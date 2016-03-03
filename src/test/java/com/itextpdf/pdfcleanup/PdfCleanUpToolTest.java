@@ -241,7 +241,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     public void cleanUpTest15() throws IOException, InterruptedException {
         String input = inputPath + "lineArtsCompletely.pdf";
         String output = outputPath + "lineArtsCompletely.pdf";
-        String cmp = inputPath + "cmp_LineArtsCompletely.pdf";
+        String cmp = inputPath + "cmp_lineArtsCompletely.pdf";
 
         cleanUp(input, output, null);
         compareByContent(cmp, output, outputPath, "diff_15");
