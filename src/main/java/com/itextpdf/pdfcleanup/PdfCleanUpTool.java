@@ -43,22 +43,28 @@
 package com.itextpdf.pdfcleanup;
 
 
+import com.itextpdf.io.source.PdfTokenizer;
+import com.itextpdf.io.source.RandomAccessFileOrArray;
+import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.color.DeviceCmyk;
+import com.itextpdf.kernel.color.DeviceGray;
+import com.itextpdf.kernel.color.DeviceRgb;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfArray;
-import com.itextpdf.kernel.pdf.PdfBoolean;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.PdfString;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfPopupAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
+import com.itextpdf.layout.Canvas;
+import com.itextpdf.layout.Property;
+import com.itextpdf.layout.element.Paragraph;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -163,7 +169,7 @@ public class PdfCleanUpTool {
      * Cleans the document by erasing all the areas which are either provided or
      * extracted from redaction annotations.
      */
-    public void cleanUp() {
+    public void cleanUp() throws IOException {
         for (Map.Entry<Integer, List<PdfCleanUpLocation>> entry : pdfCleanUpLocations.entrySet()) {
             cleanUpPage(entry.getKey(), entry.getValue());
         }
@@ -278,7 +284,7 @@ public class PdfCleanUpTool {
         return rectangles;
     }
 
-    private void removeRedactAnnots() {
+    private void removeRedactAnnots() throws IOException {
         for (PdfRedactAnnotation annotation : redactAnnotations.keySet()) {
             PdfPage page = annotation.getPage();
             page.removeAnnotation(annotation);
@@ -295,7 +301,7 @@ public class PdfCleanUpTool {
             if (redactRolloverAppearance != null) {
                 drawRolloverAppearance(canvas, redactRolloverAppearance, annotRect, redactAnnotations.get(annotation));
             } else if (overlayText != null && !overlayText.toUnicodeString().isEmpty()) {
-                drawOverlayText(canvas, overlayText.toUnicodeString(), annotRect, annotation.getRepeat(), annotation.getDrawnAfter(), annotation.getJustification());
+                drawOverlayText(canvas, overlayText.toUnicodeString(), annotRect, annotation.getRepeat(), annotation.getDefaultAppearance(), annotation.getJustification());
             }
         }
     }
@@ -313,7 +319,116 @@ public class PdfCleanUpTool {
         canvas.restoreState();
     }
 
-    private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString drawnAfter, int justification) {
+    private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString defaultAppearance, int justification) throws IOException {
+        Map<String, List> parsedDA = parseDAParam(defaultAppearance);
+        PdfFont font;
+        float fontSize = 12;
+        List fontArgs = parsedDA.get("Tf");
+        if (fontArgs != null) {
+            font = getFontFromAcroForm((PdfName) fontArgs.get(0));
+            fontSize = ((PdfNumber) fontArgs.get(1)).getFloatValue();
+        } else {
+            font = PdfFontFactory.createFont();
+        }
 
+        Canvas modelCanvas = new Canvas(canvas, pdfDocument, annotRect, false);
+
+        Paragraph p = new Paragraph(overlayText).setFont(font).setFontSize(fontSize).setMargin(0);
+        Property.TextAlignment textAlignment = Property.TextAlignment.LEFT;
+        switch (justification) {
+            case 1:
+                textAlignment = Property.TextAlignment.CENTER;
+                break;
+            case 2:
+                textAlignment = Property.TextAlignment.RIGHT;
+                break;
+            default:
+        }
+        p.setTextAlignment(textAlignment);
+        List<PdfObject> strokeColorArgs = parsedDA.get("StrokeColor");
+        if (strokeColorArgs != null) {
+            p.setStrokeColor(getColor(strokeColorArgs));
+        }
+        List<PdfObject> fillColorArgs = parsedDA.get("FillColor");
+        if (fillColorArgs != null) {
+            p.setFontColor(getColor(fillColorArgs));
+        }
+
+        modelCanvas.add(p);
+        if (repeat != null && repeat.getValue()) {
+            Boolean isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
+            while(isFull == null || !isFull) {
+                p.add(overlayText);
+                modelCanvas.relayout();
+                isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
+            }
+        }
+        modelCanvas.getRenderer().flush();
+    }
+
+    private Map<String, List> parseDAParam(PdfString DA) throws IOException {
+        Map<String, List> commandArguments = new HashMap<String, List>();
+
+        PdfTokenizer tokeniser = new PdfTokenizer(new RandomAccessFileOrArray(new RandomAccessSourceFactory().createSource(DA.toUnicodeString().getBytes())));
+        List currentArguments = new ArrayList();
+
+        while (tokeniser.nextToken()) {
+            if (tokeniser.getTokenType() == PdfTokenizer.TokenType.Other) {
+                String key = tokeniser.getStringValue();
+
+                if (key.equals("RG") || key.equals("G") || key.equals("K")) {
+                    key = "StrokeColor";
+                } else if (key.equals("rg") || key.equals("g") || key.equals("k")) {
+                    key = "FillColor";
+                }
+
+                commandArguments.put(key, currentArguments);
+                currentArguments = new ArrayList();
+            } else {
+                switch (tokeniser.getTokenType()) {
+                    case Number:
+                        currentArguments.add(new PdfNumber(new Float(tokeniser.getStringValue())));
+                        break;
+                    case Name:
+                        currentArguments.add(new PdfName(tokeniser.getStringValue()));
+                        break;
+                    default:
+                        currentArguments.add(tokeniser.getStringValue());
+                }
+            }
+        }
+
+        return commandArguments;
+    }
+
+    private PdfFont getFontFromAcroForm(PdfName fontName) {
+        PdfDictionary formDictionary = pdfDocument.getCatalog().getPdfObject().getAsDictionary(PdfName.AcroForm);
+        PdfDictionary resources = formDictionary.getAsDictionary(PdfName.DR);
+        PdfDictionary fonts = resources.getAsDictionary(PdfName.Font);
+
+        return PdfFontFactory.createFont(fonts.getAsDictionary(fontName));
+    }
+
+    private Color getColor(List colorArgs) {
+        Color color = null;
+        switch (colorArgs.size()) {
+            case 1:
+                color = new DeviceGray(((PdfNumber) colorArgs.get(0)).getFloatValue());
+                break;
+
+            case 3:
+                color = new DeviceRgb(((PdfNumber) colorArgs.get(0)).getFloatValue(),
+                        ((PdfNumber) colorArgs.get(1)).getFloatValue(),
+                        ((PdfNumber) colorArgs.get(2)).getFloatValue());
+                break;
+
+            case 4:
+                color = new DeviceCmyk(((PdfNumber) colorArgs.get(0)).getFloatValue(),
+                        ((PdfNumber) colorArgs.get(1)).getFloatValue(),
+                        ((PdfNumber) colorArgs.get(2)).getFloatValue(),
+                        ((PdfNumber) colorArgs.get(3)).getFloatValue());
+                break;
+        }
+        return color;
     }
 }

@@ -115,7 +115,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-483")
     public void cleanUpTest04() throws IOException, InterruptedException {
         String input = inputPath + "hello_05.pdf";
         String output = outputPath + "hello_05.pdf";
