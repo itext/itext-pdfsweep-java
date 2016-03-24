@@ -63,13 +63,14 @@ import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Property;
 import com.itextpdf.layout.element.Paragraph;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
+import com.itextpdf.kernel.Version;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents the main mechanism for cleaning a PDF document.
@@ -103,6 +104,10 @@ public class PdfCleanUpTool {
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
 
+    private static final String productName = "pdfSweep";
+    private static final int productMajor = 1;
+    private static final int productMinor = 0;
+
     /**
      * Creates a {@link PdfCleanUpTool} object. No regions for erasing are specified.
      * Use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)} method
@@ -128,6 +133,42 @@ public class PdfCleanUpTool {
      *                               inside the given document.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument, boolean cleanRedactAnnotations) {
+        String licenseKeyClassName = "com.itextpdf.licensekey.LicenseKey";
+        String licenseKeyProductClassName = "com.itextpdf.licensekey.LicenseKeyProduct";
+        String licenseKeyFeatureClassName = "com.itextpdf.licensekey.LicenseKeyProductFeature";
+        String checkLicenseKeyMethodName = "scheduledCheck";
+
+        try {
+            Class licenseKeyClass = Class.forName(licenseKeyClassName);
+            Class licenseKeyProductClass = Class.forName(licenseKeyProductClassName);
+            Class licenseKeyProductFeatureClass = Class.forName(licenseKeyFeatureClassName);
+
+            Object licenseKeyProductFeatureArray = Array.newInstance(licenseKeyProductFeatureClass, 0);
+
+            Class[] params = new Class[] {
+                    String.class,
+                    Integer.TYPE,
+                    Integer.TYPE,
+                    licenseKeyProductFeatureArray.getClass()
+            };
+
+            Constructor licenseKeyProductConstructor = licenseKeyProductClass.getConstructor(params);
+
+            Object licenseKeyProductObject = licenseKeyProductConstructor.newInstance(
+                    PdfCleanupProductInfo.PRODUCT_NAME,
+                    PdfCleanupProductInfo.MAJOR_VERSION,
+                    PdfCleanupProductInfo.MINOR_VERSION,
+                    licenseKeyProductFeatureArray
+            );
+
+            Method method = licenseKeyClass.getMethod(checkLicenseKeyMethodName, licenseKeyProductClass);
+            method.invoke(null, licenseKeyProductObject);
+        } catch (Exception e) {
+            if ( ! Version.isAGPLVersion() ) {
+                throw new RuntimeException(e.getCause());
+            }
+        }
+
         if (pdfDocument.getReader() == null || pdfDocument.getWriter() == null) {
             throw new PdfException(PdfException.PdfDocumentMustBeOpenedInStampingMode);
         }

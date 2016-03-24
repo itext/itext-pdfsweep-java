@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<license date="2016-03-22" issuer="iText Group NV">
+	<licensee expire="2066-03-22">
+		<name>iText Dev</name>
+		<email>dev@itextpdf.com</email>
+		<company>iText Software</company>
+		<key>testkey</key>
+		<signature>KQugOBWgPoV1rFw2P2nYdulYKlDgdAmbIqf64liKO12C4j2QI4Q3J8tRNBYGtudLktmuObRjIksvd1lFKNhlhseUrMLengsENOf4oRbe1uFB0T3vdqzFhRkwp+5JfFIbwCPPm+YHbrsd2VB0mzX/mnEZOuIOtvxpqLgEBSN1xIdtmG1dkKIpflXHujICEFidZmakGlby0kP3OrxhPRED1lzv9ufWthLTZp6NpY64PVXNerAIqiaZJlzogMVPa2JX0nTzEcs3D6zqU5mw4E7jLp8O73/5WuxEfHSCwVdbxjQCO6mp0mvOXFlacNb0iD1SGYN2SDH3AwsfOdmhFQUhKGiu6VHCggyA/WTNmKft5OZNPVvJzsCX+c+ZPJXlvCjKo6J1L0YwgkhwmDMVi4PbsN/84ofERc6vNMR1JOybdWYtDULV0zUt3g5kxwmJV67ynPlAVHqyEuZFu85YANE+jGfWfl0PS0pehXBJTZb97qwArz/i08szXuQUq8tIoKlsJCxhV/Rvna6IgTifRCRZE3l7yuCSKJxtF9EH7Ef4Ngt/gkoPCP1Nh9FICPlMOVdscZ0GWX3stht9Wnn5H8TjCnAQ60QHZtG9UcFxyfJezxJLV7effKAs5Ge2PwHFqoLqfAzoLQmAxVfQT6ZAknQp+mgKgfb9zzpdC91I2DrCyAE=</signature>
+	</licensee>
+	<product expire="2066-03-22" major="1" name="pdfSweep" platform="any" type="">
+		<signature>KOX9tlVZMjAQDm20+yriZF38b7P2kIaY33VCfhqojueV//TnzDFHPnXmwBqSt6u0V/3UB5oXWtI8eikjY/MGW+VuaOtZvC7g1BrFb8hw67XwHCNMdGKsbc+Sgly2gBygdtS2kUHrxslfnomHnGgmaEnqlgavvpP7LQjLVbAuD+MvZL2drXkB8lAHh6Svx9wG4EEN2ZIgq6i2uOwfsNrRxVY/kLB1/2lwAb2S5FYiO0666GhzAtJaXRjOsl5b0bDJj/onwuqytCQsjPdUXghxbiCUSoYfuAtf7WtbCJQVkexmD8jvJMXD54SX0nSY65s89tnnxVB6PmaRLkh1NIg0tNDMiQyPEt9/aEVjK9TMvNqZGRu8tk6AVkB9Pw8h30Hu7zE3oSLYM9fJPdL0dMXt+7bHF6lnLPGEeue1/SHlMTP3i79VHEXRh2nJ2JaQV05ZLRQLblhEjn1PCWdEknGrYE9P+vHCmROdKwSTWRaTnsjjGwxHydbTeI1MMqBsXNCn6qo/7U2mEWnDqQwVcvgIKOlHaPR9r1ql5PLPNnJMaJgQLL7cfWiLSsmpojhdceGBTYd6NzgcELG/MyzOXzy3eoNUt7iCoYz1eDrNogVbpFvQjGmuD+olCit7xIdUwSBhlTyDqC6jtoxkDoLhkvJ1SjISDLccZYhb9/l8qO8Wp0E=</signature>
+	</product>
+</license>

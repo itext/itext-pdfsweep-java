@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<license date="2016-03-22" issuer="iText Group NV">
+	<licensee expire="2066-03-22">
+		<name>iText Dev</name>
+		<email>dev@itextpdf.com</email>
+		<company>iText Software</company>
+		<key>testkey</key>
+		<signature>KQugOBWgPoV1rFw2P2nYdulYKlDgdAmbIqf64liKO12C4j2QI4Q3J8tRNBYGtudLktmuObRjIksvd1lFKNhlhseUrMLengsENOf4oRbe1uFB0T3vdqzFhRkwp+5JfFIbwCPPm+YHbrsd2VB0mzX/mnEZOuIOtvxpqLgEBSN1xIdtmG1dkKIpflXHujICEFidZmakGlby0kP3OrxhPRED1lzv9ufWthLTZp6NpY64PVXNerAIqiaZJlzogMVPa2JX0nTzEcs3D6zqU5mw4E7jLp8O73/5WuxEfHSCwVdbxjQCO6mp0mvOXFlacNb0iD1SGYN2SDH3AwsfOdmhFQUhKGiu6VHCggyA/WTNmKft5OZNPVvJzsCX+c+ZPJXlvCjKo6J1L0YwgkhwmDMVi4PbsN/84ofERc6vNMR1JOybdWYtDULV0zUt3g5kxwmJV67ynPlAVHqyEuZFu85YANE+jGfWfl0PS0pehXBJTZb97qwArz/i08szXuQUq8tIoKlsJCxhV/Rvna6IgTifRCRZE3l7yuCSKJxtF9EH7Ef4Ngt/gkoPCP1Nh9FICPlMOVdscZ0GWX3stht9Wnn5H8TjCnAQ60QHZtG9UcFxyfJezxJLV7effKAs5Ge2PwHFqoLqfAzoLQmAxVfQT6ZAknQp+mgKgfb9zzpdC91I2DrCyAE=</signature>
+	</licensee>
+	<product expire="2066-03-22" major="1" name="pdfCalligraph" platform="any" type="">
+		<signature>Eql1OhLmpzvAFEoySEh6GmP2Aqds14IlnAoM9aql+yq1oj89bpbRA97sdcalFf0m9PQo6QVeeLSKj1M2HcdWGTnGiYAYLahg+a4kXu/mGQ0BV1sYIRpioCF+bEFO+IRUunF61ADwNx1nSp5f39mQZOhuSetSVNKLJ0EA7sP5KO58I6dwQUs1C7kVOR6FfSSXszsee9TMGAjqLwHrkqNwwoo6YnZWqTn6rHJ0q9+O1iAo0AtklOj5IfAaUf7TpelKxxhguaeeKf8yeVwpnqrCipY+Nn9qMs7lkF2PElcXxvbEEhiNCtwP7YVoNY37nfHyP8jmpq0xV7P9kQ0Pp/nWunqAA33me+AourmOuMk7bHWsMG1PTysexCgzB6GXZAh15xMLbwSehymRZDTUgUyg8FfoIve6VEda0Yz4cWjeYxkovoiDAguzPGKQOGbpwrpOJRBQ4gJc8gfCFGO93r/7edo/eZUDo1HSmmQDczocwAoBwEuvwuZ5cgl1DLBnGDave7tQ8U2ySVAknTDxDW5G//VK64KDUycTcQLqzfJUl40zMfcHQFURi/wZ71v+bNVlXZ/UQDSUslzZYBVmNPowIiFmcvUNWR9aeUtUtk4XMXhYoYZCg5j2iBMj1Nkmh8UNB8o2QK4ExRduyDdba8+bpaDcpc09WIn3wMGUbENvoFo=</signature>
+	</product>
+</license>
