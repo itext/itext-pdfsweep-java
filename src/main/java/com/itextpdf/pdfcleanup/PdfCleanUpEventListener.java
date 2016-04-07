@@ -44,20 +44,20 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.kernel.PdfException;
-import com.itextpdf.kernel.parser.EventData;
-import com.itextpdf.kernel.parser.EventListener;
-import com.itextpdf.kernel.parser.EventType;
-import com.itextpdf.kernel.parser.ImageRenderInfo;
-import com.itextpdf.kernel.parser.PathRenderInfo;
-import com.itextpdf.kernel.parser.TextRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.EventData;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.EventListener;
+import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class PdfCleanUpEventListener implements EventListener{
-    private final String textDataExpected = "Text data expected.";
-    private final String imageDataExpected = "Image data expected.";
-    private final String pathDataExpected = "Path data expected.";
+    private final static String textDataExpected = "Text data expected.";
+    private final static String imageDataExpected = "Image data expected.";
+    private final static String pathDataExpected = "Path data expected.";
 
     private List<EventData> content = new ArrayList<>();
 
