@@ -69,8 +69,8 @@ import org.junit.experimental.categories.Category;
 @Category(IntegrationTest.class)
 public class PdfCleanUpToolTest extends ExtendedITextTest {
 
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/";
+    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
+    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
 
     @BeforeClass
     public static void before() {

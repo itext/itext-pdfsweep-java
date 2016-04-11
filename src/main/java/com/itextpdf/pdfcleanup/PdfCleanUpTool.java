@@ -58,6 +58,7 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfPopupAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
+import com.itextpdf.kernel.pdf.canvas.CanvasArtifact;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Canvas;
@@ -249,12 +250,19 @@ public class PdfCleanUpTool {
     }
 
     private void addColoredRectangle(PdfCanvas canvas, PdfCleanUpLocation location) {
+        if (pdfDocument.isTagged()) {
+            canvas.openTag(new CanvasArtifact());
+        }
         canvas
                 .saveState()
                 .setFillColor(location.getCleanUpColor())
                 .rectangle(location.getRegion())
                 .fill()
                 .restoreState();
+
+        if (pdfDocument.isTagged()) {
+            canvas.closeTag();
+        }
     }
 
     /**
@@ -348,6 +356,10 @@ public class PdfCleanUpTool {
     }
 
     private void drawRolloverAppearance(PdfCanvas canvas, PdfStream redactRolloverAppearance, Rectangle annotRect, List<Rectangle> cleanedRegions) {
+        if (pdfDocument.isTagged()) {
+            canvas.openTag(new CanvasArtifact());
+        }
+
         canvas.saveState();
 
         for (Rectangle rect : cleanedRegions) {
@@ -358,6 +370,10 @@ public class PdfCleanUpTool {
         PdfFormXObject formXObject = new PdfFormXObject(redactRolloverAppearance);
         canvas.addXObject(formXObject, 1, 0, 0, 1, annotRect.getLeft(), annotRect.getBottom());
         canvas.restoreState();
+
+        if (pdfDocument.isTagged()) {
+            canvas.closeTag();
+        }
     }
 
     private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString defaultAppearance, int justification) throws IOException {
@@ -370,6 +386,10 @@ public class PdfCleanUpTool {
             fontSize = ((PdfNumber) fontArgs.get(1)).getFloatValue();
         } else {
             font = PdfFontFactory.createFont();
+        }
+
+        if (pdfDocument.isTagged()) {
+            canvas.openTag(new CanvasArtifact());
         }
 
         Canvas modelCanvas = new Canvas(canvas, pdfDocument, annotRect, false);
@@ -405,6 +425,10 @@ public class PdfCleanUpTool {
             }
         }
         modelCanvas.getRenderer().flush();
+
+        if (pdfDocument.isTagged()) {
+            canvas.closeTag();
+        }
     }
 
     private Map<String, List> parseDAParam(PdfString DA) throws IOException {

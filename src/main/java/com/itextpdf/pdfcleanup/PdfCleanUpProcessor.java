@@ -50,6 +50,9 @@ import com.itextpdf.kernel.geom.Point2D;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Shape;
 import com.itextpdf.kernel.geom.Subpath;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -65,7 +68,10 @@ import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
+import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -86,16 +92,27 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }};
     private static final Set<String> clippingPathOperators = new HashSet<String>(Arrays.asList("W", "W*"));
     private static final Set<String> lineStyleOperators = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
+    private static final Set<String> markedContentOperators = new HashSet<String>(Arrays.asList("BMC", "BDC", "EMC"));
 
     private PdfDocument document;
+    private PdfPage currentPage;
     private PdfCleanUpFilter filter;
     private Stack<PdfCanvas> canvasStack;
+
+    private Deque<CanvasTag> notWrittenTags;
 
     public PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
         super(new PdfCleanUpEventListener());
         this.document = document;
         this.filter = new PdfCleanUpFilter(cleanUpRegions);
         this.canvasStack = new Stack<>();
+        this.notWrittenTags = new ArrayDeque<>();
+    }
+
+    @Override
+    public void processPageContent(PdfPage page) {
+        currentPage = page;
+        super.processPageContent(page);
     }
 
     /**
@@ -138,6 +155,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
+    @Override
+    protected void beginMarkedContent(PdfName tag, PdfDictionary dict) {
+        super.beginMarkedContent(tag, dict);
+        notWrittenTags.push(new CanvasTag(tag).addProperties(dict));
+    }
+
     private void popCanvasIfFormXObject(String operator, List<PdfObject> operands) {
         if ("Do".equals(operator)) {
             PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
@@ -161,6 +184,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if (pathConstructionOperators.contains(operator) || clippingPathOperators.contains(operator)
                 || lineStyleOperators.contains(operator)) {
             disableOutput = true;
+        } else if (markedContentOperators.contains(operator)) {
+            if ("EMC".equals(operator)) {
+                removeTagIfNotWritten();
+            }
+            disableOutput = true;
         }
 
         return disableOutput;
@@ -179,6 +207,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
 
         List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
+        PdfArray cleanedText;
         if ("TJ".equals(operator)) {
             PdfArray originalTJ = (PdfArray)operands.get(0);
             int i = 0; // text chunk index in original TJ
@@ -192,6 +221,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 }
             }
 
+            cleanedText = newTJ;
+        } else { // if operator is Tj or ' or "
+            cleanedText = filter.filterText(textChunks.get(0));
+        }
+
+        if (!cleanedText.isEmpty()) {
             // TODO Here we apply a hack. Review this later.
             // The problem is, that in PdfCleanUpProcessor we write most of the operators directly to output stream, and
             // not with PdfCanvas. But in some cases (as here) we need PdfCanvas to write changed operators. PdfCanvas
@@ -206,15 +241,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             canvas.getGraphicsState().setFont(textChunks.get(0).getFont());
             canvas.getGraphicsState().setFontSize(textChunks.get(0).getFontSize());
 
-            canvas.showText(newTJ);
-        } else { // if operator is Tj or ' or "
-            PdfArray filteredText = filter.filterText(textChunks.get(0));
+            if (cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+                openNotWrittenTags();
+            }
 
-            // TODO Here we apply the same hack as described a few lines above.
-            canvas.getGraphicsState().setFont(textChunks.get(0).getFont());
-            canvas.getGraphicsState().setFontSize(textChunks.get(0).getFontSize());
-
-            canvas.showText(filteredText);
+            canvas.showText(cleanedText);
         }
     }
 
@@ -230,6 +261,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 imageStream.clear();
                 imageStream.setData(filteredImage.getBytes(false));
                 imageStream.putAll(filteredImage);
+
+                openNotWrittenTags();
             } else {
                 return true;
             }
@@ -265,6 +298,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (fill) {
             fillPath = filter.filterFillPath(path, path.getRule());
             if (!fillPath.isEmpty()) {
+                openNotWrittenTags();
                 writePath(fillPath);
                 if (path.getRule() == FillingRule.NONZERO_WINDING) {
                     canvas.fill();
@@ -277,6 +311,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (stroke) {
             Path strokePath = filter.filterStrokePath(path);
             if (!strokePath.isEmpty()) {
+                openNotWrittenTags();
                 writeStrokePath(strokePath, path.getStrokeColor());
             }
         }
@@ -289,6 +324,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 clippingPath = filter.filterFillPath(path, path.getClippingRule());
             }
             if (!clippingPath.isEmpty()) {
+                openNotWrittenTags();
                 writePath(clippingPath);
                 if (path.getClippingRule() == FillingRule.NONZERO_WINDING) {
                     canvas.clip();
@@ -358,6 +394,31 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             } else {
                 canvas.getContentStream().getOutputStream().writeNewLine();
             }
+        }
+    }
+
+    // should be called before some content is drawn
+    private void openNotWrittenTags() {
+        CanvasTag tag = notWrittenTags.pollLast();
+        while (tag != null) {
+            canvasStack.peek().openTag(tag);
+            tag = notWrittenTags.pollLast();
+        }
+    }
+
+    private void removeTagIfNotWritten() {
+        if (!notWrittenTags.isEmpty()) {
+            CanvasTag tag = notWrittenTags.pop();
+            if (tag.hasMcid() && document.isTagged()) {
+                TagTreePointer pointer = document.getTagStructureContext().removeContentItem(currentPage, tag.getMcid());
+                if (pointer != null) {
+                    while (pointer.getKidsRoles().isEmpty()) {
+                        pointer.removeTag();
+                    }
+                }
+            }
+        } else {
+            canvasStack.peek().endMarkedContent();
         }
     }
 }
