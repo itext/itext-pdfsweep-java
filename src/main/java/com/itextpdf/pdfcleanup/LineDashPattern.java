@@ -44,7 +44,7 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.kernel.geom.Path;
-import com.itextpdf.kernel.geom.Point2D;
+import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
 import java.util.HashSet;
@@ -213,12 +213,12 @@ public class LineDashPattern {
     }
 
     public static Path applyDashPattern(Path path, LineDashPattern lineDashPattern) {
-        Set<Integer> modifiedSubpaths = new HashSet<Integer>(path.replaceCloseWithLine());
+        Set<Integer> modifiedSubpaths = new HashSet<>(path.replaceCloseWithLine());
         Path dashedPath = new Path();
         int currentSubpath = 0;
 
         for (Subpath subpath : path.getSubpaths()) {
-            List<Point2D> subpathApprox = subpath.getPiecewiseLinearApproximation();
+            List<Point> subpathApprox = subpath.getPiecewiseLinearApproximation();
 
             if (subpathApprox.size() > 1) {
                 dashedPath.moveTo((float) subpathApprox.get(0).getX(), (float) subpathApprox.get(0).getY());
@@ -226,7 +226,7 @@ public class LineDashPattern {
                 boolean remainingIsGap = false;
 
                 for (int i = 1; i < subpathApprox.size(); ++i) {
-                    Point2D nextPoint = null;
+                    Point nextPoint = null;
 
                     if (remainingDist != 0) {
                         nextPoint = getNextPoint(subpathApprox.get(i - 1), subpathApprox.get(i), remainingDist);
@@ -248,7 +248,7 @@ public class LineDashPattern {
                 if (modifiedSubpaths.contains(currentSubpath)) {
                     lineDashPattern.reset();
                     LineDashPattern.DashArrayElem currentElem = lineDashPattern.next();
-                    Point2D nextPoint = getNextPoint(subpathApprox.get(0), subpathApprox.get(1), currentElem.getVal());
+                    Point nextPoint = getNextPoint(subpathApprox.get(0), subpathApprox.get(1), currentElem.getVal());
                     applyDash(dashedPath, subpathApprox.get(0), subpathApprox.get(1), nextPoint, currentElem.isGap());
                 }
             }
@@ -261,30 +261,30 @@ public class LineDashPattern {
         return dashedPath;
     }
 
-    private static Point2D getNextPoint(Point2D segStart, Point2D segEnd, float dist) {
-        Point2D vector = componentwiseDiff(segEnd, segStart);
-        Point2D unitVector = getUnitVector(vector);
+    private static Point getNextPoint(Point segStart, Point segEnd, float dist) {
+        Point vector = componentwiseDiff(segEnd, segStart);
+        Point unitVector = getUnitVector(vector);
 
-        return new Point2D.Float((float) (segStart.getX() + dist * unitVector.getX()),
-                (float) (segStart.getY() + dist * unitVector.getY()));
+        return new Point(segStart.getX() + dist * unitVector.getX(),
+                segStart.getY() + dist * unitVector.getY());
     }
 
-    private static Point2D componentwiseDiff(Point2D minuend, Point2D subtrahend) {
-        return new Point2D.Float((float) (minuend.getX() - subtrahend.getX()),
-                (float) (minuend.getY() - subtrahend.getY()));
+    private static Point componentwiseDiff(Point minuend, Point subtrahend) {
+        return new Point(minuend.getX() - subtrahend.getX(),
+                minuend.getY() - subtrahend.getY());
     }
 
-    private static Point2D getUnitVector(Point2D vector) {
+    private static Point getUnitVector(Point vector) {
         double vectorLength = getVectorEuclideanNorm(vector);
-        return new Point2D.Float((float) (vector.getX() / vectorLength),
-                (float) (vector.getY() / vectorLength));
+        return new Point(vector.getX() / vectorLength,
+                vector.getY() / vectorLength);
     }
 
-    private static double getVectorEuclideanNorm(Point2D vector) {
+    private static double getVectorEuclideanNorm(Point vector) {
         return vector.distance(0, 0);
     }
 
-    private static float applyDash(Path dashedPath, Point2D segStart, Point2D segEnd, Point2D dashTo, boolean isGap) {
+    private static float applyDash(Path dashedPath, Point segStart, Point segEnd, Point dashTo, boolean isGap) {
         float remainingDist = 0;
 
         if (!liesOnSegment(segStart, segEnd, dashTo)) {
@@ -301,7 +301,7 @@ public class LineDashPattern {
         return remainingDist;
     }
 
-    private static boolean liesOnSegment(Point2D segStart, Point2D segEnd, Point2D point) {
+    private static boolean liesOnSegment(Point segStart, Point segEnd, Point point) {
         return point.getX() >= Math.min(segStart.getX(), segEnd.getX()) &&
                 point.getX() <= Math.max(segStart.getX(), segEnd.getX()) &&
                 point.getY() >= Math.min(segStart.getY(), segEnd.getY()) &&

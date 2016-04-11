@@ -51,7 +51,6 @@ import com.itextpdf.kernel.geom.LineSegment;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.NoninvertibleTransformException;
 import com.itextpdf.kernel.geom.Point;
-import com.itextpdf.kernel.geom.Point2D;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
@@ -160,10 +159,10 @@ public class PdfCleanUpFilter {
 
 
     private boolean isTextNotToBeCleaned(TextRenderInfo renderInfo) {
-        Point2D[] textRect = getTextRectangle(renderInfo);
+        Point[] textRect = getTextRectangle(renderInfo);
 
         for (Rectangle region : regions) {
-            Point2D[] redactRect = getRectangleVertices(region);
+            Point[] redactRect = getRectangleVertices(region);
 
             if (checkIfRectanglesIntersect(textRect, redactRect)) {
                 return false;
@@ -173,7 +172,7 @@ public class PdfCleanUpFilter {
         return true;
     }
 
-    private boolean checkIfRectanglesIntersect(Point2D[] rect1, Point2D[] rect2) {
+    private boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
         Clipper clipper = new DefaultClipper();
         ClipperBridge.addRectToClipper(clipper, rect1, PolyType.SUBJECT);
         ClipperBridge.addRectToClipper(clipper, rect2, PolyType.CLIP);
@@ -224,7 +223,7 @@ public class PdfCleanUpFilter {
             return null;
         }
 
-        Point2D[] points = transformPoints(ctm, false,
+        Point[] points = transformPoints(ctm, false,
                 new Point(0, 0), new Point(0, 1),
                 new Point(1, 0), new Point(1, 1));
 
@@ -235,7 +234,7 @@ public class PdfCleanUpFilter {
      * Transforms the given Rectangle into the image coordinate system which is [0,1]x[0,1] by default
      */
     private Rectangle transformRectIntoImageCoordinates(Rectangle rect, Matrix imageCtm) {
-        Point2D[] points = transformPoints(imageCtm, true, new Point(rect.getLeft(), rect.getBottom()),
+        Point[] points = transformPoints(imageCtm, true, new Point(rect.getLeft(), rect.getBottom()),
                 new Point(rect.getLeft(), rect.getTop()),
                 new Point(rect.getRight(), rect.getBottom()),
                 new Point(rect.getRight(), rect.getTop()));
@@ -256,7 +255,7 @@ public class PdfCleanUpFilter {
             if (imageInfo.getFormat() == ImageFormats.JPEG) {
                 return getJPGBytes(image);
             } else {
-                Map<String, Object> params = new HashMap<String, Object>();
+                Map<String, Object> params = new HashMap<>();
 
                 if (imageInfo.getFormat() == ImageFormats.TIFF) {
                     params.put(ImagingConstants.PARAM_KEY_COMPRESSION, TiffConstants.TIFF_COMPRESSION_LZW);
@@ -362,7 +361,7 @@ public class PdfCleanUpFilter {
         ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
 
         for (Rectangle rectangle : regions) {
-            Point2D[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
+            Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
             ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
         }
 
@@ -386,7 +385,7 @@ public class PdfCleanUpFilter {
      * @return {@link java.util.List} consisting of circles constructed on given degenerated subpaths.
      */
     private static List<Subpath> convertToCircles(List<Subpath> degenerateSubpaths, double radius) {
-        List<Subpath> circles = new ArrayList<Subpath>(degenerateSubpaths.size());
+        List<Subpath> circles = new ArrayList<>(degenerateSubpaths.size());
 
         for (Subpath subpath : degenerateSubpaths) {
             BezierCurve[] circleSectors = approximateCircle(subpath.getStartPoint(), radius);
@@ -413,22 +412,22 @@ public class PdfCleanUpFilter {
      * @return {@link java.util.List} consisting of squares constructed on given degenerated subpaths.
      */
     private static List<Subpath> convertToSquares(List<Subpath> degenerateSubpaths, double squareWidth, com.itextpdf.kernel.geom.Path sourcePath) {
-        List<Point2D> pathApprox = getPathApproximation(sourcePath);
+        List<Point> pathApprox = getPathApproximation(sourcePath);
 
         if (pathApprox.size() < 2) {
             return Collections.EMPTY_LIST;
         }
 
-        Iterator<Point2D> approxIter = pathApprox.iterator();
-        Point2D approxPt1 = approxIter.next();
-        Point2D approxPt2 = approxIter.next();
+        Iterator<Point> approxIter = pathApprox.iterator();
+        Point approxPt1 = approxIter.next();
+        Point approxPt2 = approxIter.next();
         StandardLine line = new StandardLine(approxPt1, approxPt2);
 
-        List<Subpath> squares = new ArrayList<Subpath>(degenerateSubpaths.size());
+        List<Subpath> squares = new ArrayList<>(degenerateSubpaths.size());
         float widthHalf = (float) squareWidth / 2;
 
-        for (int i = 0; i < degenerateSubpaths.size(); ++i) {
-            Point2D point = degenerateSubpaths.get(i).getStartPoint();
+        for (Subpath subpath : degenerateSubpaths) {
+            Point point = subpath.getStartPoint();
 
             while (!line.contains(point)) {
                 approxPt1 = approxPt2;
@@ -451,14 +450,14 @@ public class PdfCleanUpFilter {
         return squares;
     }
 
-    private static List<Point2D> getPathApproximation(com.itextpdf.kernel.geom.Path path) {
-        List<Point2D> approx = new ArrayList<Point2D>() {
+    private static List<Point> getPathApproximation(com.itextpdf.kernel.geom.Path path) {
+        List<Point> approx = new ArrayList<Point>() {
             @Override
-            public boolean addAll(Collection<? extends Point2D> c) {
-                Point2D prevPoint = (size() - 1 < 0 ? null : get(size() - 1));
+            public boolean addAll(Collection<? extends Point> c) {
+                Point prevPoint = (size() - 1 < 0 ? null : get(size() - 1));
                 boolean ret = false;
 
-                for (Point2D pt : c) {
+                for (Point pt : c) {
                     if (!pt.equals(prevPoint)) {
                         add(pt);
                         prevPoint = pt;
@@ -477,16 +476,16 @@ public class PdfCleanUpFilter {
         return approx;
     }
 
-    private static Subpath constructSquare(Point2D squareCenter, double widthHalf, double rotationAngle) {
+    private static Subpath constructSquare(Point squareCenter, double widthHalf, double rotationAngle) {
         // Orthogonal square is the square with sides parallel to one of the axes.
-        Point2D[] ortogonalSquareVertices = {
-                new Point2D.Double(-widthHalf, -widthHalf),
-                new Point2D.Double(-widthHalf, widthHalf),
-                new Point2D.Double(widthHalf, widthHalf),
-                new Point2D.Double(widthHalf, -widthHalf)
+        Point[] ortogonalSquareVertices = {
+                new Point(-widthHalf, -widthHalf),
+                new Point(-widthHalf, widthHalf),
+                new Point(widthHalf, widthHalf),
+                new Point(widthHalf, -widthHalf)
         };
 
-        Point2D[] rotatedSquareVertices = getRotatedSquareVertices(ortogonalSquareVertices, rotationAngle, squareCenter);
+        Point[] rotatedSquareVertices = getRotatedSquareVertices(ortogonalSquareVertices, rotationAngle, squareCenter);
 
         Subpath square = new Subpath();
         square.addSegment(new Line(rotatedSquareVertices[0], rotatedSquareVertices[1]));
@@ -497,8 +496,8 @@ public class PdfCleanUpFilter {
         return square;
     }
 
-    private static Point2D[] getRotatedSquareVertices(Point2D[] orthogonalSquareVertices, double angle, Point2D squareCenter) {
-        Point2D[] rotatedSquareVertices = new Point2D[orthogonalSquareVertices.length];
+    private static Point[] getRotatedSquareVertices(Point[] orthogonalSquareVertices, double angle, Point squareCenter) {
+        Point[] rotatedSquareVertices = new Point[orthogonalSquareVertices.length];
 
         AffineTransform.getRotateInstance((float) angle).
                 transform(orthogonalSquareVertices, 0, rotatedSquareVertices, 0, rotatedSquareVertices.length);
@@ -508,7 +507,7 @@ public class PdfCleanUpFilter {
         return rotatedSquareVertices;
     }
 
-    private static BezierCurve[] approximateCircle(Point2D center, double radius) {
+    private static BezierCurve[] approximateCircle(Point center, double radius) {
         // The circle is split into 4 sectors. Arc of each sector
         // is approximated  with bezier curve separately.
         BezierCurve[] approximation = new BezierCurve[4];
@@ -516,38 +515,38 @@ public class PdfCleanUpFilter {
         double y = center.getY();
 
         approximation[0] = new BezierCurve(Arrays.asList(
-                (Point2D) new Point2D.Double(x, y + radius),
-                new Point2D.Double(x + radius * circleApproximationConst, y + radius),
-                new Point2D.Double(x + radius, y + radius * circleApproximationConst),
-                new Point2D.Double(x + radius, y)));
+                new Point(x, y + radius),
+                new Point(x + radius * circleApproximationConst, y + radius),
+                new Point(x + radius, y + radius * circleApproximationConst),
+                new Point(x + radius, y)));
 
         approximation[1] = new BezierCurve(Arrays.asList(
-                (Point2D) new Point2D.Double(x + radius, y),
-                new Point2D.Double(x + radius, y - radius * circleApproximationConst),
-                new Point2D.Double(x + radius * circleApproximationConst, y - radius),
-                new Point2D.Double(x, y - radius)));
+                new Point(x + radius, y),
+                new Point(x + radius, y - radius * circleApproximationConst),
+                new Point(x + radius * circleApproximationConst, y - radius),
+                new Point(x, y - radius)));
 
         approximation[2] = new BezierCurve(Arrays.asList(
-                (Point2D) new Point2D.Double(x, y - radius),
-                new Point2D.Double(x - radius * circleApproximationConst, y - radius),
-                new Point2D.Double(x - radius, y - radius * circleApproximationConst),
-                new Point2D.Double(x - radius, y)));
+                new Point(x, y - radius),
+                new Point(x - radius * circleApproximationConst, y - radius),
+                new Point(x - radius, y - radius * circleApproximationConst),
+                new Point(x - radius, y)));
 
         approximation[3] = new BezierCurve(Arrays.asList(
-                (Point2D) new Point2D.Double(x - radius, y),
-                new Point2D.Double(x - radius, y + radius * circleApproximationConst),
-                new Point2D.Double(x - radius * circleApproximationConst, y + radius),
-                new Point2D.Double(x, y + radius)));
+                new Point(x - radius, y),
+                new Point(x - radius, y + radius * circleApproximationConst),
+                new Point(x - radius * circleApproximationConst, y + radius),
+                new Point(x, y + radius)));
 
         return approximation;
     }
 
 
-    private Point2D[] transformPoints(Matrix transformationMatrix, boolean inverse, Point2D... points) {
+    private Point[] transformPoints(Matrix transformationMatrix, boolean inverse, Point... points) {
         AffineTransform t = new AffineTransform(transformationMatrix.get(Matrix.I11), transformationMatrix.get(Matrix.I12),
                 transformationMatrix.get(Matrix.I21), transformationMatrix.get(Matrix.I22),
                 transformationMatrix.get(Matrix.I31), transformationMatrix.get(Matrix.I32));
-        Point2D[] transformed = new Point2D[points.length];
+        Point[] transformed = new Point[points.length];
 
         if (inverse) {
             try {
@@ -562,30 +561,30 @@ public class PdfCleanUpFilter {
         return transformed;
     }
 
-    private Point2D[] getTextRectangle(TextRenderInfo renderInfo) {
+    private Point[] getTextRectangle(TextRenderInfo renderInfo) {
         LineSegment ascent = renderInfo.getAscentLine();
         LineSegment descent = renderInfo.getDescentLine();
 
-        return new Point2D[] {
-                new Point2D.Float(ascent.getStartPoint().get(0), ascent.getStartPoint().get(1)),
-                new Point2D.Float(ascent.getEndPoint().get(0), ascent.getEndPoint().get(1)),
-                new Point2D.Float(descent.getEndPoint().get(0), descent.getEndPoint().get(1)),
-                new Point2D.Float(descent.getStartPoint().get(0), descent.getStartPoint().get(1)),
+        return new Point[] {
+                new Point(ascent.getStartPoint().get(0), ascent.getStartPoint().get(1)),
+                new Point(ascent.getEndPoint().get(0), ascent.getEndPoint().get(1)),
+                new Point(descent.getEndPoint().get(0), descent.getEndPoint().get(1)),
+                new Point(descent.getStartPoint().get(0), descent.getStartPoint().get(1)),
         };
     }
 
-    private Point2D[] getRectangleVertices(Rectangle rect) {
-        Point2D[] points = {
-                new Point2D.Double(rect.getLeft(), rect.getBottom()),
-                new Point2D.Double(rect.getRight(), rect.getBottom()),
-                new Point2D.Double(rect.getRight(), rect.getTop()),
-                new Point2D.Double(rect.getLeft(), rect.getTop())
+    private Point[] getRectangleVertices(Rectangle rect) {
+        Point[] points = {
+                new Point(rect.getLeft(), rect.getBottom()),
+                new Point(rect.getRight(), rect.getBottom()),
+                new Point(rect.getRight(), rect.getTop()),
+                new Point(rect.getLeft(), rect.getTop())
         };
 
         return points;
     }
 
-    private Rectangle getAsRectangle(Point2D p1, Point2D p2, Point2D p3, Point2D p4) {
+    private Rectangle getAsRectangle(Point p1, Point p2, Point p3, Point p4) {
         List<Double> xs = Arrays.asList(p1.getX(), p2.getX(), p3.getX(), p4.getX());
         List<Double> ys = Arrays.asList(p1.getY(), p2.getY(), p3.getY(), p4.getY());
 
@@ -625,7 +624,7 @@ public class PdfCleanUpFilter {
         float B;
         float C;
 
-        StandardLine(Point2D p1, Point2D p2) {
+        StandardLine(Point p1, Point p2) {
             A = (float) (p2.getY() - p1.getY());
             B = (float) (p1.getX() - p2.getX());
             C = (float) (p1.getY() * (-B) - p1.getX() * A);
@@ -639,7 +638,7 @@ public class PdfCleanUpFilter {
             return -A / B;
         }
 
-        boolean contains(Point2D point) {
+        boolean contains(Point point) {
             return Float.compare(Math.abs(A * (float) point.getX() + B * (float) point.getY() + C), 0.1f) < 0;
         }
     }

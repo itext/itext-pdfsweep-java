@@ -46,7 +46,7 @@ package com.itextpdf.pdfcleanup;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Path;
-import com.itextpdf.kernel.geom.Point2D;
+import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Shape;
 import com.itextpdf.kernel.geom.Subpath;
@@ -353,17 +353,17 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             for (Shape segment : subpath.getSegments()) {
                 if (segment instanceof BezierCurve) {
 
-                    List<Point2D> basePoints = segment.getBasePoints();
-                    Point2D p2 = basePoints.get(1);
-                    Point2D p3 = basePoints.get(2);
-                    Point2D p4 = basePoints.get(3);
+                    List<Point> basePoints = segment.getBasePoints();
+                    Point p2 = basePoints.get(1);
+                    Point p3 = basePoints.get(2);
+                    Point p4 = basePoints.get(3);
                     canvas.curveTo((float) p2.getX(), (float) p2.getY(),
                             (float) p3.getX(), (float) p3.getY(),
                             (float) p4.getX(), (float) p4.getY());
 
                 } else { // segment is Line
 
-                    Point2D destination = segment.getBasePoints().get(1);
+                    Point destination = segment.getBasePoints().get(1);
                     canvas.lineTo((float)destination.getX(), (float) destination.getY());
 
                 }
