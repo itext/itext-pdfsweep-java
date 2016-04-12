@@ -43,6 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
+import com.itextpdf.io.image.Image;
 import com.itextpdf.io.image.ImageFactory;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
@@ -128,7 +129,7 @@ public class PdfCleanUpFilter {
         return textArray;
     }
 
-    public PdfStream filterImage(ImageRenderInfo image) {
+    public Image filterImage(ImageRenderInfo image) {
         List<Rectangle> areasToBeCleaned = getImageAreasToBeCleaned(image);
         if (areasToBeCleaned == null) {
             return null;
@@ -142,7 +143,7 @@ public class PdfCleanUpFilter {
             throw new RuntimeException(e);
         }
 
-        return new PdfImageXObject(ImageFactory.getImage(filteredImageBytes)).getPdfObject();
+        return ImageFactory.getImage(filteredImageBytes);
     }
 
     public com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
@@ -202,7 +203,7 @@ public class PdfCleanUpFilter {
             Rectangle intersectionRect = getRectanglesIntersection(imageRect, region);
 
             if (intersectionRect != null) {
-                if (imageRect.equals(intersectionRect)) { // true if the image is completely covered
+                if (imageRect.equalsWithEpsilon(intersectionRect)) { // true if the image is completely covered
                     return null;
                 }
 
@@ -605,7 +606,6 @@ public class PdfCleanUpFilter {
                 ? new Rectangle(x1, y1, x2 - x1, y2 - y1)
                 : null;
     }
-
 
     private void closeOutputStream(OutputStream os) {
         if (os != null) {

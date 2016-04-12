@@ -43,6 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
+import com.itextpdf.io.image.Image;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Path;
@@ -69,6 +70,7 @@ import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -176,8 +178,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (textShowingOperators.contains(operator)) {
             cleanText(operator, operands);
             disableOutput = true;
-        } else if ("Do".equals(operator)) { // TODO inline image case
+        } else if ("Do".equals(operator)) {
             disableOutput = checkIfImageAndClean(operands);
+        } else if ("EI".equals(operator)) {
+            cleanInlineImage();
+            disableOutput = true;
         } else if (pathPaintingOperators.contains(operator)) {
             writePath();
             disableOutput = true;
@@ -256,11 +261,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         PdfStream imageStream = getXObjectStream((PdfName) operands.get(0));
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
-            PdfStream filteredImage = filter.filterImage(encounteredImage);
+            Image filteredImage = filter.filterImage(encounteredImage);
             if (filteredImage != null) {
+                PdfStream filteredImageStream = new PdfImageXObject(filteredImage).getPdfObject();
                 imageStream.clear();
-                imageStream.setData(filteredImage.getBytes(false));
-                imageStream.putAll(filteredImage);
+                imageStream.setData(filteredImageStream.getBytes(false));
+                imageStream.putAll(filteredImageStream);
 
                 openNotWrittenTags();
             } else {
@@ -268,6 +274,16 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
         }
         return false;
+    }
+
+    private void cleanInlineImage() {
+        ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
+        Image filteredImage = filter.filterImage(encounteredImage);
+        if (filteredImage != null) {
+            openNotWrittenTags();
+            // passing identity matrix for image, because it's ctm is saved from original file
+            canvasStack.peek().addImage(filteredImage, 1, 0, 0, 1, 0, 0, true);
+        }
     }
 
     private void writePath() {
