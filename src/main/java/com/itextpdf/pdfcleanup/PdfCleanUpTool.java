@@ -105,9 +105,9 @@ public class PdfCleanUpTool {
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
 
-    private static final String productName = "pdfSweep";
-    private static final int productMajor = 1;
-    private static final int productMinor = 0;
+    private static final String PRODUCT_NAME = "pdfSweep";
+    private static final int PRODUCT_MAJOR = 1;
+    private static final int PRODUCT_MINOR = 0;
 
     /**
      * Creates a {@link PdfCleanUpTool} object. No regions for erasing are specified.

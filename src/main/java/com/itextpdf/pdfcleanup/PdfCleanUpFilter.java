@@ -99,8 +99,8 @@ import org.apache.commons.imaging.ImagingConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
 
 public class PdfCleanUpFilter {
-    private static final Color cleanedAreaFillColor = Color.WHITE;
-    private static final double circleApproximationConst = 0.55191502449;
+    private static final Color CLEANED_AREA_FILL_COLOR = Color.WHITE;
+    private static final double CIRCLE_APPROXIMATION_CONST = 0.55191502449;
 
     private List<Rectangle> regions;
 
@@ -270,7 +270,7 @@ public class PdfCleanUpFilter {
 
     private void cleanImage(BufferedImage image, List<Rectangle> areasToBeCleaned) {
         Graphics2D graphics = image.createGraphics();
-        graphics.setColor(cleanedAreaFillColor);
+        graphics.setColor(CLEANED_AREA_FILL_COLOR);
 
         // A rectangle in the areasToBeCleaned list is treated to be in standard [0, 1]x[0,1] image space
         // (y varies from bottom to top and x from left to right), so we should scale the rectangle and also
@@ -516,26 +516,26 @@ public class PdfCleanUpFilter {
 
         approximation[0] = new BezierCurve(Arrays.asList(
                 new Point(x, y + radius),
-                new Point(x + radius * circleApproximationConst, y + radius),
-                new Point(x + radius, y + radius * circleApproximationConst),
+                new Point(x + radius * CIRCLE_APPROXIMATION_CONST, y + radius),
+                new Point(x + radius, y + radius * CIRCLE_APPROXIMATION_CONST),
                 new Point(x + radius, y)));
 
         approximation[1] = new BezierCurve(Arrays.asList(
                 new Point(x + radius, y),
-                new Point(x + radius, y - radius * circleApproximationConst),
-                new Point(x + radius * circleApproximationConst, y - radius),
+                new Point(x + radius, y - radius * CIRCLE_APPROXIMATION_CONST),
+                new Point(x + radius * CIRCLE_APPROXIMATION_CONST, y - radius),
                 new Point(x, y - radius)));
 
         approximation[2] = new BezierCurve(Arrays.asList(
                 new Point(x, y - radius),
-                new Point(x - radius * circleApproximationConst, y - radius),
-                new Point(x - radius, y - radius * circleApproximationConst),
+                new Point(x - radius * CIRCLE_APPROXIMATION_CONST, y - radius),
+                new Point(x - radius, y - radius * CIRCLE_APPROXIMATION_CONST),
                 new Point(x - radius, y)));
 
         approximation[3] = new BezierCurve(Arrays.asList(
                 new Point(x - radius, y),
-                new Point(x - radius, y + radius * circleApproximationConst),
-                new Point(x - radius * circleApproximationConst, y + radius),
+                new Point(x - radius, y + radius * CIRCLE_APPROXIMATION_CONST),
+                new Point(x - radius * CIRCLE_APPROXIMATION_CONST, y + radius),
                 new Point(x, y + radius)));
 
         return approximation;
