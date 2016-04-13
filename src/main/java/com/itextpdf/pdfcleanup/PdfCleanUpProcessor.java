@@ -264,6 +264,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             Image filteredImage = filter.filterImage(encounteredImage);
             if (filteredImage != null) {
                 PdfStream filteredImageStream = new PdfImageXObject(filteredImage).getPdfObject();
+                copySMaskData(imageStream, filteredImageStream);
+
                 imageStream.clear();
                 imageStream.setData(filteredImageStream.getBytes(false));
                 imageStream.putAll(filteredImageStream);
@@ -281,8 +283,27 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         Image filteredImage = filter.filterImage(encounteredImage);
         if (filteredImage != null) {
             openNotWrittenTags();
+
+            Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
+            if (imageMaskFlag != null && imageMaskFlag) {
+                filteredImage.makeMask();
+            }
             // passing identity matrix for image, because it's ctm is saved from original file
             canvasStack.peek().addImage(filteredImage, 1, 0, 0, 1, 0, 0, true);
+        }
+    }
+
+    private void copySMaskData(PdfStream imageStream, PdfStream filteredImageStream) {
+        if (imageStream.containsKey(PdfName.SMask)) {
+            filteredImageStream.put(PdfName.SMask, imageStream.get(PdfName.SMask));
+        }
+
+        if (imageStream.containsKey(PdfName.Mask)) {
+            filteredImageStream.put(PdfName.Mask, imageStream.get(PdfName.Mask));
+        }
+
+        if (imageStream.containsKey(PdfName.SMaskInData)) {
+            filteredImageStream.put(PdfName.SMaskInData, imageStream.get(PdfName.SMaskInData));
         }
     }
 

@@ -70,10 +70,8 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.Paths;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfNumber;
-import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
-import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -137,7 +135,7 @@ public class PdfCleanUpFilter {
 
         byte[] filteredImageBytes;
         try {
-            byte[] originalImageBytes = image.getImage().getImageBytes(); // TODO for TIFF, PNG and LZW images this doesn't work. Fix it, when Tiff/PngWriter are implemented
+            byte[] originalImageBytes = image.getImage().getImageBytes();
             filteredImageBytes = processImage(originalImageBytes, areasToBeCleaned);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -273,9 +271,9 @@ public class PdfCleanUpFilter {
         Graphics2D graphics = image.createGraphics();
         graphics.setColor(CLEANED_AREA_FILL_COLOR);
 
-        // A rectangle in the areasToBeCleaned list is treated to be in standard [0, 1]x[0,1] image space
+        // A rectangle in the areasToBeCleaned list is treated to be in standard [0,1]x[0,1] image space
         // (y varies from bottom to top and x from left to right), so we should scale the rectangle and also
-        // invert and shear the y axe
+        // invert and shear the y axe.
         for (Rectangle rect : areasToBeCleaned) {
             int scaledBottomY = (int) Math.ceil(rect.getBottom() * image.getHeight());
             int scaledTopY = (int) Math.floor(rect.getTop() * image.getHeight());

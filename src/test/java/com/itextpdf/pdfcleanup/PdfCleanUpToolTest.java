@@ -143,7 +143,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest06() throws IOException, InterruptedException {
         String input = inputPath + "BigImage-png.pdf";
         String output = outputPath + "BigImage-png.pdf";
@@ -154,7 +153,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest07() throws IOException, InterruptedException {
         String input = inputPath + "BigImage-tif.pdf";
         String output = outputPath + "BigImage-tif.pdf";
@@ -165,7 +163,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest08() throws IOException, InterruptedException {
         String input = inputPath + "BigImage-tif-lzw.pdf";
         String output = outputPath + "BigImage-tif-lzw.pdf";
@@ -209,7 +206,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest12() throws IOException, InterruptedException {
         String input = inputPath + "multiUseImage.pdf";
         String output = outputPath + "multiUseImage.pdf";
@@ -221,7 +217,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest13() throws IOException, InterruptedException {
         String input = inputPath + "smaskImage.pdf";
         String output = outputPath + "smaskImage.pdf";
@@ -233,7 +228,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-484")
     public void cleanUpTest14() throws IOException, InterruptedException {
         String input = inputPath + "rotatedImg.pdf";
         String output = outputPath + "rotatedImg.pdf";
