@@ -125,7 +125,7 @@ public class LineDashPattern {
 
         if (dashArray.size() > 0) {
             currentIndex = (currentIndex + 1) % dashArray.size();
-            currentElem = new DashArrayElem(dashArray.getAsNumber(currentIndex).getFloatValue(),
+            currentElem = new DashArrayElem(dashArray.getAsNumber(currentIndex).floatValue(),
                     isEven(++elemOrdinalNumber));
         }
 
@@ -156,7 +156,7 @@ public class LineDashPattern {
         float unitsOffSum = 0;
 
         for (int i = 1; i < dashArray.size(); i += 2) {
-            unitsOffSum += dashArray.getAsNumber(i).getFloatValue();
+            unitsOffSum += dashArray.getAsNumber(i).floatValue();
         }
 
         return Float.compare(unitsOffSum, 0) == 0;
@@ -165,7 +165,7 @@ public class LineDashPattern {
     private void initFirst(float phase) {
         if (dashArray.size() > 0) {
             while (phase > 0) {
-                phase -= dashArray.getAsNumber(currentIndex).getFloatValue();
+                phase -= dashArray.getAsNumber(currentIndex).floatValue();
                 currentIndex = (currentIndex + 1) % dashArray.size();
                 elemOrdinalNumber++;
             }
@@ -175,7 +175,7 @@ public class LineDashPattern {
                 --currentIndex;
                 currentElem = new DashArrayElem(-phase, isEven(elemOrdinalNumber));
             } else {
-                currentElem = new DashArrayElem(dashArray.getAsNumber(currentIndex).getFloatValue(),
+                currentElem = new DashArrayElem(dashArray.getAsNumber(currentIndex).floatValue(),
                         isEven(elemOrdinalNumber));
             }
         }

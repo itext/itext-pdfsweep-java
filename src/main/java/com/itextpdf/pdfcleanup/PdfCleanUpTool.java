@@ -320,10 +320,10 @@ public class PdfCleanUpTool {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
 
         for (int i = 0; i < quadPoints.size(); i += 8) {
-            float x = quadPoints.getAsNumber(i + 4).getFloatValue();
-            float y = quadPoints.getAsNumber(i + 5).getFloatValue();
-            float width = quadPoints.getAsNumber(i + 2).getFloatValue() - x;
-            float height = quadPoints.getAsNumber(i + 3).getFloatValue() - y;
+            float x = quadPoints.getAsNumber(i + 4).floatValue();
+            float y = quadPoints.getAsNumber(i + 5).floatValue();
+            float width = quadPoints.getAsNumber(i + 2).floatValue() - x;
+            float height = quadPoints.getAsNumber(i + 3).floatValue() - y;
             rectangles.add(new Rectangle(x, // QuadPoints have "Z" order
                     y,
                     width,
@@ -383,7 +383,7 @@ public class PdfCleanUpTool {
         List fontArgs = parsedDA.get("Tf");
         if (fontArgs != null) {
             font = getFontFromAcroForm((PdfName) fontArgs.get(0));
-            fontSize = ((PdfNumber) fontArgs.get(1)).getFloatValue();
+            fontSize = ((PdfNumber) fontArgs.get(1)).floatValue();
         } else {
             font = PdfFontFactory.createFont();
         }
@@ -478,20 +478,20 @@ public class PdfCleanUpTool {
         Color color = null;
         switch (colorArgs.size()) {
             case 1:
-                color = new DeviceGray(((PdfNumber) colorArgs.get(0)).getFloatValue());
+                color = new DeviceGray(((PdfNumber) colorArgs.get(0)).floatValue());
                 break;
 
             case 3:
-                color = new DeviceRgb(((PdfNumber) colorArgs.get(0)).getFloatValue(),
-                        ((PdfNumber) colorArgs.get(1)).getFloatValue(),
-                        ((PdfNumber) colorArgs.get(2)).getFloatValue());
+                color = new DeviceRgb(((PdfNumber) colorArgs.get(0)).floatValue(),
+                        ((PdfNumber) colorArgs.get(1)).floatValue(),
+                        ((PdfNumber) colorArgs.get(2)).floatValue());
                 break;
 
             case 4:
-                color = new DeviceCmyk(((PdfNumber) colorArgs.get(0)).getFloatValue(),
-                        ((PdfNumber) colorArgs.get(1)).getFloatValue(),
-                        ((PdfNumber) colorArgs.get(2)).getFloatValue(),
-                        ((PdfNumber) colorArgs.get(3)).getFloatValue());
+                color = new DeviceCmyk(((PdfNumber) colorArgs.get(0)).floatValue(),
+                        ((PdfNumber) colorArgs.get(1)).floatValue(),
+                        ((PdfNumber) colorArgs.get(2)).floatValue(),
+                        ((PdfNumber) colorArgs.get(3)).floatValue());
                 break;
         }
         return color;

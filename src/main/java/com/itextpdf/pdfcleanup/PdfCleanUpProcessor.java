@@ -206,8 +206,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if ("\"".equals(operator)) {
             PdfNumber wordSpacing = (PdfNumber) operands.get(0);
             PdfNumber charSpacing = (PdfNumber) operands.get(1);
-            canvas.setWordSpacing(wordSpacing.getFloatValue())
-                    .setCharacterSpacing(charSpacing.getFloatValue())
+            canvas.setWordSpacing(wordSpacing.floatValue())
+                    .setCharacterSpacing(charSpacing.floatValue())
                     .newlineText();
         }
 
