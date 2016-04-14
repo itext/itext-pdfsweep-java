@@ -320,10 +320,10 @@ public class PdfCleanUpTool {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
 
         for (int i = 0; i < quadPoints.size(); i += 8) {
-            Float x = quadPoints.getAsFloat(i + 4);
-            Float y = quadPoints.getAsFloat(i + 5);
-            Float width = quadPoints.getAsFloat(i + 2) - x;
-            Float height = quadPoints.getAsFloat(i + 3) - y;
+            float x = quadPoints.getAsNumber(i + 4).getFloatValue();
+            float y = quadPoints.getAsNumber(i + 5).getFloatValue();
+            float width = quadPoints.getAsNumber(i + 2).getFloatValue() - x;
+            float height = quadPoints.getAsNumber(i + 3).getFloatValue() - y;
             rectangles.add(new Rectangle(x, // QuadPoints have "Z" order
                     y,
                     width,

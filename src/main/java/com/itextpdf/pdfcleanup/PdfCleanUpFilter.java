@@ -146,7 +146,7 @@ public class PdfCleanUpFilter {
 
     public com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
         PdfArray dashPattern = path.getLineDashPattern();
-        LineDashPattern lineDashPattern = new LineDashPattern(dashPattern.getAsArray(0), dashPattern.getAsFloat(1));
+        LineDashPattern lineDashPattern = new LineDashPattern(dashPattern.getAsArray(0), dashPattern.getAsNumber(1).getFloatValue());
 
         return filterStrokePath(path.getPath(), path.getCtm(), path.getLineWidth(), path.getLineCapStyle(),
                 path.getLineJoinStyle(), path.getMiterLimit(), lineDashPattern);
