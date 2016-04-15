@@ -55,9 +55,9 @@ import java.util.List;
 import java.util.Set;
 
 public class PdfCleanUpEventListener implements EventListener{
-    private final static String textDataExpected = "Text data expected.";
-    private final static String imageDataExpected = "Image data expected.";
-    private final static String pathDataExpected = "Path data expected.";
+    private static final String textDataExpected = "Text data expected.";
+    private static final String imageDataExpected = "Image data expected.";
+    private static final String pathDataExpected = "Path data expected.";
 
     private List<EventData> content = new ArrayList<>();
 
