@@ -45,6 +45,7 @@ package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -65,7 +66,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -416,6 +416,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, null);
         compareByContent(cmp, output, outputPath, "diff_31");
+    }
+
+    @Test
+    public void cleanUpTest32() throws IOException, InterruptedException {
+        String input = inputPath + "page229.pdf";
+        String output = outputPath + "wholePageCleanUp.pdf";
+        String cmp = inputPath + "cmp_wholePageCleanUp.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(1, 1, PageSize.A4.getWidth() - 1, PageSize.A4.getHeight() - 1))));
+        compareByContent(cmp, output, outputPath, "diff_32");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

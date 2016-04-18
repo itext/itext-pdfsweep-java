@@ -237,6 +237,7 @@ public class PdfCleanUpTool {
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
         page.put(PdfName.Contents, pageCleanedContents.getContentStream());
+        page.setResources(pageCleanedContents.getResources());
 
         colorCleanedLocations(pageCleanedContents, cleanUpLocations);
     }

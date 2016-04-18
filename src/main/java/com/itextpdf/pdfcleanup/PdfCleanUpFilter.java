@@ -107,11 +107,29 @@ public class PdfCleanUpFilter {
         this.regions = regions;
     }
 
-    public PdfArray filterText(TextRenderInfo text) {
+    static class FilterResult<T> {
+        private boolean isModified;
+        private T filterResult;
+
+        public FilterResult(boolean isModified, T filterResult) {
+            this.isModified = isModified;
+            this.filterResult = filterResult;
+        }
+
+        public boolean isModified() {
+            return isModified;
+        }
+
+        public T getFilterResult() {
+            return filterResult;
+        }
+    }
+
+    public FilterResult<PdfArray> filterText(TextRenderInfo text) {
         PdfTextArray textArray = new PdfTextArray();
 
         if (isTextNotToBeCleaned(text)) {
-            return new PdfArray(text.getPdfString());
+            return new FilterResult<>(false, new PdfArray(text.getPdfString()));
         }
 
         for (TextRenderInfo ri : text.getCharacterRenderInfos()) {
@@ -124,13 +142,15 @@ public class PdfCleanUpFilter {
             }
         }
 
-        return textArray;
+        return new FilterResult<PdfArray>(true, textArray);
     }
 
-    public Image filterImage(ImageRenderInfo image) {
+    public FilterResult<Image> filterImage(ImageRenderInfo image) {
         List<Rectangle> areasToBeCleaned = getImageAreasToBeCleaned(image);
         if (areasToBeCleaned == null) {
-            return null;
+            return new FilterResult<>(true, null);
+        } else if (areasToBeCleaned.isEmpty()){
+            return new FilterResult<>(false, ImageFactory.getImage(image.getImage().getImageBytes()));
         }
 
         byte[] filteredImageBytes;
@@ -141,7 +161,7 @@ public class PdfCleanUpFilter {
             throw new RuntimeException(e);
         }
 
-        return ImageFactory.getImage(filteredImageBytes);
+        return new FilterResult<>(true, ImageFactory.getImage(filteredImageBytes));
     }
 
     public com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {

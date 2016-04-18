@@ -44,8 +44,11 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.io.image.Image;
+import com.itextpdf.io.source.ByteUtils;
 import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
+import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -53,7 +56,9 @@ import com.itextpdf.kernel.geom.Shape;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
 import com.itextpdf.kernel.pdf.canvas.CanvasTag;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -69,13 +74,19 @@ import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
+import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
+import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -94,21 +105,66 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }};
     private static final Set<String> clippingPathOperators = new HashSet<String>(Arrays.asList("W", "W*"));
     private static final Set<String> lineStyleOperators = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
-    private static final Set<String> markedContentOperators = new HashSet<String>(Arrays.asList("BMC", "BDC", "EMC"));
+
+    private static final Set<String> strokeColorOperators = new HashSet<String>(Arrays.asList("CS", "SC", "SCN", "G", "RG", "K"));
+    private static final Set<String> fillColorOperators = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
+
+    private static final Set<String> textPositioningOperators = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
+                         "TL")); // TL actually is not a text positioning operator, but we need to process it with them
+
+    // these operators are processed via PdfCanvasProcessor graphics state and event listener
+    private static final Set<String> ignoredOperators = new HashSet<String>() {{
+        addAll(pathConstructionOperators);
+        addAll(clippingPathOperators);
+        addAll(lineStyleOperators);
+        addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
+        addAll(Arrays.asList("BMC", "BDC"));
+    }};
 
     private PdfDocument document;
     private PdfPage currentPage;
     private PdfCleanUpFilter filter;
     private Stack<PdfCanvas> canvasStack;
 
+    /**
+     * In {@code notAppliedGsParams} field not written graphics state params are stored.
+     * Stack represents gs params on different levels of the q/Q nesting (see {@link NotAppliedGsParams}).
+     * On "q" operator new {@code NotAppliedGsParams} is pushed to the stack and on "Q" it is popped.
+     *
+     * When operators are applied, they are written from the outer to inner nesting level, separated by "q".
+     * After being written the stack is cleared.
+     *
+     * Graphics state parameters are applied in two ways:
+     * <ul>
+     *  <li>
+     *      first - right before writing text content, text state in current gs is compare to the text state of the text
+     *      render info gs and difference is applied to current gs;
+     *  </li>
+     *  <li>
+     *      second - through list of the not applied gs params. Right before writing some content, this list is checked,
+     *      and if something affecting content is stored in this list it will be applied.
+     *  </li>
+     * </ul>
+     */
+    private Deque<NotAppliedGsParams> notAppliedGsParams;
     private Deque<CanvasTag> notWrittenTags;
+    private int numOfOpenedTagsInsideText;
+    private boolean btEncountered;
+    private boolean isInText;
+    private TextPositioning textPositioning;
 
     public PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
         super(new PdfCleanUpEventListener());
         this.document = document;
         this.filter = new PdfCleanUpFilter(cleanUpRegions);
         this.canvasStack = new Stack<>();
+        this.notAppliedGsParams = new ArrayDeque<>();
+        this.notAppliedGsParams.push(new NotAppliedGsParams());
         this.notWrittenTags = new ArrayDeque<>();
+        this.numOfOpenedTagsInsideText = 0;
+        this.btEncountered = false;
+        this.isInText = false;
+        this.textPositioning = new TextPositioning();
     }
 
     @Override
@@ -123,10 +179,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      */
     @Override
     public void processContent(byte[] contentBytes, PdfResources resources) {
-        canvasStack.push(new PdfCanvas(new PdfStream(), resources, document));
+        canvasStack.push(new PdfCanvas(new PdfStream(), new PdfResources(), document));
         if (canvasStack.size() == 1) {
             // If it is the first canvas, we begin to wrap it with q
-            canvasStack.peek().saveState();
+            getCanvas().saveState();
         }
 
         super.processContent(contentBytes, resources);
@@ -141,85 +197,141 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     public PdfCanvas popCleanedCanvas() {
         // If it is the last canvas, we finish to wrap it with Q
         if (canvasStack.size() == 1) {
-            canvasStack.peek().restoreState();
+            getCanvas().restoreState();
         }
         return canvasStack.pop();
     }
 
     @Override
     protected void invokeOperator(PdfLiteral operator, List<PdfObject> operands) {
-        super.invokeOperator(operator, operands);
-        popCanvasIfFormXObject(operator.toString(), operands);
+        String operatorString = operator.toString();
 
-        boolean disableOutput = cleanContent(operator.toString(), operands);
-        if (!disableOutput) {
-            writeOperands(canvasStack.peek(), operands);
-        }
+        writeGsParamsIfFormXObject(operatorString, operands);
+        super.invokeOperator(operator, operands);
+        popCanvasIfFormXObject(operatorString, operands);
+
+        filterContent(operatorString, operands);
     }
 
     @Override
     protected void beginMarkedContent(PdfName tag, PdfDictionary dict) {
         super.beginMarkedContent(tag, dict);
-        notWrittenTags.push(new CanvasTag(tag).addProperties(dict));
+        notWrittenTags.push(new CanvasTag(tag).setProperties(dict));
+        if (btEncountered) {
+            ++numOfOpenedTagsInsideText;
+        }
+    }
+
+    protected static void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
+        int index = 0;
+
+        for (PdfObject obj : operands) {
+            canvas.getContentStream().getOutputStream().write(obj);
+            if (operands.size() > ++index) {
+                canvas.getContentStream().getOutputStream().writeSpace();
+            } else {
+                canvas.getContentStream().getOutputStream().writeNewLine();
+            }
+        }
+    }
+
+    protected static Matrix operandsToMatrix(List<PdfObject> operands) {
+        float a = ((PdfNumber) operands.get(0)).floatValue();
+        float b = ((PdfNumber) operands.get(1)).floatValue();
+        float c = ((PdfNumber) operands.get(2)).floatValue();
+        float d = ((PdfNumber) operands.get(3)).floatValue();
+        float e = ((PdfNumber) operands.get(4)).floatValue();
+        float f = ((PdfNumber) operands.get(5)).floatValue();
+        return new Matrix(a, b, c, d, e, f);
+    }
+
+    private void writeGsParamsIfFormXObject(String operator, List<PdfObject> operands) {
+        if ("Do".equals(operator)) {
+            PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
+            if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
+                writeNotAppliedGsParams(true, true, true); // write here all gs params because we don't know which content is inside of form
+                openNotWrittenTags();
+            }
+        }
     }
 
     private void popCanvasIfFormXObject(String operator, List<PdfObject> operands) {
         if ("Do".equals(operator)) {
             PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
             if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
-                formStream.setData(popCleanedCanvas().getContentStream().getBytes());
+                PdfCanvas cleanedCanvas = popCleanedCanvas();
+
+                PdfFormXObject newFormXObject = new PdfFormXObject((Rectangle) null);
+                newFormXObject.getPdfObject().putAll(formStream);
+                if (formStream.containsKey(PdfName.Resources)) {
+                    newFormXObject.put(PdfName.Resources, cleanedCanvas.getResources().getPdfObject());
+                }
+                newFormXObject.getPdfObject().setData(cleanedCanvas.getContentStream().getBytes());
+
+                PdfName name = getCanvas().getResources().addForm(newFormXObject);
+                getCanvas().getContentStream().getOutputStream().write(name).writeSpace().writeBytes(ByteUtils.getIsoBytes("Do\n"));
             }
         }
     }
 
-    private boolean cleanContent(String operator, List<PdfObject> operands) {
-        boolean disableOutput = false;
-
+    private void filterContent(String operator, List<PdfObject> operands) {
         if (textShowingOperators.contains(operator)) {
             cleanText(operator, operands);
-            disableOutput = true;
         } else if ("Do".equals(operator)) {
-            disableOutput = checkIfImageAndClean(operands);
+            checkIfImageAndClean(operands);
         } else if ("EI".equals(operator)) {
             cleanInlineImage();
-            disableOutput = true;
         } else if (pathPaintingOperators.contains(operator)) {
             writePath();
-            disableOutput = true;
-        } else if (pathConstructionOperators.contains(operator) || clippingPathOperators.contains(operator)
-                || lineStyleOperators.contains(operator)) {
-            disableOutput = true;
-        } else if (markedContentOperators.contains(operator)) {
-            if ("EMC".equals(operator)) {
-                removeTagIfNotWritten();
+        } else if ("q".equals(operator)) {
+            notAppliedGsParams.push(new NotAppliedGsParams());
+        } else if ("Q".equals(operator)) {
+            notAppliedGsParams.pop();
+            if (notAppliedGsParams.isEmpty()) {
+                getCanvas().restoreState();
+                notAppliedGsParams.push(new NotAppliedGsParams());
             }
-            disableOutput = true;
+        } else if ("BT".equals(operator)) {
+            btEncountered = true;
+        } else if ("ET".equals(operator)) {
+            if (isInText) {
+                writeOperands(getCanvas(), operands);
+                isInText = false;
+            }
+            btEncountered = false;
+            textPositioning.clear();
+        } else if (textPositioningOperators.contains(operator)) {
+            textPositioning.appendPositioningOperator(operator, operands);
+        } else if ("EMC".equals(operator)) { // BMC and BDC are handled with BeginMarkedContent method
+            removeOrCloseTag();
+        } else if (lineStyleOperators.contains(operator)) {
+            notAppliedGsParams.peek().lineStyleOperators.put(operator, new ArrayList<>(operands));
+        } else if ("gs".equals(operator)) {
+            notAppliedGsParams.peek().extGStates.add(getResources().getResource(PdfName.ExtGState).getAsDictionary((PdfName) operands.get(0)));
+        } else if ("cm".equals(operator)) {
+            notAppliedGsParams.peek().ctms.add(new ArrayList<>(operands));
+        } else if (strokeColorOperators.contains(operator)) {
+            notAppliedGsParams.peek().strokeColor = getGraphicsState().getStrokeColor();
+        } else if (fillColorOperators.contains(operator)) {
+            notAppliedGsParams.peek().fillColor = getGraphicsState().getFillColor();
+        } else if ("sh".equals(operator)) {
+            PdfShading shading = PdfShading.makeShading(getResources().getResource(PdfName.Shading).getAsDictionary((PdfName) operands.get(0)));
+            getCanvas().paintShading(shading);
+        } else if (!ignoredOperators.contains(operator)){
+            writeOperands(getCanvas(), operands);
         }
-
-        return disableOutput;
     }
 
     private void cleanText(String operator, List<PdfObject> operands) {
-        PdfCanvas canvas = canvasStack.peek();
-        if ("'".equals(operator)) {
-            canvas.newlineText();
-        } else if ("\"".equals(operator)) {
-            PdfNumber wordSpacing = (PdfNumber) operands.get(0);
-            PdfNumber charSpacing = (PdfNumber) operands.get(1);
-            canvas.setWordSpacing(wordSpacing.floatValue())
-                    .setCharacterSpacing(charSpacing.floatValue())
-                    .newlineText();
-        }
-
         List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
-        PdfArray cleanedText;
+        PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
             PdfArray originalTJ = (PdfArray)operands.get(0);
             int i = 0; // text chunk index in original TJ
             PdfTextArray newTJ = new PdfTextArray();
             for (PdfObject e : originalTJ) {
                 if (e.isString()) {
-                    PdfArray filteredText = filter.filterText(textChunks.get(i++));
+                    PdfArray filteredText = filter.filterText(textChunks.get(i++)).getFilterResult();
                     newTJ.addAll(filteredText);
                 } else {
                     newTJ.add(e);
@@ -228,69 +340,142 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
             cleanedText = newTJ;
         } else { // if operator is Tj or ' or "
-            cleanedText = filter.filterText(textChunks.get(0));
+            PdfCleanUpFilter.FilterResult<PdfArray> filterResult = filter.filterText(textChunks.get(0));
+            if (filterResult.isModified()) {
+                cleanedText = filterResult.getFilterResult();
+            }
         }
 
-        if (!cleanedText.isEmpty()) {
-            // TODO Here we apply a hack. Review this later.
-            // The problem is, that in PdfCleanUpProcessor we write most of the operators directly to output stream, and
-            // not with PdfCanvas. But in some cases (as here) we need PdfCanvas to write changed operators. PdfCanvas
-            // keeps track of the current graphics state and sometimes PdfCanvas behaviour depends on the current
-            // graphics state. For example, PdfCanvas forbids using text showing operators if in graphics state Font
-            // isn't set. As "Tf" is one of the operators which we write directly, PdfCanvas doesn't know that it is used.
-            // Similar thing happens when we write colors using PdfCanvas: if color is the current color in graphics state,
-            // color operator is not written. However, most of the color operators in PdfCleanUpProcessor are written
-            // directly, therefore PdfCanvas doesn't know which color is current.
-            //
-            // As a workaround we modify current graphics state here, so it would not throw an exception.
-            canvas.getGraphicsState().setFont(textChunks.get(0).getFont());
-            canvas.getGraphicsState().setFontSize(textChunks.get(0).getFontSize());
+        TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
+        // if text wasn't modified cleanedText is null
+        if (cleanedText == null || cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+            writeNotAppliedGsParamsForText(text);
+            beginTextObjectAndOpenNotWrittenTags();
 
-            if (cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
-                openNotWrittenTags();
-            }
-
-            canvas.showText(cleanedText);
+            writeNotAppliedTextStateParams(text);
+            textPositioning.writePositionedText(operator, operands, cleanedText, getCanvas());
+        } else { // cleaned text is tj array with single number - it means that the whole text chunk was removed
+            CanvasGraphicsState gs = getCanvas().getGraphicsState();
+            textPositioning.appendTjArrayWithSingleNumber(cleanedText, gs.getFontSize(), gs.getHorizontalScaling());
         }
     }
 
-    /**
-     * @return true - if image was completely removed, otherwise - false
-     */
-    private boolean checkIfImageAndClean(List<PdfObject> operands) {
+    private void beginTextObjectAndOpenNotWrittenTags() {
+        if (!isInText) {
+            int numOfTagsBeforeBT = notWrittenTags.size() - numOfOpenedTagsInsideText;
+            CanvasTag tag;
+            for (int i = 0; i < numOfTagsBeforeBT; ++i) {
+                tag = notWrittenTags.pollLast();
+                getCanvas().openTag(tag);
+            }
+
+            getCanvas().beginText();
+            isInText = true;
+
+            openNotWrittenTags();
+        } else {
+            openNotWrittenTags();
+        }
+    }
+
+    private void writeNotAppliedTextStateParams(TextRenderInfo text) {
+        PdfCanvas canvas = getCanvas();
+        CanvasGraphicsState currGs = canvas.getGraphicsState();
+        if (currGs.getCharSpacing() != text.getCharSpacing()) {
+            canvas.setCharacterSpacing(text.getCharSpacing());
+        }
+        if (currGs.getWordSpacing() != text.getWordSpacing()) {
+            canvas.setWordSpacing(text.getWordSpacing());
+        }
+        if (currGs.getHorizontalScaling() != text.getHorizontalScaling()) {
+            canvas.setHorizontalScaling(text.getHorizontalScaling());
+        }
+
+        // not writing leading here, it is processed along with positioning operators
+
+        PdfFont currFont = currGs.getFont();
+        if (currFont == null || currFont.getPdfObject() != text.getFont().getPdfObject()
+                || currGs.getFontSize() != text.getFontSize()) {
+            canvas.setFontAndSize(text.getFont(), text.getFontSize());
+        }
+        if (currGs.getTextRenderingMode() != text.getTextRenderMode()) {
+            canvas.setTextRenderingMode(text.getTextRenderMode());
+        }
+        if (currGs.getTextRise() != text.getRise()) {
+            canvas.setTextRise(text.getRise());
+        }
+    }
+
+    private void writeNotAppliedGsParamsForText(TextRenderInfo textRenderInfo) {
+        boolean stroke = false;
+        boolean fill = false;
+        switch (textRenderInfo.getTextRenderMode()) {
+            case PdfCanvasConstants.TextRenderingMode.STROKE:
+            case PdfCanvasConstants.TextRenderingMode.STROKE_CLIP:
+                stroke = true;
+                break;
+            case PdfCanvasConstants.TextRenderingMode.FILL:
+            case PdfCanvasConstants.TextRenderingMode.FILL_CLIP:
+                fill = true;
+                break;
+            case PdfCanvasConstants.TextRenderingMode.FILL_STROKE:
+            case PdfCanvasConstants.TextRenderingMode.FILL_STROKE_CLIP:
+                stroke = true;
+                fill = true;
+                break;
+        }
+        writeNotAppliedGsParams(fill, stroke, false);
+    }
+
+    private void checkIfImageAndClean(List<PdfObject> operands) {
         PdfStream imageStream = getXObjectStream((PdfName) operands.get(0));
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
-            Image filteredImage = filter.filterImage(encounteredImage);
-            if (filteredImage != null) {
-                PdfStream filteredImageStream = new PdfImageXObject(filteredImage).getPdfObject();
-                copySMaskData(imageStream, filteredImageStream);
+            PdfCleanUpFilter.FilterResult<Image> imageFilterResult = filter.filterImage(encounteredImage);
 
-                imageStream.clear();
-                imageStream.setData(filteredImageStream.getBytes(false));
-                imageStream.putAll(filteredImageStream);
-
-                openNotWrittenTags();
+            PdfImageXObject imageToWrite = null;
+            if (imageFilterResult.isModified()) {
+                Image filteredImage = imageFilterResult.getFilterResult();
+                if (filteredImage != null) {
+                    imageToWrite = new PdfImageXObject(filteredImage);
+                    copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
+                }
             } else {
-                return true;
+                imageToWrite = encounteredImage.getImage();
+            }
+
+            if (imageToWrite != null) {
+                float[] ctm = pollNotAppliedCtm();
+                writeNotAppliedGsParams(false, false, false);
+                openNotWrittenTags();
+                getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
         }
-        return false;
     }
 
     private void cleanInlineImage() {
         ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
-        Image filteredImage = filter.filterImage(encounteredImage);
+        PdfCleanUpFilter.FilterResult<Image> imageFilterResult = filter.filterImage(encounteredImage);
+        Image filteredImage = imageFilterResult.getFilterResult();
         if (filteredImage != null) {
-            openNotWrittenTags();
-
             Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
             if (imageMaskFlag != null && imageMaskFlag) {
                 filteredImage.makeMask();
             }
-            // passing identity matrix for image, because it's ctm is saved from original file
-            canvasStack.peek().addImage(filteredImage, 1, 0, 0, 1, 0, 0, true);
+
+            float[] ctm = pollNotAppliedCtm();
+            writeNotAppliedGsParams(false, false, false);
+            openNotWrittenTags();
+
+            getCanvas().addImage(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
         }
+
+        // TODO
+        // PdfCanvas doesn't have a method that writes inline image using pdf stream, and only have method which
+        // accepts Image as parameter. That's why we can't write image just as it was in original file, we convert it to Image.
+
+        // IMPORTANT: If writing of pdf stream of not changed inline image will be implemented, don't forget to ensure that
+        // inline image color space is present in new resources if necessary.
     }
 
     private void copySMaskData(PdfStream imageStream, PdfStream filteredImageStream) {
@@ -331,10 +516,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         // but this is the only generic solution.
 
         Path fillPath = null;
-        PdfCanvas canvas = canvasStack.peek();
+        PdfCanvas canvas = getCanvas();
         if (fill) {
             fillPath = filter.filterFillPath(path, path.getRule());
             if (!fillPath.isEmpty()) {
+                writeNotAppliedGsParams(true, false, true);
                 openNotWrittenTags();
                 writePath(fillPath);
                 if (path.getRule() == FillingRule.NONZERO_WINDING) {
@@ -348,6 +534,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (stroke) {
             Path strokePath = filter.filterStrokePath(path);
             if (!strokePath.isEmpty()) {
+                // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
+                writeNotAppliedGsParams(false, false, true);
                 openNotWrittenTags();
                 writeStrokePath(strokePath, path.getStrokeColor());
             }
@@ -361,6 +549,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 clippingPath = filter.filterFillPath(path, path.getClippingRule());
             }
             if (!clippingPath.isEmpty()) {
+                writeNotAppliedGsParams(false, false, true);
                 openNotWrittenTags();
                 writePath(clippingPath);
                 if (path.getClippingRule() == FillingRule.NONZERO_WINDING) {
@@ -376,6 +565,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 // there is no visible content at all. But at the same time as we removed the clipping
                 // path, the invisible content would become visible. So, to emulate the correct result,
                 // we would simply put a degenerate clipping path which consists of a single point at (0, 0).
+                writeNotAppliedGsParams(false, false, false); // we still need to open all q operators
                 canvas.moveTo(0, 0).clip();
             }
             canvas.newPath();
@@ -383,7 +573,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void writePath(Path path) {
-        PdfCanvas canvas = canvasStack.peek();
+        PdfCanvas canvas = getCanvas();
         for (Subpath subpath : path.getSubpaths()) {
             canvas.moveTo((float)subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
 
@@ -413,37 +603,27 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void writeStrokePath(Path strokePath, Color strokeColor) {
-        PdfCanvas canvas = canvasStack.peek();
+        PdfCanvas canvas = getCanvas();
         // As we transformed stroke to fill, we set stroke color for filling here
-        // TODO as we set color with canvas - it could be lost if we previously set this color. See TODOs in cleanText method
-        canvas.saveState().setColor(strokeColor, true);
+        canvas.saveState().setFillColor(strokeColor);
         writePath(strokePath);
         canvas.fill().restoreState();
     }
 
-    private void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
-        int index = 0;
-
-        for (PdfObject obj : operands) {
-            canvas.getContentStream().getOutputStream().write(obj);
-            if (operands.size() > ++index) {
-                canvas.getContentStream().getOutputStream().writeSpace();
-            } else {
-                canvas.getContentStream().getOutputStream().writeNewLine();
-            }
-        }
+    private PdfCanvas getCanvas() {
+        return canvasStack.peek();
     }
 
     // should be called before some content is drawn
     private void openNotWrittenTags() {
         CanvasTag tag = notWrittenTags.pollLast();
         while (tag != null) {
-            canvasStack.peek().openTag(tag);
+            getCanvas().openTag(tag);
             tag = notWrittenTags.pollLast();
         }
     }
 
-    private void removeTagIfNotWritten() {
+    private void removeOrCloseTag() {
         if (!notWrittenTags.isEmpty()) {
             CanvasTag tag = notWrittenTags.pop();
             if (tag.hasMcid() && document.isTagged()) {
@@ -455,7 +635,116 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 }
             }
         } else {
-            canvasStack.peek().endMarkedContent();
+            getCanvas().endMarkedContent();
         }
+        if (btEncountered) {
+            --numOfOpenedTagsInsideText;
+        }
+    }
+
+    /**
+     * To add images and formXObjects to canvas we pass ctm. Here we try to find last not applied ctm in order to pass it to
+     * PdfCanvas method later. Returned ctm is written right before the image, that's why we care only for not applied ctms of
+     * the current (the "deepest") q/Q nesting level.
+     * If such ctm wasn't found identity ctm is returned.
+     */
+    private float[] pollNotAppliedCtm() {
+        List<List<PdfObject>> ctms = notAppliedGsParams.peek().ctms;
+        if (ctms.isEmpty()) {
+            return new float[]{1, 0, 0, 1, 0, 0};
+        }
+        List<PdfObject> lastCtm = ctms.remove(ctms.size() - 1);
+
+        float[] ctm = new float[6];
+        ctm[0] = ((PdfNumber)lastCtm.get(0)).floatValue();
+        ctm[1] = ((PdfNumber)lastCtm.get(1)).floatValue();
+        ctm[2] = ((PdfNumber)lastCtm.get(2)).floatValue();
+        ctm[3] = ((PdfNumber)lastCtm.get(3)).floatValue();
+        ctm[4] = ((PdfNumber)lastCtm.get(4)).floatValue();
+        ctm[5] = ((PdfNumber)lastCtm.get(5)).floatValue();
+
+        return ctm;
+    }
+
+    private void writeNotAppliedGsParams(boolean fill, boolean stroke, boolean isPath) {
+        if (notAppliedGsParams.size() > 0) {
+            while (notAppliedGsParams.size() != 1) {
+                NotAppliedGsParams gsParams = notAppliedGsParams.pollLast();
+                // We want to apply graphics state params of outer q/Q nesting level on it's level and not on the inner
+                // q/Q nesting level. Because of that we write all gs params for the outer q/Q, just in case it will be needed
+                // later (if we don't write it now, there will be no possibility to write it in the outer q/Q later).
+                applyGsParams(true, true, true, gsParams);
+                getCanvas().saveState();
+            }
+            applyGsParams(fill, stroke, isPath, notAppliedGsParams.peek());
+        }
+    }
+
+    private void applyGsParams(boolean fill, boolean stroke, boolean isPath, NotAppliedGsParams gsParams) {
+        for (PdfDictionary extGState : gsParams.extGStates) {
+            getCanvas().setExtGState(extGState);
+        }
+        gsParams.extGStates.clear();
+
+        if (!gsParams.ctms.isEmpty()) {
+            Matrix m = new Matrix();
+            for (List<PdfObject> ctm : gsParams.ctms) {
+
+                m = operandsToMatrix(ctm).multiply(m);
+            }
+            getCanvas().concatMatrix(m.get(Matrix.I11), m.get(Matrix.I12),
+                    m.get(Matrix.I21), m.get(Matrix.I22), m.get(Matrix.I31), m.get(Matrix.I32));
+
+            gsParams.ctms.clear();
+        }
+
+        if (isPath) {
+            for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
+                writeOperands(getCanvas(), strokeState);
+            }
+            gsParams.lineStyleOperators.clear();
+        }
+
+        if (fill) {
+            if (gsParams.fillColor != null) {
+                getCanvas().setFillColor(gsParams.fillColor);
+            }
+            gsParams.fillColor = null;
+        }
+        if (stroke) {
+            if (gsParams.strokeColor != null) {
+                getCanvas().setStrokeColor(gsParams.strokeColor);
+            }
+            gsParams.strokeColor = null;
+        }
+    }
+
+    /**
+     * Single instance of this class represents not applied graphics state params of the single q/Q nesting level.
+     * For example:
+     *
+     * 0 g
+     * 1 0 0 1 25 50 cm
+     *
+     * q
+     *
+     * 5 w
+     * /Gs1 gs
+     * 13 g
+     *
+     * Q
+     *
+     * 1 0 0 RG
+     *
+     * Operators "0 g", "1 0 0 1 25 50 cm" and "1 0 0 RG" belong to the outer q/Q nesting level;
+     * Operators "5 w", "/Gs1 gs", "13 g" belong to the inner q/Q nesting level.
+     * Operators of every level of the q/Q nesting are stored in different instances of this class.
+     */
+    static class NotAppliedGsParams {
+        List<PdfDictionary> extGStates = new ArrayList<>();
+        List<List<PdfObject>> ctms = new ArrayList<>(); // list of operator statements
+        Color fillColor;
+        Color strokeColor;
+        Map<String, List<PdfObject>> lineStyleOperators = new LinkedHashMap<>(); // operator and it's operands
     }
 }
