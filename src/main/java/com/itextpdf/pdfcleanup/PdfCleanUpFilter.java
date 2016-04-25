@@ -57,12 +57,12 @@ import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper.ClipType;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper.EndType;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper.JoinType;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper.PolyFillType;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.Clipper.PolyType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.ClipType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.EndType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.JoinType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyFillType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperOffset;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.DefaultClipper;
@@ -192,7 +192,7 @@ public class PdfCleanUpFilter {
     }
 
     private boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
-        Clipper clipper = new DefaultClipper();
+        IClipper clipper = new DefaultClipper();
         ClipperBridge.addRectToClipper(clipper, rect1, PolyType.SUBJECT);
         ClipperBridge.addRectToClipper(clipper, rect2, PolyType.CLIP);
 
@@ -376,7 +376,7 @@ public class PdfCleanUpFilter {
     protected com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path, Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
 
-        Clipper clipper = new DefaultClipper();
+        IClipper clipper = new DefaultClipper();
         ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
 
         for (Rectangle rectangle : regions) {

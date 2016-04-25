@@ -44,8 +44,8 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.kernel.PdfException;
-import com.itextpdf.kernel.pdf.canvas.parser.data.EventData;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.EventListener;
+import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
@@ -54,15 +54,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class PdfCleanUpEventListener implements EventListener{
+public class PdfCleanUpEventListener implements IEventListener {
     private static final String textDataExpected = "Text data expected.";
     private static final String imageDataExpected = "Image data expected.";
     private static final String pathDataExpected = "Path data expected.";
 
-    private List<EventData> content = new ArrayList<>();
+    private List<IEventData> content = new ArrayList<>();
 
     @Override
-    public void eventOccurred(EventData data, EventType type) {
+    public void eventOccurred(IEventData data, EventType type) {
         switch (type) {
             case RENDER_TEXT:
             case RENDER_IMAGE:
@@ -80,7 +80,7 @@ public class PdfCleanUpEventListener implements EventListener{
         }
 
         ArrayList<TextRenderInfo> text = new ArrayList<>(content.size());
-        for (EventData data : content) {
+        for (IEventData data : content) {
             if (data instanceof TextRenderInfo) {
                 text.add((TextRenderInfo) data);
             } else {
@@ -97,7 +97,7 @@ public class PdfCleanUpEventListener implements EventListener{
             throw new PdfException(imageDataExpected);
         }
 
-        EventData eventData = content.get(0);
+        IEventData eventData = content.get(0);
         if (!(eventData instanceof ImageRenderInfo)) {
             throw new PdfException(imageDataExpected);
         }
@@ -110,7 +110,7 @@ public class PdfCleanUpEventListener implements EventListener{
             throw new PdfException(pathDataExpected);
         }
 
-        EventData eventData = content.get(0);
+        IEventData eventData = content.get(0);
         if (!(eventData instanceof PathRenderInfo)) {
             throw new PdfException(pathDataExpected);
         }

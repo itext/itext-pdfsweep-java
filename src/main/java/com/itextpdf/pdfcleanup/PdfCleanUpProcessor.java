@@ -52,7 +52,7 @@ import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.geom.Shape;
+import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
@@ -82,7 +82,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -577,7 +576,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         for (Subpath subpath : path.getSubpaths()) {
             canvas.moveTo((float)subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
 
-            for (Shape segment : subpath.getSegments()) {
+            for (IShape segment : subpath.getSegments()) {
                 if (segment instanceof BezierCurve) {
 
                     List<Point> basePoints = segment.getBasePoints();
