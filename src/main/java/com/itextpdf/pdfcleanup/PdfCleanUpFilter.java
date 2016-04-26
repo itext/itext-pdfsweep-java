@@ -43,7 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.image.Image;
+import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageFactory;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
@@ -145,7 +145,7 @@ public class PdfCleanUpFilter {
         return new FilterResult<PdfArray>(true, textArray);
     }
 
-    public FilterResult<Image> filterImage(ImageRenderInfo image) {
+    public FilterResult<ImageData> filterImage(ImageRenderInfo image) {
         List<Rectangle> areasToBeCleaned = getImageAreasToBeCleaned(image);
         if (areasToBeCleaned == null) {
             return new FilterResult<>(true, null);

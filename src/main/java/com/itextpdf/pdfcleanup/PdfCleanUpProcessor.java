@@ -43,7 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.image.Image;
+import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.source.ByteUtils;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.font.PdfFont;
@@ -430,11 +430,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         PdfStream imageStream = getXObjectStream((PdfName) operands.get(0));
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
-            PdfCleanUpFilter.FilterResult<Image> imageFilterResult = filter.filterImage(encounteredImage);
+            PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
 
             PdfImageXObject imageToWrite = null;
             if (imageFilterResult.isModified()) {
-                Image filteredImage = imageFilterResult.getFilterResult();
+                ImageData filteredImage = imageFilterResult.getFilterResult();
                 if (filteredImage != null) {
                     imageToWrite = new PdfImageXObject(filteredImage);
                     copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
@@ -454,8 +454,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
     private void cleanInlineImage() {
         ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
-        PdfCleanUpFilter.FilterResult<Image> imageFilterResult = filter.filterImage(encounteredImage);
-        Image filteredImage = imageFilterResult.getFilterResult();
+        PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
+        ImageData filteredImage = imageFilterResult.getFilterResult();
         if (filteredImage != null) {
             Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
             if (imageMaskFlag != null && imageMaskFlag) {
