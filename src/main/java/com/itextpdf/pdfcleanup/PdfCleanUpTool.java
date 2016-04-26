@@ -62,8 +62,9 @@ import com.itextpdf.kernel.pdf.canvas.CanvasArtifact;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Canvas;
-import com.itextpdf.layout.Property;
+import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.property.TextAlignment;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -396,13 +397,13 @@ public class PdfCleanUpTool {
         Canvas modelCanvas = new Canvas(canvas, pdfDocument, annotRect, false);
 
         Paragraph p = new Paragraph(overlayText).setFont(font).setFontSize(fontSize).setMargin(0);
-        Property.TextAlignment textAlignment = Property.TextAlignment.LEFT;
+        TextAlignment textAlignment = TextAlignment.LEFT;
         switch (justification) {
             case 1:
-                textAlignment = Property.TextAlignment.CENTER;
+                textAlignment = TextAlignment.CENTER;
                 break;
             case 2:
-                textAlignment = Property.TextAlignment.RIGHT;
+                textAlignment = TextAlignment.RIGHT;
                 break;
             default:
         }
