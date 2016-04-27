@@ -44,7 +44,7 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.io.image.ImageData;
-import com.itextpdf.io.image.ImageFactory;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Line;
@@ -150,7 +150,7 @@ public class PdfCleanUpFilter {
         if (areasToBeCleaned == null) {
             return new FilterResult<>(true, null);
         } else if (areasToBeCleaned.isEmpty()){
-            return new FilterResult<>(false, ImageFactory.getImage(image.getImage().getImageBytes()));
+            return new FilterResult<>(false, ImageDataFactory.create(image.getImage().getImageBytes()));
         }
 
         byte[] filteredImageBytes;
@@ -161,7 +161,7 @@ public class PdfCleanUpFilter {
             throw new RuntimeException(e);
         }
 
-        return new FilterResult<>(true, ImageFactory.getImage(filteredImageBytes));
+        return new FilterResult<>(true, ImageDataFactory.create(filteredImageBytes));
     }
 
     public com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
