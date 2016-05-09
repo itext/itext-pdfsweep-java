@@ -5,30 +5,36 @@
     <parent>
         <groupId>com.itextpdf</groupId>
         <artifactId>root</artifactId>
-        <version>7.0.0-SNAPSHOT</version>
+        <version>7.0.0</version>
+        <relativePath />
     </parent>
 
     <artifactId>cleanup</artifactId>
-    <name>iText 7 - cleanup</name>
+    <version>1.0.0</version>
+    <name>pdfSweep</name>
     <url>http://itextpdf.com/</url>
+
+    <properties>
+        <itext.version>7.0.0</itext.version>
+    </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>io</artifactId>
-            <version>${project.version}</version>
+            <version>${itext.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>kernel</artifactId>
-            <version>${project.version}</version>
+            <version>${itext.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>layout</artifactId>
-            <version>${project.version}</version>
+            <version>${itext.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -45,6 +51,16 @@
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>itext-snapshot</id>
+            <name>iText Repository - snapshots</name>
+            <url>https://repo.itextsupport.com/snapshot</url>
+        </repository>
+        <repository>
+            <id>itext-releases</id>
+            <name>iText Repository - releases</name>
+            <url>https://repo.itextsupport.com/releases</url>
+        </repository>
         <repository>
             <id>apache.snapshots</id>
             <name>Apache Development Snapshot Repository</name>
@@ -75,6 +91,16 @@
                         <include>**/*Test.java</include>
                     </includes>
                     <groups>${integrationtests}</groups>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
