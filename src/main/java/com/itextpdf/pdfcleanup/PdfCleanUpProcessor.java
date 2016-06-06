@@ -96,12 +96,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private static final Set<String> strokeOperators = new HashSet<String>(Arrays.asList("S", "s", "B", "B*", "b", "b*"));
     private static final Set<String> nwFillOperators = new HashSet<String>(Arrays.asList("f", "F", "B", "b"));
     private static final Set<String> eoFillOperators = new HashSet<String>(Arrays.asList("f*", "B*", "b*"));
-    private static final Set<String> pathPaintingOperators = new HashSet<String>() {{
-        addAll(strokeOperators);
-        addAll(nwFillOperators);
-        addAll(eoFillOperators);
-        add("n");
-    }};
+    private static final Set<String> pathPaintingOperators = new HashSet<String>();
+
     private static final Set<String> clippingPathOperators = new HashSet<String>(Arrays.asList("W", "W*"));
     private static final Set<String> lineStyleOperators = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
 
@@ -112,13 +108,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                          "TL")); // TL actually is not a text positioning operator, but we need to process it with them
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
-    private static final Set<String> ignoredOperators = new HashSet<String>() {{
-        addAll(pathConstructionOperators);
-        addAll(clippingPathOperators);
-        addAll(lineStyleOperators);
-        addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
-        addAll(Arrays.asList("BMC", "BDC"));
-    }};
+    private static final Set<String> ignoredOperators = new HashSet<String>();
+
+    static {
+        pathPaintingOperators.addAll(strokeOperators);
+        pathPaintingOperators.addAll(nwFillOperators);
+        pathPaintingOperators.addAll(eoFillOperators);
+        pathPaintingOperators.add("n");
+
+        ignoredOperators.addAll(pathConstructionOperators);
+        ignoredOperators.addAll(clippingPathOperators);
+        ignoredOperators.addAll(lineStyleOperators);
+        ignoredOperators.addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
+        ignoredOperators.addAll(Arrays.asList("BMC", "BDC"));
+    }
 
     private PdfDocument document;
     private PdfPage currentPage;
