@@ -70,7 +70,7 @@ class TextPositioning {
 
     public float getCurrLeading() {
         if (currLeading != null) {
-            return currLeading;
+            return (float) currLeading;
         }
         return 0f;
     }
@@ -174,7 +174,7 @@ class TextPositioning {
             }
             if ("T*".equals(prevOperator)) {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
-                    canvas.setLeading(currLeading);
+                    canvas.setLeading((float)currLeading);
                 }
                 canvas.newlineText();
             }
@@ -191,11 +191,11 @@ class TextPositioning {
         CanvasGraphicsState canvasGs = canvas.getGraphicsState();
         boolean newLineShowText = "'".equals(operator) || "\"".equals(operator);
         if (newLineShowText && canvasGs.getLeading() != currLeading) {
-            canvas.setLeading(currLeading);
+            canvas.setLeading((float)currLeading);
         }
         PdfTextArray tjShiftArray = new PdfTextArray();
         if (removedTextShift != null) {
-            float tjShift = removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
+            float tjShift = (float) removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
             tjShiftArray.add(new PdfNumber(tjShift));
         }
         if (cleanedText != null) {

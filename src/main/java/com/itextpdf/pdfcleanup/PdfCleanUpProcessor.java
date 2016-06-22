@@ -289,7 +289,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             notAppliedGsParams.push(new NotAppliedGsParams());
         } else if ("Q".equals(operator)) {
             notAppliedGsParams.pop();
-            if (notAppliedGsParams.isEmpty()) {
+            if (notAppliedGsParams.size() == 0) {
                 getCanvas().restoreState();
                 notAppliedGsParams.push(new NotAppliedGsParams());
             }
@@ -461,7 +461,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         ImageData filteredImage = imageFilterResult.getFilterResult();
         if (filteredImage != null) {
             Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
-            if (imageMaskFlag != null && imageMaskFlag) {
+            if (imageMaskFlag != null && (boolean) imageMaskFlag) {
                 filteredImage.makeMask();
             }
 
@@ -626,12 +626,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void removeOrCloseTag() {
-        if (!notWrittenTags.isEmpty()) {
+        if (notWrittenTags.size() > 0) {
             CanvasTag tag = notWrittenTags.pop();
             if (tag.hasMcid() && document.isTagged()) {
                 TagTreePointer pointer = document.getTagStructureContext().removeContentItem(currentPage, tag.getMcid());
                 if (pointer != null) {
-                    while (pointer.getKidsRoles().isEmpty()) {
+                    while (pointer.getKidsRoles().size() == 0) {
                         pointer.removeTag();
                     }
                 }
@@ -652,7 +652,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      */
     private float[] pollNotAppliedCtm() {
         List<List<PdfObject>> ctms = notAppliedGsParams.peek().ctms;
-        if (ctms.isEmpty()) {
+        if (ctms.size() == 0) {
             return new float[]{1, 0, 0, 1, 0, 0};
         }
         List<PdfObject> lastCtm = ctms.remove(ctms.size() - 1);
@@ -688,7 +688,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
         gsParams.extGStates.clear();
 
-        if (!gsParams.ctms.isEmpty()) {
+        if (gsParams.ctms.size() > 0) {
             Matrix m = new Matrix();
             for (List<PdfObject> ctm : gsParams.ctms) {
 
