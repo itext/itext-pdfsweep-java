@@ -43,7 +43,6 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -57,17 +56,15 @@ import java.lang.reflect.Method;
 import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.LogMessage;
-import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Category(IntegrationTest.class)
 public class PdfCleanUpToolTest extends ExtendedITextTest {
@@ -370,31 +367,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
-    })
-    public void cleanUpTest28() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImages.pdf";
-        String output = outputPath + "inlineImages_partial.pdf";
-        String cmp = inputPath + "cmp_inlineImages_partial.pdf";
-
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(62, 100, 20, 800), null));
-        cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_28");
-    }
-
-    @Test
-    public void cleanUpTest29() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImages.pdf";
-        String output = outputPath + "inlineImages_partial2.pdf";
-        String cmp = inputPath + "cmp_inlineImages_partial2.pdf";
-
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(10, 100, 70, 599), null));
-        cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_29");
-    }
-
-    @Test
     public void cleanUpTest30() throws IOException, InterruptedException {
         String input = inputPath + "inlineImages.pdf";
         String output = outputPath + "inlineImages_full.pdf";
@@ -403,19 +375,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(10, 100, 400, 600), null));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_30");
-    }
-
-    @Test
-    @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
-    })
-    public void cleanUpTest31() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImageCleanup.pdf";
-        String output = outputPath + "inlineImageCleanup.pdf";
-        String cmp = inputPath + "cmp_inlineImageCleanup.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_31");
     }
 
     @Test
