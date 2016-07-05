@@ -59,6 +59,7 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -385,6 +386,27 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(1, 1, PageSize.A4.getWidth() - 1, PageSize.A4.getHeight() - 1))));
         compareByContent(cmp, output, outputPath, "diff_32");
+    }
+
+    @Test
+    public void cleanUpTest33() throws IOException, InterruptedException {
+        String input = inputPath + "viewer_prefs_dict_table.pdf";
+        String output = outputPath + "complexTextPositioning.pdf";
+        String cmp = inputPath + "cmp_complexTextPositioning.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f))));
+        compareByContent(cmp, output, outputPath, "diff_33");
+    }
+
+    @Test
+    @Ignore("DEVSIX-722")
+    public void cleanUpTest34() throws IOException, InterruptedException {
+        String input = inputPath + "new_york_times.pdf";
+        String output = outputPath + "textAndImages.pdf";
+        String cmp = inputPath + "cmp_textAndImages.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f , 235f, 230f , 445f))));
+        compareByContent(cmp, output, outputPath, "diff_34");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

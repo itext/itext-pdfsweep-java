@@ -176,13 +176,12 @@ class TextPositioning {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
                     canvas.setLeading((float)currLeading);
                 }
-                canvas.newlineText();
             }
             PdfCleanUpProcessor.writeOperands(canvas, firstPositioningOperands);
         } else if (tdShift != null) {
             canvas.moveText(tdShift[0], tdShift[1]);
         } else if (tmShift != null) {
-            canvas.concatMatrix(tmShift.get(Matrix.I11), tmShift.get(Matrix.I12),
+            canvas.setTextMatrix(tmShift.get(Matrix.I11), tmShift.get(Matrix.I12),
                     tmShift.get(Matrix.I21), tmShift.get(Matrix.I22), tmShift.get(Matrix.I31), tmShift.get(Matrix.I32));
         }
     }
