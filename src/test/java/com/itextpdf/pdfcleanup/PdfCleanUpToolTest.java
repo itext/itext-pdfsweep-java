@@ -420,6 +420,17 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_35");
     }
 
+    @Test
+    @Ignore("DEVSIX-772")
+    public void cleanUpTest36() throws IOException, InterruptedException {
+        String input = inputPath + "bigOne.pdf";
+        String output = outputPath + "bigOne.pdf";
+        String cmp = inputPath + "cmp_bigOne.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f), Color.GRAY)));
+        compareByContent(cmp, output, outputPath, "diff_36");
+    }
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
