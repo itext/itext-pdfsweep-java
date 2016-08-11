@@ -420,8 +420,15 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_35");
     }
 
+    /**
+     * In this test, glyph "1" got removed by the clean up area that on first sight is not covering the glyph.
+     * However, we can't get the particular glyphs height and instead we have the same height for all glyphs.
+     * Because of this, in case of the big font sizes such situations might occur, that even though visually glyph is
+     * rather away from the cleanup location we still get it removed because it's bbox intersects with cleanup area rectangle.
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
-    @Ignore("DEVSIX-772")
     public void cleanUpTest36() throws IOException, InterruptedException {
         String input = inputPath + "bigOne.pdf";
         String output = outputPath + "bigOne.pdf";
