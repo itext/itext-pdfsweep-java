@@ -88,6 +88,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     }
 
     @Test
+    @Ignore("DEVSIX-770")
     public void bigTaggedDocument() throws IOException, InterruptedException {
         String input = inputPath + "chapter8_Interactive_features.pdf";
         String output = outputPath + "bigTaggedDocument.pdf";
