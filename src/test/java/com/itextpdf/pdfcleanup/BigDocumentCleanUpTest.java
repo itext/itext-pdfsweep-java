@@ -99,6 +99,19 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_bigTagged_");
     }
 
+    @Test
+    public void textPositioning() throws IOException, InterruptedException {
+        String input = inputPath + "textPositioning.pdf";
+        String output = outputPath + "textPositioning.pdf";
+        String cmp = inputPath + "cmp_textPositioning.pdf";
+
+        List<Rectangle> rects = Arrays.asList(new Rectangle(0f, 0f, 1f, 1f)); // just to enable cleanup processing of the pages
+        cleanUp(input, output, initLocations(rects, 163));
+        compareByContent(cmp, output, outputPath, "diff_txtPos_");
+    }
+
+
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 

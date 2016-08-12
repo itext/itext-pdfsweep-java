@@ -76,6 +76,10 @@ class TextPositioning {
     }
 
     public void appendPositioningOperator(String operator, List<PdfObject> operands) {
+        if (firstPositioningOperands != null) {
+            storePositioningInfoInShiftFields();
+        }
+
         if ("TL".equals(operator)) {
             currLeading = ((PdfNumber) operands.get(0)).floatValue();
             return;
@@ -89,10 +93,6 @@ class TextPositioning {
             firstPositioningOperands = new ArrayList<>(operands);
             prevOperator = operator;
         } else {
-            if ("TD".equals(prevOperator)) {
-                currLeading = -((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-            }
-
             if ("Tm".equals(operator)) {
                 clear();
                 firstPositioningOperands = new ArrayList<>(operands);
@@ -102,31 +102,15 @@ class TextPositioning {
                 float ty;
                 if ("T*".equals(operator)) {
                     tx = 0;
-                    ty = getCurrLeading();
+                    ty = -getCurrLeading();
                 } else {
                     tx = ((PdfNumber) operands.get(0)).floatValue();
                     ty = ((PdfNumber) operands.get(1)).floatValue();
                 }
                 if ("Tm".equals(prevOperator)) {
-                    if (firstPositioningOperands != null) {
-                        tmShift = PdfCleanUpProcessor.operandsToMatrix(firstPositioningOperands);
-                        firstPositioningOperands = null;
-                    }
-
                     tmShift = new Matrix(tx, ty).multiply(tmShift);
                     // prevOperator is left as TM here
-
                 } else {
-                    if ("T*".equals(prevOperator)) {
-                        firstPositioningOperands = null;
-                        tdShift = new float[] {0, getCurrLeading()};
-                    } else if (firstPositioningOperands != null) {
-                        tdShift = new float[2];
-                        tdShift[0] = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
-                        tdShift[1] = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-                        firstPositioningOperands = null;
-                    }
-
                     tdShift[0] += tx;
                     tdShift[1] += ty;
                     prevOperator = "Td"; // concatenation of two any TD, Td, T* result in Td
@@ -139,6 +123,24 @@ class TextPositioning {
         }
     }
 
+    private void storePositioningInfoInShiftFields() {
+        if ("Tm".equals(prevOperator)) {
+            tmShift = PdfCleanUpProcessor.operandsToMatrix(firstPositioningOperands);
+        } else if ("T*".equals(prevOperator)) {
+            tdShift = new float[] {0, -getCurrLeading()};
+        } else {
+            float tx = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
+            float ty = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
+            if ("TD".equals(prevOperator)) {
+                currLeading = -ty;
+            }
+            tdShift = new float[2];
+            tdShift[0] = tx;
+            tdShift[1] = ty;
+        }
+        firstPositioningOperands = null;
+    }
+
     public void appendTjArrayWithSingleNumber(PdfArray tjArray, float fontSize, float scaling) {
         if (removedTextShift == null) {
             removedTextShift = 0f;
@@ -149,7 +151,7 @@ class TextPositioning {
     }
 
     /**
-     * is performed when text object is ended
+     * is performed when text object is ended or text chunk is written
      */
     public void clear() {
         // leading is not removed, as it is preserved between different text objects
