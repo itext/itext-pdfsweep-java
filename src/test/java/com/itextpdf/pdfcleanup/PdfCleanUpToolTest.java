@@ -120,7 +120,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_03");
     }
 
-    @Test(timeout = 30000)
+    @Test
     public void cleanUpTest04() throws IOException, InterruptedException {
         String input = inputPath + "hello_05.pdf";
         String output = outputPath + "hello_05.pdf";
@@ -399,7 +399,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-722")
     public void cleanUpTest34() throws IOException, InterruptedException {
         String input = inputPath + "new_york_times.pdf";
         String output = outputPath + "textAndImages.pdf";

@@ -80,7 +80,9 @@ class TextPositioning {
             storePositioningInfoInShiftFields();
         }
 
-        if ("TL".equals(operator)) {
+        if ("TD".equals(operator)) {
+            currLeading = -((PdfNumber) operands.get(1)).floatValue();
+        } else if ("TL".equals(operator)) {
             currLeading = ((PdfNumber) operands.get(0)).floatValue();
             return;
         }
@@ -115,10 +117,6 @@ class TextPositioning {
                     tdShift[1] += ty;
                     prevOperator = "Td"; // concatenation of two any TD, Td, T* result in Td
                 }
-
-                if ("TD".equals(operator)) {
-                    currLeading = -((PdfNumber) operands.get(1)).floatValue();
-                }
             }
         }
     }
@@ -129,14 +127,9 @@ class TextPositioning {
         } else if ("T*".equals(prevOperator)) {
             tdShift = new float[] {0, -getCurrLeading()};
         } else {
-            float tx = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
-            float ty = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-            if ("TD".equals(prevOperator)) {
-                currLeading = -ty;
-            }
             tdShift = new float[2];
-            tdShift[0] = tx;
-            tdShift[1] = ty;
+            tdShift[0] = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
+            tdShift[1] = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
         }
         firstPositioningOperands = null;
     }
@@ -171,9 +164,6 @@ class TextPositioning {
 
     private void writePositioningOperator(PdfCanvas canvas) {
         if (firstPositioningOperands != null) {
-            if ("TD".equals(prevOperator)) {
-                currLeading = -((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-            }
             if ("T*".equals(prevOperator)) {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
                     canvas.setLeading((float)currLeading);

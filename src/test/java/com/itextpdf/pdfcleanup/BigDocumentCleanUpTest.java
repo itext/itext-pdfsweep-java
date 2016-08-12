@@ -76,13 +76,12 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-722")
     public void bigUntaggedDocument() throws IOException, InterruptedException {
         String input = inputPath + "iphone_user_guide_untagged.pdf";
         String output = outputPath + "bigUntaggedDocument.pdf";
         String cmp = inputPath + "cmp_bigUntaggedDocument.pdf";
 
-        List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 270f));
+        List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 260f));
         cleanUp(input, output, initLocations(rects, 130));
         compareByContent(cmp, output, outputPath, "diff_bigUntagged_");
     }
