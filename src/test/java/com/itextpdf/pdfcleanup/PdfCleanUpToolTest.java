@@ -409,7 +409,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-770")
     public void cleanUpTest35() throws IOException, InterruptedException {
         String input = inputPath + "lineArtsSimple.pdf";
         String output = outputPath + "lineArtsSimple.pdf";
