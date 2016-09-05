@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
@@ -82,6 +81,7 @@ import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -143,8 +143,8 @@ public class PdfCleanUpTool {
      * then no regions for erasing are specified. In that case use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)}
      * method to set regions to be erased from the document.
      *
-     * @param pdfDocument A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
-     *                    to which redaction applies.
+     * @param pdfDocument            A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
+     *                               to which redaction applies.
      * @param cleanRedactAnnotations if true - regions to be erased are extracted from the redact annotations contained
      *                               inside the given document.
      */
@@ -309,7 +309,7 @@ public class PdfCleanUpTool {
      */
     private void extractLocationsFromSingleRedactAnnotation(PdfRedactAnnotation redactAnnotation) {
         List<Rectangle> regions;
-        PdfArray quadPoints =  redactAnnotation.getQuadPoints();
+        PdfArray quadPoints = redactAnnotation.getQuadPoints();
         if (quadPoints != null && !quadPoints.isEmpty()) {
             regions = translateQuadPointsToRectangles(quadPoints);
         } else {
@@ -455,7 +455,13 @@ public class PdfCleanUpTool {
     private Map<String, List> parseDAParam(PdfString DA) throws IOException {
         Map<String, List> commandArguments = new HashMap<String, List>();
 
-        PdfTokenizer tokeniser = new PdfTokenizer(new RandomAccessFileOrArray(new RandomAccessSourceFactory().createSource(DA.toUnicodeString().getBytes())));
+        PdfTokenizer tokeniser = new PdfTokenizer(
+                new RandomAccessFileOrArray(
+                        new RandomAccessSourceFactory().createSource(
+                                DA.toUnicodeString().getBytes(StandardCharsets.UTF_8)
+                        )
+                )
+        );
         List currentArguments = new ArrayList();
 
         while (tokeniser.nextToken()) {
