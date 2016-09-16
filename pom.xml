@@ -5,17 +5,17 @@
     <parent>
         <groupId>com.itextpdf</groupId>
         <artifactId>root</artifactId>
-        <version>7.0.1</version>
+        <version>7.0.3</version>
         <relativePath />
     </parent>
 
     <artifactId>cleanup</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.3-SNAPSHOT</version>
     <name>pdfSweep</name>
     <url>http://itextpdf.com/</url>
 
     <properties>
-        <itext.version>7.0.1</itext.version>
+        <itext.version>${project.parent.version}</itext.version>
     </properties>
 
     <dependencies>
@@ -23,19 +23,16 @@
             <groupId>com.itextpdf</groupId>
             <artifactId>io</artifactId>
             <version>${itext.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>kernel</artifactId>
             <version>${itext.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>layout</artifactId>
             <version>${itext.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
@@ -79,18 +76,22 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+              	<version>2.19.1</version>
                 <configuration>
                     <groups>${unittests}</groups>
+                  	<argLine>${env.SUREFIRE_OPTS}</argLine>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+              	<version>2.19.1</version>
                 <configuration>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
                     <groups>${integrationtests}</groups>
+                  	<argLine>${env.SUREFIRE_OPTS}</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -102,6 +103,23 @@
                         <exclude>**</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${javadoc.version}</version>
+                <configuration>
+                    <subpackages>com.itextpdf.pdfcleanup</subpackages>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
