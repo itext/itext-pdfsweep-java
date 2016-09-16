@@ -96,12 +96,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private static final Set<String> strokeOperators = new HashSet<String>(Arrays.asList("S", "s", "B", "B*", "b", "b*"));
     private static final Set<String> nwFillOperators = new HashSet<String>(Arrays.asList("f", "F", "B", "b"));
     private static final Set<String> eoFillOperators = new HashSet<String>(Arrays.asList("f*", "B*", "b*"));
-    private static final Set<String> pathPaintingOperators = new HashSet<String>() {{
-        addAll(strokeOperators);
-        addAll(nwFillOperators);
-        addAll(eoFillOperators);
-        add("n");
-    }};
+    private static final Set<String> pathPaintingOperators = new HashSet<String>();
+
     private static final Set<String> clippingPathOperators = new HashSet<String>(Arrays.asList("W", "W*"));
     private static final Set<String> lineStyleOperators = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
 
@@ -112,13 +108,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                          "TL")); // TL actually is not a text positioning operator, but we need to process it with them
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
-    private static final Set<String> ignoredOperators = new HashSet<String>() {{
-        addAll(pathConstructionOperators);
-        addAll(clippingPathOperators);
-        addAll(lineStyleOperators);
-        addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
-        addAll(Arrays.asList("BMC", "BDC"));
-    }};
+    private static final Set<String> ignoredOperators = new HashSet<String>();
+
+    static {
+        pathPaintingOperators.addAll(strokeOperators);
+        pathPaintingOperators.addAll(nwFillOperators);
+        pathPaintingOperators.addAll(eoFillOperators);
+        pathPaintingOperators.add("n");
+
+        ignoredOperators.addAll(pathConstructionOperators);
+        ignoredOperators.addAll(clippingPathOperators);
+        ignoredOperators.addAll(lineStyleOperators);
+        ignoredOperators.addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
+        ignoredOperators.addAll(Arrays.asList("BMC", "BDC"));
+    }
 
     private PdfDocument document;
     private PdfPage currentPage;
@@ -286,7 +289,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             notAppliedGsParams.push(new NotAppliedGsParams());
         } else if ("Q".equals(operator)) {
             notAppliedGsParams.pop();
-            if (notAppliedGsParams.isEmpty()) {
+            if (notAppliedGsParams.size() == 0) {
                 getCanvas().restoreState();
                 notAppliedGsParams.push(new NotAppliedGsParams());
             }
@@ -458,7 +461,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         ImageData filteredImage = imageFilterResult.getFilterResult();
         if (filteredImage != null) {
             Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
-            if (imageMaskFlag != null && imageMaskFlag) {
+            if (imageMaskFlag != null && (boolean) imageMaskFlag) {
                 filteredImage.makeMask();
             }
 
@@ -623,12 +626,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void removeOrCloseTag() {
-        if (!notWrittenTags.isEmpty()) {
+        if (notWrittenTags.size() > 0) {
             CanvasTag tag = notWrittenTags.pop();
             if (tag.hasMcid() && document.isTagged()) {
                 TagTreePointer pointer = document.getTagStructureContext().removeContentItem(currentPage, tag.getMcid());
                 if (pointer != null) {
-                    while (pointer.getKidsRoles().isEmpty()) {
+                    while (pointer.getKidsRoles().size() == 0) {
                         pointer.removeTag();
                     }
                 }
@@ -649,7 +652,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      */
     private float[] pollNotAppliedCtm() {
         List<List<PdfObject>> ctms = notAppliedGsParams.peek().ctms;
-        if (ctms.isEmpty()) {
+        if (ctms.size() == 0) {
             return new float[]{1, 0, 0, 1, 0, 0};
         }
         List<PdfObject> lastCtm = ctms.remove(ctms.size() - 1);
@@ -685,7 +688,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
         gsParams.extGStates.clear();
 
-        if (!gsParams.ctms.isEmpty()) {
+        if (gsParams.ctms.size() > 0) {
             Matrix m = new Matrix();
             for (List<PdfObject> ctm : gsParams.ctms) {
 

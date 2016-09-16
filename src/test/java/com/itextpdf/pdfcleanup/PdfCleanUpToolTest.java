@@ -43,7 +43,6 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -57,17 +56,16 @@ import java.lang.reflect.Method;
 import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.LogMessage;
-import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 @Category(IntegrationTest.class)
 public class PdfCleanUpToolTest extends ExtendedITextTest {
@@ -370,31 +368,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
-    })
-    public void cleanUpTest28() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImages.pdf";
-        String output = outputPath + "inlineImages_partial.pdf";
-        String cmp = inputPath + "cmp_inlineImages_partial.pdf";
-
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(62, 100, 20, 800), null));
-        cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_28");
-    }
-
-    @Test
-    public void cleanUpTest29() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImages.pdf";
-        String output = outputPath + "inlineImages_partial2.pdf";
-        String cmp = inputPath + "cmp_inlineImages_partial2.pdf";
-
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(10, 100, 70, 599), null));
-        cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_29");
-    }
-
-    @Test
     public void cleanUpTest30() throws IOException, InterruptedException {
         String input = inputPath + "inlineImages.pdf";
         String output = outputPath + "inlineImages_full.pdf";
@@ -406,19 +379,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
-    })
-    public void cleanUpTest31() throws IOException, InterruptedException {
-        String input = inputPath + "inlineImageCleanup.pdf";
-        String output = outputPath + "inlineImageCleanup.pdf";
-        String cmp = inputPath + "cmp_inlineImageCleanup.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_31");
-    }
-
-    @Test
     public void cleanUpTest32() throws IOException, InterruptedException {
         String input = inputPath + "page229.pdf";
         String output = outputPath + "wholePageCleanUp.pdf";
@@ -426,6 +386,54 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(1, 1, PageSize.A4.getWidth() - 1, PageSize.A4.getHeight() - 1))));
         compareByContent(cmp, output, outputPath, "diff_32");
+    }
+
+    @Test
+    public void cleanUpTest33() throws IOException, InterruptedException {
+        String input = inputPath + "viewer_prefs_dict_table.pdf";
+        String output = outputPath + "complexTextPositioning.pdf";
+        String cmp = inputPath + "cmp_complexTextPositioning.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f))));
+        compareByContent(cmp, output, outputPath, "diff_33");
+    }
+
+    @Test
+    public void cleanUpTest34() throws IOException, InterruptedException {
+        String input = inputPath + "new_york_times.pdf";
+        String output = outputPath + "textAndImages.pdf";
+        String cmp = inputPath + "cmp_textAndImages.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f , 235f, 230f , 445f))));
+        compareByContent(cmp, output, outputPath, "diff_34");
+    }
+
+    @Test
+    public void cleanUpTest35() throws IOException, InterruptedException {
+        String input = inputPath + "lineArtsSimple.pdf";
+        String output = outputPath + "lineArtsSimple.pdf";
+        String cmp = inputPath + "cmp_lineArtsSimple.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 80f, 460f, 65f), Color.GRAY)));
+        compareByContent(cmp, output, outputPath, "diff_35");
+    }
+
+    /**
+     * In this test, glyph "1" got removed by the clean up area that on first sight is not covering the glyph.
+     * However, we can't get the particular glyphs height and instead we have the same height for all glyphs.
+     * Because of this, in case of the big font sizes such situations might occur, that even though visually glyph is
+     * rather away from the cleanup location we still get it removed because it's bbox intersects with cleanup area rectangle.
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    @Test
+    public void cleanUpTest36() throws IOException, InterruptedException {
+        String input = inputPath + "bigOne.pdf";
+        String output = outputPath + "bigOne.pdf";
+        String cmp = inputPath + "cmp_bigOne.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f), Color.GRAY)));
+        compareByContent(cmp, output, outputPath, "diff_36");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

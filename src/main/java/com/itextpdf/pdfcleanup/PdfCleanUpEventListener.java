@@ -75,7 +75,7 @@ public class PdfCleanUpEventListener implements IEventListener {
     }
 
     public List<TextRenderInfo> getEncounteredText() {
-        if (content.isEmpty()) {
+        if (content.size() == 0) {
             throw new PdfException(textDataExpected);
         }
 
@@ -93,7 +93,7 @@ public class PdfCleanUpEventListener implements IEventListener {
     }
 
     public ImageRenderInfo getEncounteredImage() {
-        if (content.isEmpty()) {
+        if (content.size() == 0) {
             throw new PdfException(imageDataExpected);
         }
 
@@ -106,7 +106,7 @@ public class PdfCleanUpEventListener implements IEventListener {
     }
 
     public PathRenderInfo getEncounteredPath() {
-        if (content.isEmpty()) {
+        if (content.size() == 0) {
             throw new PdfException(pathDataExpected);
         }
 

@@ -70,13 +70,19 @@ class TextPositioning {
 
     public float getCurrLeading() {
         if (currLeading != null) {
-            return currLeading;
+            return (float) currLeading;
         }
         return 0f;
     }
 
     public void appendPositioningOperator(String operator, List<PdfObject> operands) {
-        if ("TL".equals(operator)) {
+        if (firstPositioningOperands != null) {
+            storePositioningInfoInShiftFields();
+        }
+
+        if ("TD".equals(operator)) {
+            currLeading = -((PdfNumber) operands.get(1)).floatValue();
+        } else if ("TL".equals(operator)) {
             currLeading = ((PdfNumber) operands.get(0)).floatValue();
             return;
         }
@@ -89,10 +95,6 @@ class TextPositioning {
             firstPositioningOperands = new ArrayList<>(operands);
             prevOperator = operator;
         } else {
-            if ("TD".equals(prevOperator)) {
-                currLeading = -((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-            }
-
             if ("Tm".equals(operator)) {
                 clear();
                 firstPositioningOperands = new ArrayList<>(operands);
@@ -102,41 +104,34 @@ class TextPositioning {
                 float ty;
                 if ("T*".equals(operator)) {
                     tx = 0;
-                    ty = getCurrLeading();
+                    ty = -getCurrLeading();
                 } else {
                     tx = ((PdfNumber) operands.get(0)).floatValue();
                     ty = ((PdfNumber) operands.get(1)).floatValue();
                 }
                 if ("Tm".equals(prevOperator)) {
-                    if (firstPositioningOperands != null) {
-                        tmShift = PdfCleanUpProcessor.operandsToMatrix(firstPositioningOperands);
-                        firstPositioningOperands = null;
-                    }
-
                     tmShift = new Matrix(tx, ty).multiply(tmShift);
                     // prevOperator is left as TM here
-
                 } else {
-                    if ("T*".equals(prevOperator)) {
-                        firstPositioningOperands = null;
-                        tdShift = new float[] {0, getCurrLeading()};
-                    } else if (firstPositioningOperands != null) {
-                        tdShift = new float[2];
-                        tdShift[0] = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
-                        tdShift[1] = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-                        firstPositioningOperands = null;
-                    }
-
                     tdShift[0] += tx;
                     tdShift[1] += ty;
                     prevOperator = "Td"; // concatenation of two any TD, Td, T* result in Td
                 }
-
-                if ("TD".equals(operator)) {
-                    currLeading = -((PdfNumber) operands.get(1)).floatValue();
-                }
             }
         }
+    }
+
+    private void storePositioningInfoInShiftFields() {
+        if ("Tm".equals(prevOperator)) {
+            tmShift = PdfCleanUpProcessor.operandsToMatrix(firstPositioningOperands);
+        } else if ("T*".equals(prevOperator)) {
+            tdShift = new float[] {0, -getCurrLeading()};
+        } else {
+            tdShift = new float[2];
+            tdShift[0] = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
+            tdShift[1] = ((PdfNumber) firstPositioningOperands.get(1)).floatValue();
+        }
+        firstPositioningOperands = null;
     }
 
     public void appendTjArrayWithSingleNumber(PdfArray tjArray, float fontSize, float scaling) {
@@ -149,7 +144,7 @@ class TextPositioning {
     }
 
     /**
-     * is performed when text object is ended
+     * is performed when text object is ended or text chunk is written
      */
     public void clear() {
         // leading is not removed, as it is preserved between different text objects
@@ -169,20 +164,16 @@ class TextPositioning {
 
     private void writePositioningOperator(PdfCanvas canvas) {
         if (firstPositioningOperands != null) {
-            if ("TD".equals(prevOperator)) {
-                currLeading = -((PdfNumber) firstPositioningOperands.get(1)).floatValue();
-            }
             if ("T*".equals(prevOperator)) {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
-                    canvas.setLeading(currLeading);
+                    canvas.setLeading((float)currLeading);
                 }
-                canvas.newlineText();
             }
             PdfCleanUpProcessor.writeOperands(canvas, firstPositioningOperands);
         } else if (tdShift != null) {
             canvas.moveText(tdShift[0], tdShift[1]);
         } else if (tmShift != null) {
-            canvas.concatMatrix(tmShift.get(Matrix.I11), tmShift.get(Matrix.I12),
+            canvas.setTextMatrix(tmShift.get(Matrix.I11), tmShift.get(Matrix.I12),
                     tmShift.get(Matrix.I21), tmShift.get(Matrix.I22), tmShift.get(Matrix.I31), tmShift.get(Matrix.I32));
         }
     }
@@ -191,11 +182,11 @@ class TextPositioning {
         CanvasGraphicsState canvasGs = canvas.getGraphicsState();
         boolean newLineShowText = "'".equals(operator) || "\"".equals(operator);
         if (newLineShowText && canvasGs.getLeading() != currLeading) {
-            canvas.setLeading(currLeading);
+            canvas.setLeading((float)currLeading);
         }
         PdfTextArray tjShiftArray = new PdfTextArray();
         if (removedTextShift != null) {
-            float tjShift = removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
+            float tjShift = (float) removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
             tjShiftArray.add(new PdfNumber(tjShift));
         }
         if (cleanedText != null) {

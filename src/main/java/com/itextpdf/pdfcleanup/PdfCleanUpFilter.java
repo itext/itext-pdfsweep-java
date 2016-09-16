@@ -434,7 +434,7 @@ public class PdfCleanUpFilter {
         List<Point> pathApprox = getPathApproximation(sourcePath);
 
         if (pathApprox.size() < 2) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
         Iterator<Point> approxIter = pathApprox.iterator();

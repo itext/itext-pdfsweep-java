@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
@@ -54,7 +53,16 @@ import com.itextpdf.kernel.color.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfBoolean;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfObject;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfStream;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfPopupAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
@@ -62,8 +70,9 @@ import com.itextpdf.kernel.pdf.canvas.CanvasArtifact;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Canvas;
-import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.layout.LayoutArea;
+import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -72,7 +81,12 @@ import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 
 import java.io.IOException;
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represents the main mechanism for cleaning a PDF document.
@@ -129,8 +143,8 @@ public class PdfCleanUpTool {
      * then no regions for erasing are specified. In that case use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)}
      * method to set regions to be erased from the document.
      *
-     * @param pdfDocument A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
-     *                    to which redaction applies.
+     * @param pdfDocument            A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
+     *                               to which redaction applies.
      * @param cleanRedactAnnotations if true - regions to be erased are extracted from the redact annotations contained
      *                               inside the given document.
      */
@@ -295,7 +309,7 @@ public class PdfCleanUpTool {
      */
     private void extractLocationsFromSingleRedactAnnotation(PdfRedactAnnotation redactAnnotation) {
         List<Rectangle> regions;
-        PdfArray quadPoints =  redactAnnotation.getQuadPoints();
+        PdfArray quadPoints = redactAnnotation.getQuadPoints();
         if (quadPoints != null && !quadPoints.isEmpty()) {
             regions = translateQuadPointsToRectangles(quadPoints);
         } else {
@@ -420,9 +434,14 @@ public class PdfCleanUpTool {
         modelCanvas.add(p);
         if (repeat != null && repeat.getValue()) {
             Boolean isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
-            while(isFull == null || !isFull) {
+            while (isFull == null || !isFull) {
                 p.add(overlayText);
+                LayoutArea previousArea = modelCanvas.getRenderer().getCurrentArea().clone();
                 modelCanvas.relayout();
+                if (modelCanvas.getRenderer().getCurrentArea().equals(previousArea)) {
+                    // Avoid infinite loop. This might be caused by the fact that the font does not support the text we want to show
+                    break;
+                }
                 isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
             }
         }
@@ -436,7 +455,13 @@ public class PdfCleanUpTool {
     private Map<String, List> parseDAParam(PdfString DA) throws IOException {
         Map<String, List> commandArguments = new HashMap<String, List>();
 
-        PdfTokenizer tokeniser = new PdfTokenizer(new RandomAccessFileOrArray(new RandomAccessSourceFactory().createSource(DA.toUnicodeString().getBytes())));
+        PdfTokenizer tokeniser = new PdfTokenizer(
+                new RandomAccessFileOrArray(
+                        new RandomAccessSourceFactory().createSource(
+                                DA.toUnicodeString().getBytes(StandardCharsets.UTF_8)
+                        )
+                )
+        );
         List currentArguments = new ArrayList();
 
         while (tokeniser.nextToken()) {
