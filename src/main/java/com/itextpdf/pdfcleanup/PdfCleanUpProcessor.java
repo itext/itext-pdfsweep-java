@@ -249,6 +249,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         return new Matrix(a, b, c, d, e, f);
     }
 
+    @Override
     protected void eventOccurred(IEventData data, EventType type) {
         if (supportedEvents == null || supportedEvents.contains(type)) {
             eventListener.eventOccurred(data, type);
