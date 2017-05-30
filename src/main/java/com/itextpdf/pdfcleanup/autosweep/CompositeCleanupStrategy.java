@@ -46,47 +46,50 @@ import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 
 import java.util.*;
 
 /**
- * This class is a composite pattern for {@code ILocationExtractionStrategy}
+ * This class is a composite pattern for {@code ICleanupStrategy}
+ * It allows users to have multiple ICleanupStrategy implementations and bundle them as one.
  */
-public class CompositeLocationExtractionStrategy implements ILocationExtractionStrategy {
+public class CompositeCleanupStrategy implements ICleanupStrategy {
 
-    private Map<Integer, Set<Rectangle>> locations = new HashMap<>();
-    private List<ILocationExtractionStrategy> strategies = new ArrayList<>();
+    private Map<Integer, Set<IPdfTextLocation>> locations = new HashMap<>();
+    private List<ICleanupStrategy> strategies = new ArrayList<>();
 
-    public CompositeLocationExtractionStrategy() {
+    public CompositeCleanupStrategy() {
     }
 
-    public void add(ILocationExtractionStrategy ies) {
+    public void add(ICleanupStrategy ies) {
         strategies.add(ies);
     }
 
     @Override
-    public Collection<Rectangle> getLocations() {
+    public Collection<IPdfTextLocation> getResultantLocations() {
         locations.clear();
 
         // build return value
-        Set<Rectangle> retval = new HashSet<>();
+        Set<IPdfTextLocation> retval = new HashSet<>();
         for (int i = 0; i < strategies.size(); i++) {
             ILocationExtractionStrategy s = strategies.get(i);
-            Collection<Rectangle> rects = s.getLocations();
-
+            Collection<IPdfTextLocation> rects = s.getResultantLocations();
             retval.addAll(rects);
-
             locations.put(i, new HashSet<>(rects));
         }
 
-        List<Rectangle> rectangles = new ArrayList<>(retval);
-        java.util.Collections.sort(rectangles, new Comparator<Rectangle>() {
+        List<IPdfTextLocation> rectangles = new ArrayList<>(retval);
+        java.util.Collections.sort(rectangles, new Comparator<IPdfTextLocation>() {
             @Override
-            public int compare(Rectangle o1, Rectangle o2) {
-                if (o1.getY() == o2.getY()) {
-                    return o1.getX() == o2.getX() ? 0 : (o1.getX() < o2.getX() ? -1 : 1);
+            public int compare(IPdfTextLocation l1, IPdfTextLocation l2) {
+                Rectangle r1 = l1.getRectangle();
+                Rectangle r2 = l2.getRectangle();
+                if (r1.getY() == r2.getY()) {
+                    return r1.getX() == r2.getX() ? 0 : (r1.getX() < r2.getX() ? -1 : 1);
                 } else {
-                    return o1.getY() < o2.getY() ? -1 : 1;
+                    return r1.getY() < r2.getY() ? -1 : 1;
                 }
             }
         });
@@ -96,25 +99,13 @@ public class CompositeLocationExtractionStrategy implements ILocationExtractionS
     }
 
     @Override
-    public Color getColor(Rectangle rectangle) {
+    public Color getRedactionColor(IPdfTextLocation location) {
         for (int i = 0; i < strategies.size(); i++) {
-            if (locations.get(i).contains(rectangle)) {
-                return strategies.get(i).getColor(rectangle);
+            if (locations.get(i).contains(location)) {
+                return strategies.get(i).getRedactionColor(location);
             }
         }
         return Color.BLACK;
-    }
-
-    @Override
-    public void clear() {
-        for (ILocationExtractionStrategy s : strategies) {
-            s.clear();
-        }
-    }
-
-    @Override
-    public String getResultantText() {
-        return null;
     }
 
     @Override
@@ -133,5 +124,15 @@ public class CompositeLocationExtractionStrategy implements ILocationExtractionS
                 evts.addAll(se);
         }
         return evts.isEmpty() ? null : evts;
+    }
+
+    public ICleanupStrategy reset()
+    {
+        CompositeCleanupStrategy retval = new CompositeCleanupStrategy();
+        for(ICleanupStrategy s : strategies)
+        {
+            retval.add(s.reset());
+        }
+        return retval;
     }
 }

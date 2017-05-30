@@ -40,40 +40,43 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.ITextExtractionStrategy;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 
-import java.util.Collection;
+import java.util.regex.Pattern;
 
 /**
- * Represents a mechanism for extracting regions of interest (typically regions that need to be redacted) from a PdfDocument
+ * This class represents a regular expression based cleanup strategy
  */
-public interface ILocationExtractionStrategy extends ITextExtractionStrategy {
+public class RegexBasedCleanupStrategy extends RegexBasedLocationExtractionStrategy implements ICleanupStrategy {
 
-    /**
-     * Get all the locations that match a certain snippet of interest
-     *
-     * @return
-     */
-    Collection<Rectangle> getLocations();
+    private Pattern pattern;
+    private Color redactionColor = Color.BLACK;
 
-    /**
-     * Get the color used by this {@code ITextExtractionStrategy} for marking/highlighting
-     *
-     * @return
-     */
-    Color getColor(Rectangle rect);
+    public RegexBasedCleanupStrategy(String regex) {
+        super(regex);
+        this.pattern = Pattern.compile(regex);
+    }
 
-    /**
-     * Clear the state of this {@code ILocationExtractionStrategy}
-     */
-    void clear();
+    public RegexBasedCleanupStrategy(Pattern pattern) {
+        super(pattern);
+        this.pattern = pattern;
+    }
+
+    @Override
+    public Color getRedactionColor(IPdfTextLocation location) {
+        return redactionColor;
+    }
+
+    public RegexBasedCleanupStrategy setRedactionColor(Color color) {
+        this.redactionColor = color;
+        return this;
+    }
+
+    public ICleanupStrategy reset() {
+        return new RegexBasedCleanupStrategy(pattern);
+    }
 }

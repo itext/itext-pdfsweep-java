@@ -47,15 +47,14 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.kernel.color.*;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.*;
 import com.itextpdf.kernel.utils.CompareTool;
-import com.itextpdf.layout.font.FontProvider;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -64,6 +63,7 @@ import com.itextpdf.kernel.Version;
 import com.itextpdf.pdfcleanup.autosweep.*;
 
 import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
+
 import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.IOException;
@@ -98,8 +98,8 @@ public class BigDocumentAutoCleanUpTest {
         String output = outputPath + "redactLipsum.pdf";
         String cmp = inputPath + "cmp_redactLipsum.pdf";
 
-        CompositeLocationExtractionStrategy strategy = new CompositeLocationExtractionStrategy();
-        strategy.add(new PatternLocationExtractionStrategy("(D|d)olor").setRedactionColor(Color.GREEN));
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(Color.GREEN));
 
         PdfWriter writer = new PdfWriter(output);
         writer.setCompressionLevel(0);
@@ -122,10 +122,10 @@ public class BigDocumentAutoCleanUpTest {
         String output = outputPath + "redactTonySoprano.pdf";
         String cmp = inputPath + "cmp_redactTonySoprano.pdf";
 
-        CompositeLocationExtractionStrategy strategy = new CompositeLocationExtractionStrategy();
-        strategy.add(new PatternLocationExtractionStrategy("Tony( |_)Soprano"));
-        strategy.add(new PatternLocationExtractionStrategy("Soprano"));
-        strategy.add(new PatternLocationExtractionStrategy("Sopranos"));
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("Tony( |_)Soprano"));
+        strategy.add(new RegexBasedCleanupStrategy("Soprano"));
+        strategy.add(new RegexBasedCleanupStrategy("Sopranos"));
 
         PdfWriter writer = new PdfWriter(output);
         writer.setCompressionLevel(0);
@@ -148,7 +148,7 @@ public class BigDocumentAutoCleanUpTest {
         String output = outputPath + "redactIPhoneUserManualMatchColor.pdf";
         String cmp = inputPath + "cmp_redactIPhoneUserManualMatchColor.pdf";
 
-        CompositeLocationExtractionStrategy strategy = new CompositeLocationExtractionStrategy();
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
         strategy.add(new CustomLocationExtractionStrategy("(iphone)|(iPhone)"));
 
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
@@ -171,8 +171,8 @@ public class BigDocumentAutoCleanUpTest {
         String output = outputPath + "redactIPhoneUserManual.pdf";
         String cmp = inputPath + "cmp_redactIPhoneUserManual.pdf";
 
-        CompositeLocationExtractionStrategy strategy = new CompositeLocationExtractionStrategy();
-        strategy.add(new PatternLocationExtractionStrategy("(iphone)|(iPhone)"));
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(iphone)|(iPhone)"));
 
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
@@ -220,13 +220,14 @@ class CCharacterRenderInfo extends CharacterRenderInfo {
     }
 }
 
-class CustomLocationExtractionStrategy extends PatternLocationExtractionStrategy {
+class CustomLocationExtractionStrategy extends RegexBasedLocationExtractionStrategy implements ICleanupStrategy {
 
+    private String regex;
     private Map<Rectangle, Color> colorByRectangle = new HashMap<>();
-    private ILocationExtractionStrategy strategy;
 
     public CustomLocationExtractionStrategy(String regex) {
         super(regex);
+        this.regex = regex;
     }
 
     @Override
@@ -249,7 +250,12 @@ class CustomLocationExtractionStrategy extends PatternLocationExtractionStrategy
     }
 
     @Override
-    public Color getColor(Rectangle rect) {
-        return colorByRectangle.containsKey(rect) ? colorByRectangle.get(rect) : Color.BLACK;
+    public Color getRedactionColor(IPdfTextLocation rect) {
+        return colorByRectangle.containsKey(rect.getRectangle()) ? colorByRectangle.get(rect.getRectangle()) : Color.BLACK;
+    }
+
+    public ICleanupStrategy reset()
+    {
+        return new CustomLocationExtractionStrategy(regex);
     }
 }

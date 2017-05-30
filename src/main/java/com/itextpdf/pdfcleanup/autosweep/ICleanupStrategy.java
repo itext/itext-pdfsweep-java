@@ -43,53 +43,30 @@
 package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.canvas.parser.EventType;
-import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 
 /**
- * This class provides compatibility with workflows that wish to integrate both sweep and autoSweep
+ * This class represents a generic cleanup strategy to be used with {@code PdfAutoSweep}
+ * ICleanupStrategy must implement Cloneable to ensure a strategy can be reset after having handled a page.
  */
-public class FixedLocationStrategy implements ILocationExtractionStrategy {
+public interface ICleanupStrategy extends ILocationExtractionStrategy {
 
-    private List<Rectangle> rectangles = new ArrayList<>();
-    private Color redactionColor = Color.BLACK;
+    /**
+     * Get the color in which redaction is to take place
+     *
+     * @return
+     */
+    Color getRedactionColor(IPdfTextLocation location);
 
-    public FixedLocationStrategy(Collection<Rectangle> rectangles)
-    {
-        this.rectangles.addAll(rectangles);
-    }
-
-    @Override
-    public Collection<Rectangle> getLocations() {
-        return rectangles;
-    }
-
-    public FixedLocationStrategy setRedactionColor(Color redactionColor) {
-        this.redactionColor = redactionColor;
-        return this;
-    }
-
-    @Override
-    public Color getColor(Rectangle rect) {
-        return null;
-    }
-
-    @Override
-    public void clear() {}
-
-    @Override
-    public String getResultantText() { return null; }
-
-    @Override
-    public void eventOccurred(IEventData data, EventType type) {}
-
-    @Override
-    public Set<EventType> getSupportedEvents() { return null; }
+    /**
+     * ICleanupStrategy objects have to be reset at times
+     * {@code PdfAutoSweep} will use the same strategy for all pages,
+     * and expects to receive only the rectangles from the last page as output.
+     * Hence the reset method.
+     *
+     * @return a clone of this Object
+     */
+    ICleanupStrategy reset();
 
 }
