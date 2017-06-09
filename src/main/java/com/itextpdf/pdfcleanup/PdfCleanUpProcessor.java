@@ -59,6 +59,8 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
 import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
+import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -245,6 +247,13 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         float e = ((PdfNumber) operands.get(4)).floatValue();
         float f = ((PdfNumber) operands.get(5)).floatValue();
         return new Matrix(a, b, c, d, e, f);
+    }
+
+    @Override
+    protected void eventOccurred(IEventData data, EventType type) {
+        if (supportedEvents == null || supportedEvents.contains(type)) {
+            eventListener.eventOccurred(data, type);
+        }
     }
 
     private void writeGsParamsIfFormXObject(String operator, List<PdfObject> operands) {

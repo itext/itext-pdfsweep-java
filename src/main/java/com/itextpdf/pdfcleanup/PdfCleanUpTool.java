@@ -129,7 +129,7 @@ public class PdfCleanUpTool {
      * Use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)} method
      * to set regions to be erased from the document.
      *
-     * @param pdfDocument A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
+     * @param pdfDocument A {@link PdfDocument} object representing the document
      *                    to which redaction applies.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument) {
@@ -137,13 +137,13 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Creates a {@link PdfCleanUpTool} object. If {@param cleanRedactAnnotations} is true,
+     * Creates a {@link PdfCleanUpTool} object. If {@code cleanRedactAnnotations} is true,
      * regions to be erased are extracted from the redact annotations contained inside the given document.
-     * Those redact annotations will be removed from the resultant document. If {@param cleanRedactAnnotations} is false,
+     * Those redact annotations will be removed from the resultant document. If {@code cleanRedactAnnotations} is false,
      * then no regions for erasing are specified. In that case use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)}
      * method to set regions to be erased from the document.
      *
-     * @param pdfDocument            A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
+     * @param pdfDocument            A {@link PdfDocument} object representing the document
      *                               to which redaction applies.
      * @param cleanRedactAnnotations if true - regions to be erased are extracted from the redact annotations contained
      *                               inside the given document.
@@ -200,8 +200,8 @@ public class PdfCleanUpTool {
      * Creates a {@link PdfCleanUpTool} object based on the given {@link java.util.List}
      * of {@link PdfCleanUpLocation}s representing regions to be erased from the document.
      *
-     * @param cleanUpLocations list of locations to be cleaned up {@see PdfCleanUpLocation}
-     * @param pdfDocument      A{@link com.itextpdf.kernel.pdf.PdfDocument} object representing the document
+     * @param cleanUpLocations list of locations to be cleaned up {@link PdfCleanUpLocation}
+     * @param pdfDocument      A {@link PdfDocument} object representing the document
      *                         to which redaction applies.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument, List<PdfCleanUpLocation> cleanUpLocations) {
@@ -284,8 +284,6 @@ public class PdfCleanUpTool {
     /**
      * Adds clean up locations to be erased by extracting regions from the redact annotations
      * contained inside the given document. Those redact annotations will be removed from the resultant document.
-     *
-     * @return current {@link PdfCleanUpTool} instance.
      */
     private void addCleanUpLocationsBasedOnRedactAnnotations() {
         redactAnnotations = new LinkedHashMap<>();
