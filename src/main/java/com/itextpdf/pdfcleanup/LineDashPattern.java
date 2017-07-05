@@ -145,7 +145,7 @@ public class LineDashPattern {
     /**
      * Checks whether the dashed pattern is solid or not. It's solid when the
      * size of a dash array is even and sum of all the units off in the array
-     * is 0.<br/>
+     * is 0.
      * For example: [3 0 4 0 5 0 6 0] (sum is 0), [3 0 4 0 5 1] (sum is 1).
      */
     public boolean isSolid() {
