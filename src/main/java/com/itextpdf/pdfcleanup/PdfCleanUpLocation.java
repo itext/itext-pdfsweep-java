@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.geom.Rectangle;
 
@@ -71,7 +70,7 @@ public class PdfCleanUpLocation {
      *
      * @param page         specifies the number of the page which the region belongs to.
      * @param region       represents the boundaries of the area to be erased.
-     * @param cleanUpColor a color used to fill the area after erasing it. If <CODE>null</CODE>
+     * @param cleanUpColor a color used to fill the area after erasing it. If {@code null}
      *                     the erased area left uncolored.
      */
     public PdfCleanUpLocation(int page, Rectangle region, Color cleanUpColor) {
@@ -94,7 +93,7 @@ public class PdfCleanUpLocation {
     }
 
     /**
-     * Returns a color used to fill the area after erasing it. If <CODE>null</CODE> the erased area left uncolored.
+     * Returns a color used to fill the area after erasing it. If {@code null} the erased area left uncolored.
      *
      * @return a color used to fill the area after erasing it.
      */

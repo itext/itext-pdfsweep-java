@@ -42,11 +42,11 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -147,6 +147,8 @@ public class LineDashPattern {
      * size of a dash array is even and sum of all the units off in the array
      * is 0.
      * For example: [3 0 4 0 5 0 6 0] (sum is 0), [3 0 4 0 5 1] (sum is 1).
+     *
+     * @return is the dashed pattern solid or not
      */
     public boolean isSolid() {
         if (dashArray.size() % 2 != 0) {

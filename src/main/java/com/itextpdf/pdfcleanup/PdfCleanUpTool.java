@@ -225,6 +225,8 @@ public class PdfCleanUpTool {
     /**
      * Cleans the document by erasing all the areas which are either provided or
      * extracted from redaction annotations.
+     *
+     * @throws IOException IOException
      */
     public void cleanUp() throws IOException {
         for (Map.Entry<Integer, List<PdfCleanUpLocation>> entry : pdfCleanUpLocations.entrySet()) {

@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.geom.AffineTransform;
@@ -54,26 +53,36 @@ import com.itextpdf.kernel.geom.NoninvertibleTransformException;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
-import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfTextArray;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperOffset;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.DefaultClipper;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.ClipType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.EndType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.JoinType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyFillType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyType;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperOffset;
-import com.itextpdf.kernel.pdf.canvas.parser.clipper.DefaultClipper;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.Paths;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
-import com.itextpdf.kernel.pdf.PdfArray;
-import com.itextpdf.kernel.pdf.PdfNumber;
-import com.itextpdf.kernel.pdf.PdfTextArray;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import org.apache.commons.imaging.ImageFormats;
+import org.apache.commons.imaging.ImageInfo;
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.ImagingConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -86,16 +95,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.MemoryCacheImageOutputStream;
-import org.apache.commons.imaging.ImageFormats;
-import org.apache.commons.imaging.ImageInfo;
-import org.apache.commons.imaging.Imaging;
-import org.apache.commons.imaging.ImagingConstants;
-import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
 
 public class PdfCleanUpFilter {
     private static final Color CLEANED_AREA_FILL_COLOR = Color.WHITE;
@@ -176,7 +175,6 @@ public class PdfCleanUpFilter {
         return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
     }
 
-
     private boolean isTextNotToBeCleaned(TextRenderInfo renderInfo) {
         Point[] textRect = getTextRectangle(renderInfo);
 
@@ -202,11 +200,10 @@ public class PdfCleanUpFilter {
         return !paths.isEmpty();
     }
 
-
     /**
      * Calculates intersection of the image and the render filter region in the coordinate system relative to the image.
      *
-     * @return <code>null</code> if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
+     * @return {@code null} if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
      * {@link Rectangle} objects otherwise.
      */
     private List<Rectangle> getImageAreasToBeCleaned(ImageRenderInfo image) {
@@ -334,7 +331,6 @@ public class PdfCleanUpFilter {
         }
     }
 
-
     private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
                                                            float lineWidth, int lineCapStyle, int lineJoinStyle,
                                                            float miterLimit, LineDashPattern lineDashPattern) {
@@ -371,7 +367,10 @@ public class PdfCleanUpFilter {
     /**
      * Note: this method will close all unclosed subpaths of the passed path.
      *
+     * @param path path
+     * @param ctm ctm
      * @param fillingRule If the subpath is contour, pass any value.
+     * @return filterFillPath
      */
     protected com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path, Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
@@ -559,7 +558,6 @@ public class PdfCleanUpFilter {
 
         return approximation;
     }
-
 
     private Point[] transformPoints(Matrix transformationMatrix, boolean inverse, Point... points) {
         AffineTransform t = new AffineTransform(transformationMatrix.get(Matrix.I11), transformationMatrix.get(Matrix.I12),
