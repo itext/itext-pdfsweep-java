@@ -436,6 +436,22 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_36");
     }
 
+    /**
+     * In this test we check that line style operators (such as 'w') are processed correctly
+     */
+    @Test
+    public void cleanUpTest37() throws IOException, InterruptedException {
+        String input = inputPath + "helloHelvetica.pdf";
+        String output = outputPath + "helloHelvetica.pdf";
+        String cmp = inputPath + "cmp_helloHelvetica.pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 595f, 680f), Color.GRAY));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_37");
+    }
+
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 

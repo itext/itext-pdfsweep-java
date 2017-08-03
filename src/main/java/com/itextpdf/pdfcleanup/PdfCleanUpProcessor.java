@@ -260,7 +260,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if ("Do".equals(operator)) {
             PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
             if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
-                writeNotAppliedGsParams(true, true, true); // write here all gs params because we don't know which content is inside of form
+                writeNotAppliedGsParams(true, true);
                 openNotWrittenTags();
             }
         }
@@ -435,7 +435,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 fill = true;
                 break;
         }
-        writeNotAppliedGsParams(fill, stroke, false);
+        writeNotAppliedGsParams(fill, stroke);
     }
 
     private void checkIfImageAndClean(List<PdfObject> operands) {
@@ -457,7 +457,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
             if (imageToWrite != null) {
                 float[] ctm = pollNotAppliedCtm();
-                writeNotAppliedGsParams(false, false, false);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
@@ -475,7 +475,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
 
             float[] ctm = pollNotAppliedCtm();
-            writeNotAppliedGsParams(false, false, false);
+            writeNotAppliedGsParams(false, false);
             openNotWrittenTags();
 
             getCanvas().addImage(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
@@ -531,7 +531,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (fill) {
             fillPath = filter.filterFillPath(path, path.getRule());
             if (!fillPath.isEmpty()) {
-                writeNotAppliedGsParams(true, false, true);
+                writeNotAppliedGsParams(true, false);
                 openNotWrittenTags();
                 writePath(fillPath);
                 if (path.getRule() == FillingRule.NONZERO_WINDING) {
@@ -546,7 +546,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             Path strokePath = filter.filterStrokePath(path);
             if (!strokePath.isEmpty()) {
                 // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
-                writeNotAppliedGsParams(false, false, true);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 writeStrokePath(strokePath, path.getStrokeColor());
             }
@@ -560,7 +560,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 clippingPath = filter.filterFillPath(path, path.getClippingRule());
             }
             if (!clippingPath.isEmpty()) {
-                writeNotAppliedGsParams(false, false, true);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 writePath(clippingPath);
                 if (path.getClippingRule() == FillingRule.NONZERO_WINDING) {
@@ -576,7 +576,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 // there is no visible content at all. But at the same time as we removed the clipping
                 // path, the invisible content would become visible. So, to emulate the correct result,
                 // we would simply put a degenerate clipping path which consists of a single point at (0, 0).
-                writeNotAppliedGsParams(false, false, false); // we still need to open all q operators
+                writeNotAppliedGsParams(false, false); // we still need to open all q operators
                 canvas.moveTo(0, 0).clip();
             }
             canvas.newPath();
@@ -677,21 +677,21 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         return ctm;
     }
 
-    private void writeNotAppliedGsParams(boolean fill, boolean stroke, boolean isPath) {
+    private void writeNotAppliedGsParams(boolean fill, boolean stroke) {
         if (notAppliedGsParams.size() > 0) {
             while (notAppliedGsParams.size() != 1) {
                 NotAppliedGsParams gsParams = notAppliedGsParams.pollLast();
                 // We want to apply graphics state params of outer q/Q nesting level on it's level and not on the inner
                 // q/Q nesting level. Because of that we write all gs params for the outer q/Q, just in case it will be needed
                 // later (if we don't write it now, there will be no possibility to write it in the outer q/Q later).
-                applyGsParams(true, true, true, gsParams);
+                applyGsParams(true, true, gsParams);
                 getCanvas().saveState();
             }
-            applyGsParams(fill, stroke, isPath, notAppliedGsParams.peek());
+            applyGsParams(fill, stroke, notAppliedGsParams.peek());
         }
     }
 
-    private void applyGsParams(boolean fill, boolean stroke, boolean isPath, NotAppliedGsParams gsParams) {
+    private void applyGsParams(boolean fill, boolean stroke, NotAppliedGsParams gsParams) {
         for (PdfDictionary extGState : gsParams.extGStates) {
             getCanvas().setExtGState(extGState);
         }
@@ -709,12 +709,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             gsParams.ctms.clear();
         }
 
-        if (isPath) {
-            for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
-                writeOperands(getCanvas(), strokeState);
-            }
-            gsParams.lineStyleOperators.clear();
+        for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
+            writeOperands(getCanvas(), strokeState);
         }
+        gsParams.lineStyleOperators.clear();
 
         if (fill) {
             if (gsParams.fillColor != null) {
