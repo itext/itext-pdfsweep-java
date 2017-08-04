@@ -43,12 +43,16 @@
 package com.itextpdf.pdfcleanup;
 
 
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.utils.CompareTool;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -449,6 +453,20 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_37");
+    }
+
+    @Test
+    @Ignore("line style operators are written even if there is no need for this (like on paths fill or FILL text rendering mode")
+    public void cleanUpTest38() throws IOException, InterruptedException {
+        String input = inputPath + "helloHelvetica02.pdf";
+        String output = outputPath + "helloHelvetica02.pdf";
+        String cmp = inputPath + "cmp_helloHelvetica02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 0f, 0f), Color.GRAY));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_38");
     }
 
 
