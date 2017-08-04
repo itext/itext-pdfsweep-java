@@ -709,10 +709,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             gsParams.ctms.clear();
         }
 
-        for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
-            writeOperands(getCanvas(), strokeState);
+        if (stroke) {
+            for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
+                writeOperands(getCanvas(), strokeState);
+            }
+            gsParams.lineStyleOperators.clear();
         }
-        gsParams.lineStyleOperators.clear();
 
         if (fill) {
             if (gsParams.fillColor != null) {
