@@ -456,7 +456,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("line style operators are written even if there is no need for this (like on paths fill or FILL text rendering mode")
     public void cleanUpTest38() throws IOException, InterruptedException {
         String input = inputPath + "helloHelvetica02.pdf";
         String output = outputPath + "helloHelvetica02.pdf";
