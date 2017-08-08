@@ -49,6 +49,7 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,14 +69,19 @@ class TextPositioning {
 
     private Float currLeading;
 
-    public float getCurrLeading() {
+    /**
+     * Get the current leading
+     *
+     * @return
+     */
+    float getCurrLeading() {
         if (currLeading != null) {
             return (float) currLeading;
         }
         return 0f;
     }
 
-    public void appendPositioningOperator(String operator, List<PdfObject> operands) {
+    void appendPositioningOperator(String operator, List<PdfObject> operands) {
         if (firstPositioningOperands != null) {
             storePositioningInfoInShiftFields();
         }
@@ -125,7 +131,7 @@ class TextPositioning {
         if ("Tm".equals(prevOperator)) {
             tmShift = PdfCleanUpProcessor.operandsToMatrix(firstPositioningOperands);
         } else if ("T*".equals(prevOperator)) {
-            tdShift = new float[] {0, -getCurrLeading()};
+            tdShift = new float[]{0, -getCurrLeading()};
         } else {
             tdShift = new float[2];
             tdShift[0] = ((PdfNumber) firstPositioningOperands.get(0)).floatValue();
@@ -134,19 +140,19 @@ class TextPositioning {
         firstPositioningOperands = null;
     }
 
-    public void appendTjArrayWithSingleNumber(PdfArray tjArray, float fontSize, float scaling) {
+    void appendTjArrayWithSingleNumber(PdfArray tjArray, float fontSize, float scaling) {
         if (removedTextShift == null) {
             removedTextShift = 0f;
         }
 
         float shift = tjArray.getAsNumber(0).floatValue();
-        removedTextShift += shift*fontSize*(scaling/100) / 1000;
+        removedTextShift += shift * fontSize * (scaling / 100) / 1000;
     }
 
     /**
      * is performed when text object is ended or text chunk is written
      */
-    public void clear() {
+    void clear() {
         // leading is not removed, as it is preserved between different text objects
         firstPositioningOperands = null;
         prevOperator = null;
@@ -156,7 +162,7 @@ class TextPositioning {
         tmShift = null;
     }
 
-    public void writePositionedText(String operator, List<PdfObject> operands, PdfArray cleanedText, PdfCanvas canvas) {
+    void writePositionedText(String operator, List<PdfObject> operands, PdfArray cleanedText, PdfCanvas canvas) {
         writePositioningOperator(canvas);
         writeText(operator, operands, cleanedText, canvas);
         clear();
@@ -166,7 +172,7 @@ class TextPositioning {
         if (firstPositioningOperands != null) {
             if ("T*".equals(prevOperator)) {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
-                    canvas.setLeading((float)currLeading);
+                    canvas.setLeading((float) currLeading);
                 }
             }
             PdfCleanUpProcessor.writeOperands(canvas, firstPositioningOperands);
@@ -182,7 +188,7 @@ class TextPositioning {
         CanvasGraphicsState canvasGs = canvas.getGraphicsState();
         boolean newLineShowText = "'".equals(operator) || "\"".equals(operator);
         if (newLineShowText && canvasGs.getLeading() != currLeading) {
-            canvas.setLeading((float)currLeading);
+            canvas.setLeading((float) currLeading);
         }
         PdfTextArray tjShiftArray = new PdfTextArray();
         if (removedTextShift != null) {

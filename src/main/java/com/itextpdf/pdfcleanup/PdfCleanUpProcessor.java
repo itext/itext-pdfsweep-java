@@ -80,6 +80,7 @@ import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,7 +108,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private static final Set<String> fillColorOperators = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
 
     private static final Set<String> textPositioningOperators = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
-                         "TL")); // TL actually is not a text positioning operator, but we need to process it with them
+            "TL")); // TL actually is not a text positioning operator, but we need to process it with them
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
     private static final Set<String> ignoredOperators = new HashSet<String>();
@@ -134,20 +135,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      * In {@code notAppliedGsParams} field not written graphics state params are stored.
      * Stack represents gs params on different levels of the q/Q nesting (see {@link NotAppliedGsParams}).
      * On "q" operator new {@code NotAppliedGsParams} is pushed to the stack and on "Q" it is popped.
-     *
+     * <p>
      * When operators are applied, they are written from the outer to inner nesting level, separated by "q".
      * After being written the stack is cleared.
-     *
+     * <p>
      * Graphics state parameters are applied in two ways:
      * <ul>
-     *  <li>
-     *      first - right before writing text content, text state in current gs is compare to the text state of the text
-     *      render info gs and difference is applied to current gs;
-     *  </li>
-     *  <li>
-     *      second - through list of the not applied gs params. Right before writing some content, this list is checked,
-     *      and if something affecting content is stored in this list it will be applied.
-     *  </li>
+     * <li>
+     * first - right before writing text content, text state in current gs is compare to the text state of the text
+     * render info gs and difference is applied to current gs;
+     * </li>
+     * <li>
+     * second - through list of the not applied gs params. Right before writing some content, this list is checked,
+     * and if something affecting content is stored in this list it will be applied.
+     * </li>
      * </ul>
      */
     private Deque<NotAppliedGsParams> notAppliedGsParams;
@@ -157,7 +158,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private boolean isInText;
     private TextPositioning textPositioning;
 
-    public PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
+    PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
         super(new PdfCleanUpEventListener());
         this.document = document;
         this.filter = new PdfCleanUpFilter(cleanUpRegions);
@@ -198,7 +199,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         return (PdfCleanUpEventListener) eventListener;
     }
 
-    public PdfCanvas popCleanedCanvas() {
+    PdfCanvas popCleanedCanvas() {
         // If it is the last canvas, we finish to wrap it with Q
         if (canvasStack.size() == 1) {
             getCanvas().restoreState();
@@ -226,7 +227,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
-    protected static void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
+    static void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
         int index = 0;
 
         for (PdfObject obj : operands) {
@@ -239,7 +240,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
-    protected static Matrix operandsToMatrix(List<PdfObject> operands) {
+    static Matrix operandsToMatrix(List<PdfObject> operands) {
         float a = ((PdfNumber) operands.get(0)).floatValue();
         float b = ((PdfNumber) operands.get(1)).floatValue();
         float c = ((PdfNumber) operands.get(2)).floatValue();
@@ -328,7 +329,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if ("sh".equals(operator)) {
             PdfShading shading = PdfShading.makeShading(getResources().getResource(PdfName.Shading).getAsDictionary((PdfName) operands.get(0)));
             getCanvas().paintShading(shading);
-        } else if (!ignoredOperators.contains(operator)){
+        } else if (!ignoredOperators.contains(operator)) {
             writeOperands(getCanvas(), operands);
         }
     }
@@ -337,7 +338,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
         PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
-            PdfArray originalTJ = (PdfArray)operands.get(0);
+            PdfArray originalTJ = (PdfArray) operands.get(0);
             int i = 0; // text chunk index in original TJ
             PdfTextArray newTJ = new PdfTextArray();
             for (PdfObject e : originalTJ) {
@@ -586,7 +587,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private void writePath(Path path) {
         PdfCanvas canvas = getCanvas();
         for (Subpath subpath : path.getSubpaths()) {
-            canvas.moveTo((float)subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
+            canvas.moveTo((float) subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
 
             for (IShape segment : subpath.getSegments()) {
                 if (segment instanceof BezierCurve) {
@@ -602,7 +603,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 } else { // segment is Line
 
                     Point destination = segment.getBasePoints().get(1);
-                    canvas.lineTo((float)destination.getX(), (float) destination.getY());
+                    canvas.lineTo((float) destination.getX(), (float) destination.getY());
 
                 }
             }
@@ -667,12 +668,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         List<PdfObject> lastCtm = ctms.remove(ctms.size() - 1);
 
         float[] ctm = new float[6];
-        ctm[0] = ((PdfNumber)lastCtm.get(0)).floatValue();
-        ctm[1] = ((PdfNumber)lastCtm.get(1)).floatValue();
-        ctm[2] = ((PdfNumber)lastCtm.get(2)).floatValue();
-        ctm[3] = ((PdfNumber)lastCtm.get(3)).floatValue();
-        ctm[4] = ((PdfNumber)lastCtm.get(4)).floatValue();
-        ctm[5] = ((PdfNumber)lastCtm.get(5)).floatValue();
+        ctm[0] = ((PdfNumber) lastCtm.get(0)).floatValue();
+        ctm[1] = ((PdfNumber) lastCtm.get(1)).floatValue();
+        ctm[2] = ((PdfNumber) lastCtm.get(2)).floatValue();
+        ctm[3] = ((PdfNumber) lastCtm.get(3)).floatValue();
+        ctm[4] = ((PdfNumber) lastCtm.get(4)).floatValue();
+        ctm[5] = ((PdfNumber) lastCtm.get(5)).floatValue();
 
         return ctm;
     }
@@ -733,20 +734,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     /**
      * Single instance of this class represents not applied graphics state params of the single q/Q nesting level.
      * For example:
-     *
+     * <p>
      * 0 g
      * 1 0 0 1 25 50 cm
-     *
+     * <p>
      * q
-     *
+     * <p>
      * 5 w
      * /Gs1 gs
      * 13 g
-     *
+     * <p>
      * Q
-     *
+     * <p>
      * 1 0 0 RG
-     *
+     * <p>
      * Operators "0 g", "1 0 0 1 25 50 cm" and "1 0 0 RG" belong to the outer q/Q nesting level;
      * Operators "5 w", "/Gs1 gs", "13 g" belong to the inner q/Q nesting level.
      * Operators of every level of the q/Q nesting are stored in different instances of this class.

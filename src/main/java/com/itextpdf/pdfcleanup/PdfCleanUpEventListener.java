@@ -50,6 +50,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -74,7 +75,12 @@ public class PdfCleanUpEventListener implements IEventListener {
         }
     }
 
-    public List<TextRenderInfo> getEncounteredText() {
+    /**
+     * Get the last encountered TextRenderInfo objects, then clears the internal buffer
+     *
+     * @return the TextRenderInfo objects that were encountered when processing the last text rendering operation
+     */
+    List<TextRenderInfo> getEncounteredText() {
         if (content.size() == 0) {
             throw new PdfException(textDataExpected);
         }
@@ -92,7 +98,12 @@ public class PdfCleanUpEventListener implements IEventListener {
         return text;
     }
 
-    public ImageRenderInfo getEncounteredImage() {
+    /**
+     * Get the last encountered ImageRenderInfo, then clears the internal buffer
+     *
+     * @return the ImageRenderInfo object that was encountered when processing the last image rendering operation
+     */
+    ImageRenderInfo getEncounteredImage() {
         if (content.size() == 0) {
             throw new PdfException(imageDataExpected);
         }
@@ -105,7 +116,12 @@ public class PdfCleanUpEventListener implements IEventListener {
         return (ImageRenderInfo) eventData;
     }
 
-    public PathRenderInfo getEncounteredPath() {
+    /**
+     * Get the last encountered PathRenderInfo, then clears the internal buffer
+     *
+     * @return the PathRenderInfo object that was encountered when processing the last path rendering operation
+     */
+    PathRenderInfo getEncounteredPath() {
         if (content.size() == 0) {
             throw new PdfException(pathDataExpected);
         }
