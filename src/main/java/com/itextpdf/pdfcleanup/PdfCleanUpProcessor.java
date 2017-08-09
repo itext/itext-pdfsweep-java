@@ -45,7 +45,7 @@ package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.source.ByteUtils;
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Matrix;
