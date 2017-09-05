@@ -73,6 +73,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageInfo;
+import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.ImagingConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
@@ -84,6 +85,7 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -331,7 +333,7 @@ public class PdfCleanUpFilter {
         }
 
         try {
-            BufferedImage image = Imaging.getBufferedImage(imageBytes);
+            BufferedImage image = getBuffer(imageBytes);
             ImageInfo imageInfo = Imaging.getImageInfo(imageBytes);
             cleanImage(image, areasToBeCleaned);
 
@@ -349,6 +351,22 @@ public class PdfCleanUpFilter {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Reads the image bytes into a {@link BufferedImage}.
+     * Isolates and catches known Apache Commons Imaging bug for JPEG:
+     * https://issues.apache.org/jira/browse/IMAGING-97
+     *
+     * @param imageBytes       the image to be read, as a byte array
+     * @return a BufferedImage, independent of the reading strategy
+     */
+    private BufferedImage getBuffer(byte[] imageBytes) throws IOException {
+        try {
+            return Imaging.getBufferedImage(imageBytes);
+        } catch (ImageReadException ire) {
+            return ImageIO.read(new ByteArrayInputStream(imageBytes));
         }
     }
 
