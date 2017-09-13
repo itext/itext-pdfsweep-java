@@ -98,14 +98,18 @@ public class PdfCleanUpTool {
      * calculations with floating point numbers. All of them are translated
      * into fixed point numbers by multiplying by this coefficient. Vary it
      * to adjust the preciseness of the calculations.
+     * @deprecated
      */
-    static double floatMultiplier = Math.pow(10, 14);
+    @Deprecated
+    public static double floatMultiplier = Math.pow(10, 14);
 
     /**
      * Used as the criterion of a good approximation of rounded line joins
      * and line caps.
+     * @deprecated 
      */
-    static double arcTolerance = 0.0025;
+    @Deprecated
+    public static double arcTolerance = 0.0025;
 
     private PdfDocument pdfDocument;
 
