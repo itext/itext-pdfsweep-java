@@ -468,6 +468,19 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_38");
     }
 
+    @Test
+    public void cleanUpTest39() throws IOException, InterruptedException {
+        String input = inputPath + "corruptJpeg.pdf";
+        String output = outputPath + "corruptJpeg.pdf";
+        String cmp = inputPath + "cmp_corruptJpeg.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(100, 350, 100, 200), Color.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_39");
+    }
+
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
