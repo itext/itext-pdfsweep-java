@@ -43,16 +43,12 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.color.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.utils.CompareTool;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -63,7 +59,6 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -88,11 +83,11 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "page229_01.pdf";
         String cmp = inputPath + "cmp_page229_01.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1, new Rectangle(240.0f, 602.3f, 275.7f - 240.0f, 614.8f - 602.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(171.3f, 550.3f, 208.4f - 171.3f, 562.8f - 550.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(270.7f, 459.2f, 313.1f - 270.7f, 471.7f - 459.2f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(249.9f, 329.3f, 279.6f - 249.9f, 341.8f - 329.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(216.2f, 303.3f, 273.0f - 216.2f, 315.8f - 303.3f), Color.GRAY));
+                new PdfCleanUpLocation(1, new Rectangle(240.0f, 602.3f, 275.7f - 240.0f, 614.8f - 602.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(171.3f, 550.3f, 208.4f - 171.3f, 562.8f - 550.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(270.7f, 459.2f, 313.1f - 270.7f, 471.7f - 459.2f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(249.9f, 329.3f, 279.6f - 249.9f, 341.8f - 329.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(216.2f, 303.3f, 273.0f - 216.2f, 315.8f - 303.3f), ColorConstants.GRAY));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_01");
@@ -104,11 +99,11 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "page229-modified-Tc-Tw.pdf";
         String cmp = inputPath + "cmp_page229-modified-Tc-Tw.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1, new Rectangle(240.0f, 602.3f, 275.7f - 240.0f, 614.8f - 602.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(171.3f, 550.3f, 208.4f - 171.3f, 562.8f - 550.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(270.7f, 459.2f, 313.1f - 270.7f, 471.7f - 459.2f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(249.9f, 329.3f, 279.6f - 249.9f, 341.8f - 329.3f), Color.GRAY),
-                new PdfCleanUpLocation(1, new Rectangle(216.2f, 303.3f, 273.0f - 216.2f, 315.8f - 303.3f), Color.GRAY));
+                new PdfCleanUpLocation(1, new Rectangle(240.0f, 602.3f, 275.7f - 240.0f, 614.8f - 602.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(171.3f, 550.3f, 208.4f - 171.3f, 562.8f - 550.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(270.7f, 459.2f, 313.1f - 270.7f, 471.7f - 459.2f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(249.9f, 329.3f, 279.6f - 249.9f, 341.8f - 329.3f), ColorConstants.GRAY),
+                new PdfCleanUpLocation(1, new Rectangle(216.2f, 303.3f, 273.0f - 216.2f, 315.8f - 303.3f), ColorConstants.GRAY));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_02");
@@ -180,7 +175,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "simpleImmediate.pdf";
         String cmp = inputPath + "cmp_simpleImmediate.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_09");
     }
@@ -191,7 +186,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "simpleImmediate-tm.pdf";
         String cmp = inputPath + "cmp_simpleImmediate-tm.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_10");
     }
@@ -202,7 +197,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "multiUseIndirect.pdf";
         String cmp = inputPath + "cmp_multiUseIndirect.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 605f, 480f - 97f, 645f - 605f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 605f, 480f - 97f, 645f - 605f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_11");
     }
@@ -213,7 +208,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "multiUseImage.pdf";
         String cmp = inputPath + "cmp_multiUseImage.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_12");
     }
@@ -224,7 +219,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "smaskImage.pdf";
         String cmp = inputPath + "cmp_smaskImage.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_13");
     }
@@ -235,7 +230,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "rotatedImg.pdf";
         String cmp = inputPath + "cmp_rotatedImg.pdf";
 
-        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), Color.GRAY));
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_14");
     }
@@ -418,7 +413,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "lineArtsSimple.pdf";
         String cmp = inputPath + "cmp_lineArtsSimple.pdf";
 
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 80f, 460f, 65f), Color.GRAY)));
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 80f, 460f, 65f), ColorConstants.GRAY)));
         compareByContent(cmp, output, outputPath, "diff_35");
     }
 
@@ -436,7 +431,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "bigOne.pdf";
         String cmp = inputPath + "cmp_bigOne.pdf";
 
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f), Color.GRAY)));
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(300f, 370f, 215f, 270f), ColorConstants.GRAY)));
         compareByContent(cmp, output, outputPath, "diff_36");
     }
 
@@ -449,7 +444,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "helloHelvetica.pdf";
         String cmp = inputPath + "cmp_helloHelvetica.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 595f, 680f), Color.GRAY));
+                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 595f, 680f), ColorConstants.GRAY));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_37");
@@ -462,7 +457,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_helloHelvetica02.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 0f, 0f), Color.GRAY));
+                new PdfCleanUpLocation(1, new Rectangle(0f, 0f, 0f, 0f), ColorConstants.GRAY));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_38");
@@ -475,7 +470,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_corruptJpeg.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1, new Rectangle(100, 350, 100, 200), Color.ORANGE));
+                new PdfCleanUpLocation(1, new Rectangle(100, 350, 100, 200), ColorConstants.ORANGE));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_39");
