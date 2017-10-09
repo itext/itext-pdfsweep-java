@@ -53,17 +53,19 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.*;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.CharacterRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 import com.itextpdf.kernel.utils.CompareTool;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
-import com.itextpdf.pdfcleanup.autosweep.*;
-
-import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
-
+import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
+import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
+import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
+import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.IOException;
@@ -76,6 +78,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
 
 /**
  * @author Joris Schellekens
@@ -188,7 +192,7 @@ public class BigDocumentAutoCleanUpTest {
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
+        String errorMessage = cmpTool.compareVisually(output, cmp, targetDir, diffPrefix + "_");
 
         if (errorMessage != null) {
             Assert.fail(errorMessage);
