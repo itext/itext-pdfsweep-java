@@ -132,7 +132,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private PdfCleanUpFilter filter;
     private Stack<PdfCanvas> canvasStack;
 
-    private boolean removeIfPartial = true;
+    private boolean removeAnnotIfPartOverlap = true;
 
     /**
      * In {@code notAppliedGsParams} field not written graphics state params are stored.
@@ -181,28 +181,33 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         super.processPageContent(page);
     }
 
+    /**
+     * Process the annotations of a page.
+     * Default process behaviour is to remove the annotation if there is (partial) overlap with a redaction region
+     *
+     * @param page    the page to process
+     * @param regions a list of redaction regions
+     */
     public void processPageAnnotations(PdfPage page, List<Rectangle> regions) {
-        List<PdfAnnotation> toRemove = new ArrayList<PdfAnnotation>();
         //Iterate over annotations
         for (PdfAnnotation annot : page.getAnnotations()) {
             //Check against regions
             for (Rectangle region : regions) {
-                processAnnotation(annot, region, toRemove);
+                if (processAnnotation(annot, region)) {//Individual process methods will return true if the entire annotation needs to be removed
+                    page.removeAnnotation(annot);
+                }
             }
-        }
-        //remove any annotations that need to be removed
-        for (PdfAnnotation annot : toRemove) {
-            page.removeAnnotation(annot);
         }
     }
 
-    private void processAnnotation(PdfAnnotation annotation, Rectangle region, List<PdfAnnotation> toRemove) {
-        //TODO(Samuel, RND-366) add reference to later ticket that implements this configuration option
-        removeIfPartial = true;
-
+    private boolean processAnnotation(PdfAnnotation annotation, Rectangle region) {
+        //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1607,DEVSIX-1608,DEVSIX-1609)
+        removeAnnotIfPartOverlap = true;
+        boolean result = false;//Default to not remove;
         //Check if the field is a terminal form-field, by checking if the FT entry exists
-        if(annotation.getPdfObject().get(PdfName.FT) != null){
-            processAnnotationForm(annotation, region,toRemove);
+        if (annotation.getPdfObject().get(PdfName.FT) != null) {
+            result = processAnnotationForm(annotation, region);
+            return result;
         }
 
         PdfName annotationType = annotation.getPdfObject().getAsName(PdfName.Subtype);
@@ -210,106 +215,116 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         PdfArray quadPoints = annotation.getQuadPoints();
         //For text and some link annotations, check passed region against rectangle entry
         if (rect != null && annotationType.equals(PdfName.Text) || ((annotationType.equals(PdfName.Link) && useRectangleForLinkAnnotation(rect, quadPoints)))) {
-            processAnnotationRectangle(annotation, region, toRemove);
-            return;
+            result = processAnnotationRectangle(annotation, region);
+            return result;
         }
         //For line annotations, check against the /L array
         if (annotationType.equals(PdfName.Line)) {
-            processAnnotationLink(annotation, region, toRemove);
-            return;
+            result = processAnnotationLink(annotation, region);
+            return result;
         }
         //For highlight annotations, check against the quadpoints array
         if (annotationType.equals(PdfName.Highlight) || (annotationType.equals(PdfName.Link) && useRectangleForLinkAnnotation(rect, quadPoints))) {
-            processAnnotationQuadPoints(annotation, region, toRemove);
-            return;
+            result = processAnnotationQuadPoints(annotation, region);
+            return result;
         }
+        return result;
     }
 
-    private void processAnnotationRectangle(PdfAnnotation annotation, Rectangle region, List<PdfAnnotation> toRemove) {
+    private boolean processAnnotationRectangle(PdfAnnotation annotation, Rectangle region) {
+        boolean result = false;//Default to not remove
         PdfArray rectAsArray = annotation.getRectangle();
         if (rectAsArray != null) {
             Rectangle rect = rectAsArray.toRectangle();
             //3 possible situations: full overlap, partial overlap, no overlap
             if (region.overlaps(rect)) {
                 //full overlap
-                if (region.envelops(rect)) {
-                    toRemove.add(annotation);
-                    return;
+                if (region.contains(rect)) {
+                    result = true;
+                    return result;
                 }
                 //partial overlap
-                Rectangle intersectionRect = region.getIntersectionRectangle(rect);
+                Rectangle intersectionRect = region.getIntersection(rect);
                 if (intersectionRect != null) {
-                    if (removeIfPartial) {
-                        toRemove.add(annotation);
-                        return;
+                    if (removeAnnotIfPartOverlap) {
+                        result = true;
+                        return result;
                     } else {
-                        //TODO(Samuel, RND-366) Fill in relevant successor DEVSIX ticket nr here
+                        //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1609)
                     }
                 }
             }
             //no overlap, do nothing
         }
+        return result;
     }
 
-    private void processAnnotationLink(PdfAnnotation annotation, Rectangle region, List<PdfAnnotation> toRemove) {
+    private boolean processAnnotationLink(PdfAnnotation annotation, Rectangle region) {
+        boolean result = false;//Default to not remove;
         Rectangle rect = new Rectangle(annotation.getPdfObject().getAsArray(PdfName.L).toRectangle());
         if (region.overlaps(rect)) {
             //Full overlap
-            if (region.envelops(rect)) {
-                toRemove.add(annotation);
-                return;
+            if (region.contains(rect)) {
+                result = true;
+                return result;
             }
             //partial overlap
-            Rectangle intersectionRect = region.getIntersectionRectangle(rect);
+            Rectangle intersectionRect = region.getIntersection(rect);
             if (intersectionRect != null) {
-                if (removeIfPartial) {
-                    toRemove.add(annotation);
-                    return;
+                if (removeAnnotIfPartOverlap) {
+                    result = true;
+                    return result;
                 } else {
-                    //TODO(Samuel, RND-366) Fill in relevant successor DEVSIX ticket nr here
+                    //TODO(DEVSIX-1607)
                 }
             }
         }
         //No overlap, do nothing
+        return result;
     }
 
-    private void processAnnotationQuadPoints(PdfAnnotation annotation, Rectangle region, List<PdfAnnotation> toRemove) {
+    private boolean processAnnotationQuadPoints(PdfAnnotation annotation, Rectangle region) {
         //Create rectangles from quadpoints array
+        boolean result = false;//Default to not remove;
         PdfArray quadPoints = annotation.getQuadPoints();
-        List<Rectangle> boundingRectangles = getBoundingRectanglesFromQuadPoints(quadPoints);
+        List<Rectangle> boundingRectangles = Rectangle.createBoundingRectanglesFromQuadPoint(quadPoints);
         if (boundingRectangles != null) {
             for (Rectangle boundingRect : boundingRectangles) {
                 //3 possible situations: full overlap, partial overlap, no overlap
                 if (region.overlaps(boundingRect)) {
                     //full overlap
-                    if (region.envelops(boundingRect)) {
-                        toRemove.add(annotation);
-                        return;
+                    if (region.contains(boundingRect)) {
+                        result = true;
+                        return result;
                     }
                     //partial overlap
-                    Rectangle intersectionRect = region.getIntersectionRectangle(boundingRect);
+                    Rectangle intersectionRect = region.getIntersection(boundingRect);
                     if (intersectionRect != null) {
-                        if (removeIfPartial) {
-                            toRemove.add(annotation);
-                            return;
+                        if (removeAnnotIfPartOverlap) {
+                            result = true;
+                            return result;
                         } else {
-                            //TODO(Samuel, RND-366) Fill in relevant successor DEVSIX ticket nr here
+                            //TODO(DEVSIX-1605,DEVSIX-1608)
                         }
                     }
                 }
                 //no overlap, do nothing
             }
         }
+        return result;
     }
 
-    private void processAnnotationForm(PdfAnnotation annotation, Rectangle region, List<PdfAnnotation> toRemove) {
+    private boolean processAnnotationForm(PdfAnnotation annotation, Rectangle region) {
+        boolean result = false;//Default to not remove;
         //Forms with no kids can be processed by their rectangle
         PdfArray rectAsArray = annotation.getRectangle();
         if (rectAsArray != null) {
-            processAnnotationRectangle(annotation,region,toRemove);
-            return;
+            result = processAnnotationRectangle(annotation, region);
+            return result;
         }
-        //Currently, a radiobutton field will get its kids processed (because they appear on a page), but will not be directly touched/
+        //TODO{DEVSIX-1609) Partial redaction
+        //Currently, a radiobutton field will get its kids processed (because they appear on a page), but will not be directly touched
+        return result;
     }
 
     /**
@@ -325,43 +340,15 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (quadPoints == null) {
             return true;
         }
-        Boolean noPointsOutside = true;
+        boolean noPointsOutside = true;
         for (int i = 0; i < quadPoints.size(); i += 8) {
             for (int j = 0; j < 8; j += 2) {
                 float x = quadPoints.getAsNumber(i + j).floatValue();
                 float y = quadPoints.getAsNumber(i + j + 1).floatValue();
-                noPointsOutside = noPointsOutside && rect.envelops(new Rectangle(x, y, 0, 0));
+                noPointsOutside = noPointsOutside && rect.contains(new Rectangle(x, y, 0, 0));
             }
         }
         return !noPointsOutside;
-    }
-
-    private List<Rectangle> getBoundingRectanglesFromQuadPoints(PdfArray quadPoints) {
-        if (quadPoints == null) {
-            return null;
-        }
-        List<Rectangle> rectangles = new ArrayList<Rectangle>();
-        for (int i = 0; i < quadPoints.size(); i += 8) {
-            float llx = Float.MAX_VALUE;
-            float lly = Float.MAX_VALUE;
-            float urx = Float.MIN_VALUE;
-            float ury = Float.MIN_VALUE;
-            for (int j = 0; j < 8; j += 2) {
-                float x = quadPoints.getAsNumber(i + j).floatValue();
-                float y = quadPoints.getAsNumber(i + j + 1).floatValue();
-
-                if (x < llx) llx = x;
-                if (x > urx) urx = x;
-                if (y < lly) lly = y;
-                if (y > ury) ury = y;
-            }
-            rectangles.add(new Rectangle(llx, // QuadPoints in redact annotations have "Z" order
-                    lly,
-                    urx - llx,
-                    ury - lly));
-        }
-
-        return rectangles;
     }
 
     /**

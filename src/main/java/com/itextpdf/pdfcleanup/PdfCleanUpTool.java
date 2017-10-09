@@ -284,7 +284,6 @@ public class PdfCleanUpTool {
         PdfPage page = pdfDocument.getPage(pageNumber);
         PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
         cleanUpProcessor.processPageContent(page);
-        Boolean processAnnotations = true;
         if(processAnnotations){
             cleanUpProcessor.processPageAnnotations(page,regions);
         }
