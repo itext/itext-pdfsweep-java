@@ -57,6 +57,8 @@ import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
 import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
 import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
@@ -203,64 +205,66 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private boolean processAnnotation(PdfAnnotation annotation, Rectangle region) {
         //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1607,DEVSIX-1608,DEVSIX-1609)
         removeAnnotIfPartOverlap = true;
-        boolean result = false;//Default to not remove;
         //Check if the field is a terminal form-field, by checking if the FT entry exists
         if (annotation.getPdfObject().get(PdfName.FT) != null) {
-            result = processAnnotationForm(annotation, region);
-            return result;
+            return processAnnotationForm(annotation, region);
         }
 
         PdfName annotationType = annotation.getPdfObject().getAsName(PdfName.Subtype);
-        Rectangle rect = new Rectangle(annotation.getRectangle().toRectangle());
-        PdfArray quadPoints = annotation.getQuadPoints();
+        PdfArray rectAsArray = annotation.getRectangle();
+        Rectangle rect = null;
+        if (rectAsArray != null) {
+            rect = rectAsArray.toRectangle();
+        }
         //For text and some link annotations, check passed region against rectangle entry
-        if (rect != null && annotationType.equals(PdfName.Text) || ((annotationType.equals(PdfName.Link) && useRectangleForLinkAnnotation(rect, quadPoints)))) {
-            result = processAnnotationRectangle(annotation, region);
-            return result;
+        if (PdfName.Link.equals(annotationType)) {
+            PdfArray quadPoints = ((PdfLinkAnnotation) annotation).getQuadPoints();
+            if (rect != null && useRectangleForLinkAnnotation(rect, quadPoints)) {
+                return processAnnotationRectangle(annotation, region, rect);
+            } else {
+                return processAnnotationQuadPoints(annotation, region, quadPoints);
+            }
+        } else if (PdfName.Text.equals(annotationType)) {
+            return rect != null && processAnnotationRectangle(annotation, region, rect);
+
+        } else if (PdfName.Line.equals(annotationType)) {
+            //For line annotations, check against the /L array
+            return processAnnotationLine(annotation, region);
+        } else if (annotationType.equals(PdfName.Highlight)) {
+            PdfArray quadPoints = ((PdfTextMarkupAnnotation) annotation).getQuadPoints();
+            //For highlight annotations, check against the quadpoints array
+            return processAnnotationQuadPoints(annotation, region, quadPoints);
         }
-        //For line annotations, check against the /L array
-        if (annotationType.equals(PdfName.Line)) {
-            result = processAnnotationLink(annotation, region);
-            return result;
-        }
-        //For highlight annotations, check against the quadpoints array
-        if (annotationType.equals(PdfName.Highlight) || (annotationType.equals(PdfName.Link) && useRectangleForLinkAnnotation(rect, quadPoints))) {
-            result = processAnnotationQuadPoints(annotation, region);
-            return result;
-        }
-        return result;
+        return false; //Default to not remove
     }
 
-    private boolean processAnnotationRectangle(PdfAnnotation annotation, Rectangle region) {
+    private boolean processAnnotationRectangle(PdfAnnotation annotation, Rectangle region, Rectangle annotationRect) {
         boolean result = false;//Default to not remove
-        PdfArray rectAsArray = annotation.getRectangle();
-        if (rectAsArray != null) {
-            Rectangle rect = rectAsArray.toRectangle();
-            //3 possible situations: full overlap, partial overlap, no overlap
-            if (region.overlaps(rect)) {
-                //full overlap
-                if (region.contains(rect)) {
+        //3 possible situations: full overlap, partial overlap, no overlap
+        if (region.overlaps(annotationRect)) {
+            //full overlap
+            if (region.contains(annotationRect)) {
+                result = true;
+                return result;
+            }
+            //partial overlap
+            Rectangle intersectionRect = region.getIntersection(annotationRect);
+            if (intersectionRect != null) {
+                if (removeAnnotIfPartOverlap) {
                     result = true;
                     return result;
-                }
-                //partial overlap
-                Rectangle intersectionRect = region.getIntersection(rect);
-                if (intersectionRect != null) {
-                    if (removeAnnotIfPartOverlap) {
-                        result = true;
-                        return result;
-                    } else {
-                        //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1609)
-                    }
+                } else {
+                    //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1609)
                 }
             }
-            //no overlap, do nothing
         }
+        //No overlap, do nothing
         return result;
     }
 
-    private boolean processAnnotationLink(PdfAnnotation annotation, Rectangle region) {
+    private boolean processAnnotationLine(PdfAnnotation annotation, Rectangle region) {
         boolean result = false;//Default to not remove;
+        //TODO(DEVSIX-1607) Do we need to check Line entry on existence as we do with rect?
         Rectangle rect = new Rectangle(annotation.getPdfObject().getAsArray(PdfName.L).toRectangle());
         if (region.overlaps(rect)) {
             //Full overlap
@@ -283,10 +287,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         return result;
     }
 
-    private boolean processAnnotationQuadPoints(PdfAnnotation annotation, Rectangle region) {
+    private boolean processAnnotationQuadPoints(PdfAnnotation annotation, Rectangle region, PdfArray quadPoints) {
         //Create rectangles from quadpoints array
         boolean result = false;//Default to not remove;
-        PdfArray quadPoints = annotation.getQuadPoints();
+        //TODO(DEVSIX-1605, DEVSIX-1608) consider possibility of missing quadPoints
         List<Rectangle> boundingRectangles = Rectangle.createBoundingRectanglesFromQuadPoint(quadPoints);
         if (boundingRectangles != null) {
             for (Rectangle boundingRect : boundingRectangles) {
@@ -319,7 +323,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         //Forms with no kids can be processed by their rectangle
         PdfArray rectAsArray = annotation.getRectangle();
         if (rectAsArray != null) {
-            result = processAnnotationRectangle(annotation, region);
+            result = processAnnotationRectangle(annotation, region, rectAsArray.toRectangle());
             return result;
         }
         //TODO{DEVSIX-1609) Partial redaction
