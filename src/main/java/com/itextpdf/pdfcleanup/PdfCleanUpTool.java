@@ -98,16 +98,42 @@ public class PdfCleanUpTool {
      * calculations with floating point numbers. All of them are translated
      * into fixed point numbers by multiplying by this coefficient. Vary it
      * to adjust the preciseness of the calculations.
+     * @deprecated
      */
-    static double floatMultiplier = Math.pow(10, 14);
+    @Deprecated
+    public static double floatMultiplier = Math.pow(10, 14);
 
     /**
      * Used as the criterion of a good approximation of rounded line joins
      * and line caps.
+     * @deprecated 
      */
-    static double arcTolerance = 0.0025;
+    @Deprecated
+    public static double arcTolerance = 0.0025;
 
     private PdfDocument pdfDocument;
+
+    private boolean processAnnotations;
+
+    /**
+     * Check if page annotations will be processed
+     * Default: True
+     * @return True if annotations will be processed by the PdfCleanUpTool
+     */
+    public boolean isProcessAnnotations() {
+        return processAnnotations;
+    }
+
+    /**
+     * Set if page annotations will be processed
+     * Default processing behaviour: remove annotation if there is overlap with a redaction region
+     * @param processAnnotations
+     */
+    public void setProcessAnnotations(boolean processAnnotations) {
+        this.processAnnotations = processAnnotations;
+    }
+
+
 
     /**
      * Key - page number, value - list of locations related to the page.
@@ -194,6 +220,7 @@ public class PdfCleanUpTool {
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
         }
+        processAnnotations = true;
     }
 
     /**
@@ -257,6 +284,9 @@ public class PdfCleanUpTool {
         PdfPage page = pdfDocument.getPage(pageNumber);
         PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
         cleanUpProcessor.processPageContent(page);
+        if(processAnnotations){
+            cleanUpProcessor.processPageAnnotations(page,regions);
+        }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
         page.put(PdfName.Contents, pageCleanedContents.getContentStream());
@@ -364,7 +394,7 @@ public class PdfCleanUpTool {
             float y = quadPoints.getAsNumber(i + 5).floatValue();
             float width = quadPoints.getAsNumber(i + 2).floatValue() - x;
             float height = quadPoints.getAsNumber(i + 3).floatValue() - y;
-            rectangles.add(new Rectangle(x, // QuadPoints have "Z" order
+            rectangles.add(new Rectangle(x, // QuadPoints in redact annotations have "Z" order
                     y,
                     width,
                     height));
@@ -553,4 +583,5 @@ public class PdfCleanUpTool {
         }
         return color;
     }
+
 }
