@@ -55,14 +55,17 @@ import java.lang.reflect.Method;
 import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Category(IntegrationTest.class)
 public class CleanUpAnnotationTest extends ExtendedITextTest {
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpAnnotationTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpAnnotationTest/";
