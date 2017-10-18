@@ -42,7 +42,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -79,7 +79,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_cleanAnnotation_full01.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
-        cleanUpLocations.add(new PdfCleanUpLocation(1, PageSize.A4, Color.WHITE));
+        cleanUpLocations.add(new PdfCleanUpLocation(1, PageSize.A4, ColorConstants.WHITE));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_Annotation_full");
@@ -93,7 +93,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation linkLoc = new PdfCleanUpLocation(1,new Rectangle(235,740,30,16), Color.BLUE);
+        PdfCleanUpLocation linkLoc = new PdfCleanUpLocation(1,new Rectangle(235,740,30,16), ColorConstants.BLUE);
         cleanUpLocations.add(linkLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -109,7 +109,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation textLoc = new PdfCleanUpLocation(1,new Rectangle(150,650,0,0), Color.RED);
+        PdfCleanUpLocation textLoc = new PdfCleanUpLocation(1,new Rectangle(150,650,0,0), ColorConstants.RED);
         cleanUpLocations.add(textLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -124,7 +124,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation lineLoc = new PdfCleanUpLocation(1,new Rectangle(20,20,555,0), Color.GREEN);
+        PdfCleanUpLocation lineLoc = new PdfCleanUpLocation(1,new Rectangle(20,20,555,0), ColorConstants.GREEN);
         cleanUpLocations.add(lineLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -139,7 +139,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_cleanAnnotation_highlight01.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(105,500,70,10), Color.BLACK);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(105,500,70,10), ColorConstants.BLACK);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -153,7 +153,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_formAnnotation01.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,500,170), Color.YELLOW);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,500,170), ColorConstants.YELLOW);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -166,7 +166,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_formAnnotation02.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,300,100), Color.YELLOW);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,300,100), ColorConstants.YELLOW);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);

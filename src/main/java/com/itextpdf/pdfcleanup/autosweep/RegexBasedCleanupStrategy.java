@@ -43,6 +43,7 @@
 package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 
@@ -54,7 +55,7 @@ import java.util.regex.Pattern;
 public class RegexBasedCleanupStrategy extends RegexBasedLocationExtractionStrategy implements ICleanupStrategy {
 
     private Pattern pattern;
-    private Color redactionColor = Color.BLACK;
+    private Color redactionColor = ColorConstants.BLACK;
 
     public RegexBasedCleanupStrategy(String regex) {
         super(regex);
