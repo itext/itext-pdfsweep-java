@@ -82,10 +82,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Get all {@code PdfCleanupLocation} objects from a given {@code PdfPage}
+     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfPage}
      *
-     * @param page the {@code PdfPage} to be processed
-     * @return
+     * @param page the {@link PdfPage} to be processed
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfPage page) {
         // get document
@@ -113,10 +112,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Get all {@code PdfCleanupLocation} objects from a given {@code PdfDocument}
+     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfDocument}
      *
-     * @param doc the {@code PdfDocument} to be processed
-     * @return
+     * @param doc the {@link PdfDocument} to be processed
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfDocument doc) {
         PdfDocumentContentParser parser = new PdfDocumentContentParser(doc);
@@ -147,9 +145,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Highlight areas of interest in a given {@code PdfDocument}
+     * Highlight areas of interest in a given {@link PdfDocument}
      *
-     * @param pdfDocument the {@code PdfDocument} to be highlighted
+     * @param pdfDocument the {@link PdfDocument} to be highlighted
      */
     public void highlight(PdfDocument pdfDocument) {
         for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
@@ -157,9 +155,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Highlight areas of interest in a given {@code PdfPage}
+     * Highlight areas of interest in a given {@link PdfPage}
      *
-     * @param pdfPage the {@code PdfPage} to be highlighted
+     * @param pdfPage the {@link PdfPage} to be highlighted
      */
     public void highlight(PdfPage pdfPage) {
         List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
@@ -172,9 +170,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Perform cleanup of areas of interest on a given {@code PdfDocument}
+     * Perform cleanup of areas of interest on a given {@link PdfDocument}
      *
-     * @param pdfDocument the {@code PdfDocument} to be redacted
+     * @param pdfDocument the {@link PdfDocument} to be redacted
      * @throws IOException
      */
     public void cleanUp(PdfDocument pdfDocument) throws IOException {
@@ -186,9 +184,9 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Perform cleanup of areas of interest on a given {@code PdfPage}
+     * Perform cleanup of areas of interest on a given {@link PdfPage}
      *
-     * @param pdfPage the {@code PdfPage} to be redacted
+     * @param pdfPage the {@link PdfPage} to be redacted
      * @throws IOException
      */
     public void cleanUp(PdfPage pdfPage) throws IOException {
@@ -200,7 +198,7 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Perform tentative cleanup of areas of interest on a given {@Code PdfDocument}
+     * Perform tentative cleanup of areas of interest on a given {@link PdfDocument}
      * This method will add all redaction annotations to the given document, allowing
      * the end-user to choose which redactions to keep or delete.
      *
@@ -212,7 +210,7 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Perform tentative cleanup of areas of interest on a given {@Code PdfPage}
+     * Perform tentative cleanup of areas of interest on a given {@link PdfPage}
      * This method will add all redaction annotations to the given page, allowing
      * the end-user to choose which redactions to keep or delete.
      *

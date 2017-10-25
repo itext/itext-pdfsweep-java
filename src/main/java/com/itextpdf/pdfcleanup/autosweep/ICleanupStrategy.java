@@ -47,15 +47,13 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrateg
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 
 /**
- * This class represents a generic cleanup strategy to be used with {@code PdfAutoSweep}
+ * This class represents a generic cleanup strategy to be used with {@link PdfAutoSweep}
  * ICleanupStrategy must implement Cloneable to ensure a strategy can be reset after having handled a page.
  */
 public interface ICleanupStrategy extends ILocationExtractionStrategy {
 
     /**
      * Get the color in which redaction is to take place
-     *
-     * @return
      */
     Color getRedactionColor(IPdfTextLocation location);
 
