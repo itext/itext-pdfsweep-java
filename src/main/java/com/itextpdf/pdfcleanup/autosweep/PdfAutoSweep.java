@@ -85,6 +85,7 @@ public class PdfAutoSweep {
      * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfPage}
      *
      * @param page the {@link PdfPage} to be processed
+     * @return a List of {@link PdfCleanUpLocation} objects
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfPage page) {
         // get document
@@ -115,6 +116,7 @@ public class PdfAutoSweep {
      * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfDocument}
      *
      * @param doc the {@link PdfDocument} to be processed
+     * @return a List of {@link PdfCleanUpLocation} objects
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfDocument doc) {
         PdfDocumentContentParser parser = new PdfDocumentContentParser(doc);
@@ -173,7 +175,7 @@ public class PdfAutoSweep {
      * Perform cleanup of areas of interest on a given {@link PdfDocument}
      *
      * @param pdfDocument the {@link PdfDocument} to be redacted
-     * @throws IOException
+     * @throws IOException an {@link IOException}
      */
     public void cleanUp(PdfDocument pdfDocument) throws IOException {
         List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfDocument);
@@ -187,7 +189,7 @@ public class PdfAutoSweep {
      * Perform cleanup of areas of interest on a given {@link PdfPage}
      *
      * @param pdfPage the {@link PdfPage} to be redacted
-     * @throws IOException
+     * @throws IOException an {@link IOException}
      */
     public void cleanUp(PdfPage pdfPage) throws IOException {
         List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
@@ -202,7 +204,7 @@ public class PdfAutoSweep {
      * This method will add all redaction annotations to the given document, allowing
      * the end-user to choose which redactions to keep or delete.
      *
-     * @param pdfDocument
+     * @param pdfDocument the document to clean up
      */
     public void tentativeCleanUp(PdfDocument pdfDocument) {
         for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
@@ -214,7 +216,7 @@ public class PdfAutoSweep {
      * This method will add all redaction annotations to the given page, allowing
      * the end-user to choose which redactions to keep or delete.
      *
-     * @param pdfPage
+     * @param pdfPage the page to clean up
      */
     public void tentativeCleanUp(PdfPage pdfPage) {
         List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);

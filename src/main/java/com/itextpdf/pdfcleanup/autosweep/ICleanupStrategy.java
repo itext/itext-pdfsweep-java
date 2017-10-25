@@ -54,6 +54,9 @@ public interface ICleanupStrategy extends ILocationExtractionStrategy {
 
     /**
      * Get the color in which redaction is to take place
+     *
+     * @param location where to get the redaction color from
+     * @return a {@link Color}
      */
     Color getRedactionColor(IPdfTextLocation location);
 

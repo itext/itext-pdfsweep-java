@@ -106,7 +106,7 @@ public class PdfCleanUpTool {
     /**
      * Used as the criterion of a good approximation of rounded line joins
      * and line caps.
-     * @deprecated 
+     * @deprecated
      */
     @Deprecated
     public static double arcTolerance = 0.0025;
@@ -127,7 +127,7 @@ public class PdfCleanUpTool {
     /**
      * Set if page annotations will be processed
      * Default processing behaviour: remove annotation if there is overlap with a redaction region
-     * @param processAnnotations
+     * @param processAnnotations if page annotations will be processed
      */
     public void setProcessAnnotations(boolean processAnnotations) {
         this.processAnnotations = processAnnotations;
