@@ -42,11 +42,11 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,6 +66,7 @@ public class LineDashPattern {
 
     /**
      * Creates new {@link LineDashPattern} object.
+     *
      * @param dashArray The dash array. See {@link #getDashArray()}
      * @param dashPhase The dash phase. See {@link #getDashPhase()}
      */
@@ -77,7 +78,7 @@ public class LineDashPattern {
 
     /**
      * Getter for the dash array.
-     *
+     * <p>
      * The dash array’s elements is number that specify the lengths of
      * alternating dashes and gaps; the numbers are nonnegative. The
      * elements are expressed in user space units.
@@ -90,6 +91,7 @@ public class LineDashPattern {
 
     /**
      * Setter for the dash array. See {@link #getDashArray()}
+     *
      * @param dashArray New dash array.
      */
     public void setDashArray(PdfArray dashArray) {
@@ -98,7 +100,7 @@ public class LineDashPattern {
 
     /**
      * Getter for the dash phase.
-     *
+     * <p>
      * The dash phase shall specify the distance into the dash pattern at which
      * to start the dash. The elements are expressed in user space units.
      *
@@ -110,6 +112,7 @@ public class LineDashPattern {
 
     /**
      * Setter for the dash phase. See {@link #getDashArray()}
+     *
      * @param dashPhase New dash phase.
      */
     public void setDashPhase(float dashPhase) {
@@ -118,9 +121,10 @@ public class LineDashPattern {
 
     /**
      * Calculates and returns the next element which is either gap or dash.
+     *
      * @return The next dash array's element.
      */
-    public DashArrayElem next() {
+    private DashArrayElem next() {
         DashArrayElem ret = currentElem;
 
         if (dashArray.size() > 0) {
@@ -136,7 +140,7 @@ public class LineDashPattern {
      * Resets the dash array so that the {@link #next()} method will start
      * from the beginning of the dash array.
      */
-    public void reset() {
+    private void reset() {
         currentIndex = 0;
         elemOrdinalNumber = 1;
         initFirst(dashPhase);
@@ -145,8 +149,10 @@ public class LineDashPattern {
     /**
      * Checks whether the dashed pattern is solid or not. It's solid when the
      * size of a dash array is even and sum of all the units off in the array
-     * is 0.<br/>
+     * is 0.
      * For example: [3 0 4 0 5 0 6 0] (sum is 0), [3 0 4 0 5 1] (sum is 1).
+     *
+     * @return is the dashed pattern solid or not
      */
     public boolean isSolid() {
         if (dashArray.size() % 2 != 0) {
@@ -181,37 +187,59 @@ public class LineDashPattern {
         }
     }
 
+    /**
+     * Return whether or not a given number is even
+     *
+     * @param num input number
+     * @return true if the input number is even, false otherwise
+     */
     private boolean isEven(int num) {
         return (num % 2) == 0;
     }
 
+    /**
+     * Class representing a single element of a dash array
+     */
     public class DashArrayElem {
 
         private float val;
         private boolean isGap;
 
-        public DashArrayElem(float val, boolean isGap) {
+        /**
+         * Construct a new DashArrayElem object
+         *
+         * @param val   the length of the dash array element
+         * @param isGap whether this element indicates a gap, or a stroke
+         */
+        DashArrayElem(float val, boolean isGap) {
             this.val = val;
             this.isGap = isGap;
         }
 
-        public float getVal() {
+        float getVal() {
             return val;
         }
 
-        public void setVal(float val) {
+        void setVal(float val) {
             this.val = val;
         }
 
-        public boolean isGap() {
+        boolean isGap() {
             return isGap;
         }
 
-        public void setGap(boolean isGap) {
+        void setGap(boolean isGap) {
             this.isGap = isGap;
         }
     }
 
+    /**
+     * Apply a LineDashPattern along a Path
+     *
+     * @param path            input path
+     * @param lineDashPattern input LineDashPattern
+     * @return a dashed Path
+     */
     public static Path applyDashPattern(Path path, LineDashPattern lineDashPattern) {
         Set<Integer> modifiedSubpaths = new HashSet<>(path.replaceCloseWithLine());
         Path dashedPath = new Path();
@@ -269,17 +297,37 @@ public class LineDashPattern {
                 segStart.getY() + dist * unitVector.getY());
     }
 
+    /**
+     * Returns the componentwise difference between two vectors
+     *
+     * @param minuend    first vector
+     * @param subtrahend second vector
+     * @return first vector .- second vector
+     */
     private static Point componentwiseDiff(Point minuend, Point subtrahend) {
         return new Point(minuend.getX() - subtrahend.getX(),
                 minuend.getY() - subtrahend.getY());
     }
 
+    /**
+     * Construct a unit vector from a given vector
+     *
+     * @param vector input vector
+     * @return a vector of length 1, with the same orientation as the original vector
+     */
     private static Point getUnitVector(Point vector) {
         double vectorLength = getVectorEuclideanNorm(vector);
         return new Point(vector.getX() / vectorLength,
                 vector.getY() / vectorLength);
     }
 
+    /**
+     * Returns the Euclidean vector norm.
+     * This is the Euclidean distance between the tip of the vector and the origin.
+     *
+     * @param vector input vector
+     * @return
+     */
     private static double getVectorEuclideanNorm(Point vector) {
         return vector.distance(0, 0);
     }
@@ -301,6 +349,14 @@ public class LineDashPattern {
         return remainingDist;
     }
 
+    /**
+     * Returns whether a given point lies on a line-segment specified by start and end point
+     *
+     * @param segStart start of the line segment
+     * @param segEnd   end of the line segment
+     * @param point    query point
+     * @return
+     */
     private static boolean liesOnSegment(Point segStart, Point segEnd, Point point) {
         return point.getX() >= Math.min(segStart.getX(), segEnd.getX()) &&
                 point.getX() <= Math.max(segStart.getX(), segEnd.getX()) &&

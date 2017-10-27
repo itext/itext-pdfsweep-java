@@ -98,16 +98,42 @@ public class PdfCleanUpTool {
      * calculations with floating point numbers. All of them are translated
      * into fixed point numbers by multiplying by this coefficient. Vary it
      * to adjust the preciseness of the calculations.
+     * @deprecated
      */
+    @Deprecated
     public static double floatMultiplier = Math.pow(10, 14);
 
     /**
      * Used as the criterion of a good approximation of rounded line joins
      * and line caps.
+     * @deprecated
      */
+    @Deprecated
     public static double arcTolerance = 0.0025;
 
     private PdfDocument pdfDocument;
+
+    private boolean processAnnotations;
+
+    /**
+     * Check if page annotations will be processed
+     * Default: True
+     * @return True if annotations will be processed by the PdfCleanUpTool
+     */
+    public boolean isProcessAnnotations() {
+        return processAnnotations;
+    }
+
+    /**
+     * Set if page annotations will be processed
+     * Default processing behaviour: remove annotation if there is overlap with a redaction region
+     * @param processAnnotations if page annotations will be processed
+     */
+    public void setProcessAnnotations(boolean processAnnotations) {
+        this.processAnnotations = processAnnotations;
+    }
+
+
 
     /**
      * Key - page number, value - list of locations related to the page.
@@ -194,6 +220,7 @@ public class PdfCleanUpTool {
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
         }
+        processAnnotations = true;
     }
 
     /**
@@ -225,6 +252,8 @@ public class PdfCleanUpTool {
     /**
      * Cleans the document by erasing all the areas which are either provided or
      * extracted from redaction annotations.
+     *
+     * @throws IOException IOException
      */
     public void cleanUp() throws IOException {
         for (Map.Entry<Integer, List<PdfCleanUpLocation>> entry : pdfCleanUpLocations.entrySet()) {
@@ -236,6 +265,12 @@ public class PdfCleanUpTool {
         }
     }
 
+    /**
+     * Cleans a page from the document by erasing all the areas which are provided or
+     *
+     * @param pageNumber       the page to be cleaned up
+     * @param cleanUpLocations the locations to be cleaned up
+     */
     private void cleanUpPage(int pageNumber, List<PdfCleanUpLocation> cleanUpLocations) {
         if (cleanUpLocations.size() == 0) {
             return;
@@ -249,6 +284,9 @@ public class PdfCleanUpTool {
         PdfPage page = pdfDocument.getPage(pageNumber);
         PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
         cleanUpProcessor.processPageContent(page);
+        if(processAnnotations){
+            cleanUpProcessor.processPageAnnotations(page,regions);
+        }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
         page.put(PdfName.Contents, pageCleanedContents.getContentStream());
@@ -257,6 +295,12 @@ public class PdfCleanUpTool {
         colorCleanedLocations(pageCleanedContents, cleanUpLocations);
     }
 
+    /**
+     * Draws colored rectangles on the PdfCanvas corresponding to the PdfCleanUpLocation objects
+     *
+     * @param canvas           the PdfCanvas on which to draw
+     * @param cleanUpLocations the PdfCleanUpLocations
+     */
     private void colorCleanedLocations(PdfCanvas canvas, List<PdfCleanUpLocation> cleanUpLocations) {
         for (PdfCleanUpLocation location : cleanUpLocations) {
             if (location.getCleanUpColor() != null) {
@@ -265,6 +309,12 @@ public class PdfCleanUpTool {
         }
     }
 
+    /**
+     * Draws a colored rectangle on the PdfCanvas correponding to a PdfCleanUpLocation
+     *
+     * @param canvas   the PdfCanvas on which to draw
+     * @param location the PdfCleanUpLocation
+     */
     private void addColoredRectangle(PdfCanvas canvas, PdfCleanUpLocation location) {
         if (pdfDocument.isTagged()) {
             canvas.openTag(new CanvasArtifact());
@@ -330,6 +380,12 @@ public class PdfCleanUpTool {
         }
     }
 
+    /**
+     * Convert a PdfArray of floats into a List of Rectangle objects
+     *
+     * @param quadPoints input PdfArray
+     * @return
+     */
     private List<Rectangle> translateQuadPointsToRectangles(PdfArray quadPoints) {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
 
@@ -338,7 +394,7 @@ public class PdfCleanUpTool {
             float y = quadPoints.getAsNumber(i + 5).floatValue();
             float width = quadPoints.getAsNumber(i + 2).floatValue() - x;
             float height = quadPoints.getAsNumber(i + 3).floatValue() - y;
-            rectangles.add(new Rectangle(x, // QuadPoints have "Z" order
+            rectangles.add(new Rectangle(x, // QuadPoints in redact annotations have "Z" order
                     y,
                     width,
                     height));
@@ -347,6 +403,12 @@ public class PdfCleanUpTool {
         return rectangles;
     }
 
+    /**
+     * Remove the redaction annotations
+     * This method is called after the annotations are processed.
+     *
+     * @throws IOException
+     */
     private void removeRedactAnnots() throws IOException {
         for (PdfRedactAnnotation annotation : redactAnnotations.keySet()) {
             PdfPage page = annotation.getPage();
@@ -521,4 +583,5 @@ public class PdfCleanUpTool {
         }
         return color;
     }
+
 }

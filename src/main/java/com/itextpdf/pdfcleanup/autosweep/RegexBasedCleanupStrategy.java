@@ -40,64 +40,43 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup;
+package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
+
+import java.util.regex.Pattern;
 
 /**
- * Defines the region to be erased in a PDF document.
- *
+ * This class represents a regular expression based cleanup strategy
  */
-public class PdfCleanUpLocation {
-    private int page;
-    private Rectangle region;
-    private Color cleanUpColor;
+public class RegexBasedCleanupStrategy extends RegexBasedLocationExtractionStrategy implements ICleanupStrategy {
 
-    /**
-     * Constructs a {@link PdfCleanUpLocation} object.
-     *
-     * @param page   specifies the number of the page which the region belongs to.
-     * @param region represents the boundaries of the area to be erased.
-     */
-    public PdfCleanUpLocation(int page, Rectangle region) {
-        this.page = page;
-        this.region = region;
+    private Pattern pattern;
+    private Color redactionColor = Color.BLACK;
+
+    public RegexBasedCleanupStrategy(String regex) {
+        super(regex);
+        this.pattern = Pattern.compile(regex);
     }
 
-    /**
-     * Constructs a {@link PdfCleanUpLocation} object.
-     *
-     * @param page         specifies the number of the page which the region belongs to.
-     * @param region       represents the boundaries of the area to be erased.
-     * @param cleanUpColor a color used to fill the area after erasing it. If {@code null}
-     *                     the erased area left uncolored.
-     */
-    public PdfCleanUpLocation(int page, Rectangle region, Color cleanUpColor) {
-        this(page, region);
-        this.cleanUpColor = cleanUpColor;
+    public RegexBasedCleanupStrategy(Pattern pattern) {
+        super(pattern);
+        this.pattern = pattern;
     }
 
-    /**
-     * @return the number of the page which the region belongs to.
-     */
-    public int getPage() {
-        return page;
+    @Override
+    public Color getRedactionColor(IPdfTextLocation location) {
+        return redactionColor;
     }
 
-    /**
-     * @return A {@link Rectangle} representing the boundaries of the area to be erased.
-     */
-    public Rectangle getRegion() {
-        return region;
+    public RegexBasedCleanupStrategy setRedactionColor(Color color) {
+        this.redactionColor = color;
+        return this;
     }
 
-    /**
-     * Returns a color used to fill the area after erasing it. If {@code null} the erased area left uncolored.
-     *
-     * @return a color used to fill the area after erasing it.
-     */
-    public Color getCleanUpColor() {
-        return cleanUpColor;
+    public ICleanupStrategy reset() {
+        return new RegexBasedCleanupStrategy(pattern);
     }
 }

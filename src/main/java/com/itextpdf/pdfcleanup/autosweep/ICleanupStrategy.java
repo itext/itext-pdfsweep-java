@@ -40,64 +40,34 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup;
+package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 
 /**
- * Defines the region to be erased in a PDF document.
- *
+ * This class represents a generic cleanup strategy to be used with {@link PdfAutoSweep}
+ * ICleanupStrategy must implement Cloneable to ensure a strategy can be reset after having handled a page.
  */
-public class PdfCleanUpLocation {
-    private int page;
-    private Rectangle region;
-    private Color cleanUpColor;
+public interface ICleanupStrategy extends ILocationExtractionStrategy {
 
     /**
-     * Constructs a {@link PdfCleanUpLocation} object.
+     * Get the color in which redaction is to take place
      *
-     * @param page   specifies the number of the page which the region belongs to.
-     * @param region represents the boundaries of the area to be erased.
+     * @param location where to get the redaction color from
+     * @return a {@link Color}
      */
-    public PdfCleanUpLocation(int page, Rectangle region) {
-        this.page = page;
-        this.region = region;
-    }
+    Color getRedactionColor(IPdfTextLocation location);
 
     /**
-     * Constructs a {@link PdfCleanUpLocation} object.
+     * ICleanupStrategy objects have to be reset at times
+     * {@code PdfAutoSweep} will use the same strategy for all pages,
+     * and expects to receive only the rectangles from the last page as output.
+     * Hence the reset method.
      *
-     * @param page         specifies the number of the page which the region belongs to.
-     * @param region       represents the boundaries of the area to be erased.
-     * @param cleanUpColor a color used to fill the area after erasing it. If {@code null}
-     *                     the erased area left uncolored.
+     * @return a clone of this Object
      */
-    public PdfCleanUpLocation(int page, Rectangle region, Color cleanUpColor) {
-        this(page, region);
-        this.cleanUpColor = cleanUpColor;
-    }
+    ICleanupStrategy reset();
 
-    /**
-     * @return the number of the page which the region belongs to.
-     */
-    public int getPage() {
-        return page;
-    }
-
-    /**
-     * @return A {@link Rectangle} representing the boundaries of the area to be erased.
-     */
-    public Rectangle getRegion() {
-        return region;
-    }
-
-    /**
-     * Returns a color used to fill the area after erasing it. If {@code null} the erased area left uncolored.
-     *
-     * @return a color used to fill the area after erasing it.
-     */
-    public Color getCleanUpColor() {
-        return cleanUpColor;
-    }
 }

@@ -56,6 +56,9 @@ import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
 import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
 import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
@@ -80,6 +83,7 @@ import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,7 +111,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private static final Set<String> fillColorOperators = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
 
     private static final Set<String> textPositioningOperators = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
-                         "TL")); // TL actually is not a text positioning operator, but we need to process it with them
+            "TL")); // TL actually is not a text positioning operator, but we need to process it with them
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
     private static final Set<String> ignoredOperators = new HashSet<String>();
@@ -130,24 +134,26 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private PdfCleanUpFilter filter;
     private Stack<PdfCanvas> canvasStack;
 
+    private boolean removeAnnotIfPartOverlap = true;
+
     /**
      * In {@code notAppliedGsParams} field not written graphics state params are stored.
      * Stack represents gs params on different levels of the q/Q nesting (see {@link NotAppliedGsParams}).
      * On "q" operator new {@code NotAppliedGsParams} is pushed to the stack and on "Q" it is popped.
-     *
+     * <p>
      * When operators are applied, they are written from the outer to inner nesting level, separated by "q".
      * After being written the stack is cleared.
-     *
+     * <p>
      * Graphics state parameters are applied in two ways:
      * <ul>
-     *  <li>
-     *      first - right before writing text content, text state in current gs is compare to the text state of the text
-     *      render info gs and difference is applied to current gs;
-     *  </li>
-     *  <li>
-     *      second - through list of the not applied gs params. Right before writing some content, this list is checked,
-     *      and if something affecting content is stored in this list it will be applied.
-     *  </li>
+     * <li>
+     * first - right before writing text content, text state in current gs is compare to the text state of the text
+     * render info gs and difference is applied to current gs;
+     * </li>
+     * <li>
+     * second - through list of the not applied gs params. Right before writing some content, this list is checked,
+     * and if something affecting content is stored in this list it will be applied.
+     * </li>
      * </ul>
      */
     private Deque<NotAppliedGsParams> notAppliedGsParams;
@@ -157,7 +163,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private boolean isInText;
     private TextPositioning textPositioning;
 
-    public PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
+    PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
         super(new PdfCleanUpEventListener());
         this.document = document;
         this.filter = new PdfCleanUpFilter(cleanUpRegions);
@@ -175,6 +181,178 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     public void processPageContent(PdfPage page) {
         currentPage = page;
         super.processPageContent(page);
+    }
+
+    /**
+     * Process the annotations of a page.
+     * Default process behaviour is to remove the annotation if there is (partial) overlap with a redaction region
+     *
+     * @param page    the page to process
+     * @param regions a list of redaction regions
+     */
+    public void processPageAnnotations(PdfPage page, List<Rectangle> regions) {
+        //Iterate over annotations
+        for (PdfAnnotation annot : page.getAnnotations()) {
+            //Check against regions
+            for (Rectangle region : regions) {
+                if (processAnnotation(annot, region)) {//Individual process methods will return true if the entire annotation needs to be removed
+                    page.removeAnnotation(annot);
+                }
+            }
+        }
+    }
+
+    private boolean processAnnotation(PdfAnnotation annotation, Rectangle region) {
+        //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1607,DEVSIX-1608,DEVSIX-1609)
+        removeAnnotIfPartOverlap = true;
+        //Check if the field is a terminal form-field, by checking if the FT entry exists
+        if (annotation.getPdfObject().get(PdfName.FT) != null) {
+            return processAnnotationForm(annotation, region);
+        }
+
+        PdfName annotationType = annotation.getPdfObject().getAsName(PdfName.Subtype);
+        PdfArray rectAsArray = annotation.getRectangle();
+        Rectangle rect = null;
+        if (rectAsArray != null) {
+            rect = rectAsArray.toRectangle();
+        }
+        //For text and some link annotations, check passed region against rectangle entry
+        if (PdfName.Link.equals(annotationType)) {
+            PdfArray quadPoints = ((PdfLinkAnnotation) annotation).getQuadPoints();
+            if (rect != null && useRectangleForLinkAnnotation(rect, quadPoints)) {
+                return processAnnotationRectangle(annotation, region, rect);
+            } else {
+                return processAnnotationQuadPoints(annotation, region, quadPoints);
+            }
+        } else if (PdfName.Text.equals(annotationType)) {
+            return rect != null && processAnnotationRectangle(annotation, region, rect);
+
+        } else if (PdfName.Line.equals(annotationType)) {
+            //For line annotations, check against the /L array
+            return processAnnotationLine(annotation, region);
+        } else if (annotationType.equals(PdfName.Highlight)) {
+            PdfArray quadPoints = ((PdfTextMarkupAnnotation) annotation).getQuadPoints();
+            //For highlight annotations, check against the quadpoints array
+            return processAnnotationQuadPoints(annotation, region, quadPoints);
+        }
+        return false; //Default to not remove
+    }
+
+    private boolean processAnnotationRectangle(PdfAnnotation annotation, Rectangle region, Rectangle annotationRect) {
+        boolean result = false;//Default to not remove
+        //3 possible situations: full overlap, partial overlap, no overlap
+        if (region.overlaps(annotationRect)) {
+            //full overlap
+            if (region.contains(annotationRect)) {
+                result = true;
+                return result;
+            }
+            //partial overlap
+            Rectangle intersectionRect = region.getIntersection(annotationRect);
+            if (intersectionRect != null) {
+                if (removeAnnotIfPartOverlap) {
+                    result = true;
+                    return result;
+                } else {
+                    //TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1609)
+                }
+            }
+        }
+        //No overlap, do nothing
+        return result;
+    }
+
+    private boolean processAnnotationLine(PdfAnnotation annotation, Rectangle region) {
+        boolean result = false;//Default to not remove;
+        //TODO(DEVSIX-1607) Do we need to check Line entry on existence as we do with rect?
+        Rectangle rect = new Rectangle(annotation.getPdfObject().getAsArray(PdfName.L).toRectangle());
+        if (region.overlaps(rect)) {
+            //Full overlap
+            if (region.contains(rect)) {
+                result = true;
+                return result;
+            }
+            //partial overlap
+            Rectangle intersectionRect = region.getIntersection(rect);
+            if (intersectionRect != null) {
+                if (removeAnnotIfPartOverlap) {
+                    result = true;
+                    return result;
+                } else {
+                    //TODO(DEVSIX-1607)
+                }
+            }
+        }
+        //No overlap, do nothing
+        return result;
+    }
+
+    private boolean processAnnotationQuadPoints(PdfAnnotation annotation, Rectangle region, PdfArray quadPoints) {
+        //Create rectangles from quadpoints array
+        boolean result = false;//Default to not remove;
+        //TODO(DEVSIX-1605, DEVSIX-1608) consider possibility of missing quadPoints
+        List<Rectangle> boundingRectangles = Rectangle.createBoundingRectanglesFromQuadPoint(quadPoints);
+        if (boundingRectangles != null) {
+            for (Rectangle boundingRect : boundingRectangles) {
+                //3 possible situations: full overlap, partial overlap, no overlap
+                if (region.overlaps(boundingRect)) {
+                    //full overlap
+                    if (region.contains(boundingRect)) {
+                        result = true;
+                        return result;
+                    }
+                    //partial overlap
+                    Rectangle intersectionRect = region.getIntersection(boundingRect);
+                    if (intersectionRect != null) {
+                        if (removeAnnotIfPartOverlap) {
+                            result = true;
+                            return result;
+                        } else {
+                            //TODO(DEVSIX-1605,DEVSIX-1608)
+                        }
+                    }
+                }
+                //no overlap, do nothing
+            }
+        }
+        return result;
+    }
+
+    private boolean processAnnotationForm(PdfAnnotation annotation, Rectangle region) {
+        boolean result = false;//Default to not remove;
+        //Forms with no kids can be processed by their rectangle
+        PdfArray rectAsArray = annotation.getRectangle();
+        if (rectAsArray != null) {
+            result = processAnnotationRectangle(annotation, region, rectAsArray.toRectangle());
+            return result;
+        }
+        //TODO{DEVSIX-1609) Partial redaction
+        //Currently, a radiobutton field will get its kids processed (because they appear on a page), but will not be directly touched
+        return result;
+    }
+
+    /**
+     * For a link annotation, a quadpoints array can be specified
+     * but it will be ignored in favour of the rectangle
+     * if one of the points is located outside the rectangle's boundaries
+     *
+     * @param rect       rectangle enry of the link annotation
+     * @param quadPoints
+     * @return True if the rectangle should be used, False if the quadpoint array should be used
+     */
+    private boolean useRectangleForLinkAnnotation(Rectangle rect, PdfArray quadPoints) {
+        if (quadPoints == null) {
+            return true;
+        }
+        boolean noPointsOutside = true;
+        for (int i = 0; i < quadPoints.size(); i += 8) {
+            for (int j = 0; j < 8; j += 2) {
+                float x = quadPoints.getAsNumber(i + j).floatValue();
+                float y = quadPoints.getAsNumber(i + j + 1).floatValue();
+                noPointsOutside = noPointsOutside && rect.contains(new Rectangle(x, y, 0, 0));
+            }
+        }
+        return !noPointsOutside;
     }
 
     /**
@@ -198,7 +376,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         return (PdfCleanUpEventListener) eventListener;
     }
 
-    public PdfCanvas popCleanedCanvas() {
+    PdfCanvas popCleanedCanvas() {
         // If it is the last canvas, we finish to wrap it with Q
         if (canvasStack.size() == 1) {
             getCanvas().restoreState();
@@ -226,7 +404,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
-    protected static void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
+    static void writeOperands(PdfCanvas canvas, List<PdfObject> operands) {
         int index = 0;
 
         for (PdfObject obj : operands) {
@@ -239,7 +417,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
-    protected static Matrix operandsToMatrix(List<PdfObject> operands) {
+    static Matrix operandsToMatrix(List<PdfObject> operands) {
         float a = ((PdfNumber) operands.get(0)).floatValue();
         float b = ((PdfNumber) operands.get(1)).floatValue();
         float c = ((PdfNumber) operands.get(2)).floatValue();
@@ -260,7 +438,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if ("Do".equals(operator)) {
             PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
             if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
-                writeNotAppliedGsParams(true, true, true); // write here all gs params because we don't know which content is inside of form
+                writeNotAppliedGsParams(true, true);
                 openNotWrittenTags();
             }
         }
@@ -328,7 +506,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if ("sh".equals(operator)) {
             PdfShading shading = PdfShading.makeShading(getResources().getResource(PdfName.Shading).getAsDictionary((PdfName) operands.get(0)));
             getCanvas().paintShading(shading);
-        } else if (!ignoredOperators.contains(operator)){
+        } else if (!ignoredOperators.contains(operator)) {
             writeOperands(getCanvas(), operands);
         }
     }
@@ -337,7 +515,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
         PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
-            PdfArray originalTJ = (PdfArray)operands.get(0);
+            PdfArray originalTJ = (PdfArray) operands.get(0);
             int i = 0; // text chunk index in original TJ
             PdfTextArray newTJ = new PdfTextArray();
             for (PdfObject e : originalTJ) {
@@ -435,7 +613,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 fill = true;
                 break;
         }
-        writeNotAppliedGsParams(fill, stroke, false);
+        writeNotAppliedGsParams(fill, stroke);
     }
 
     private void checkIfImageAndClean(List<PdfObject> operands) {
@@ -457,7 +635,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
             if (imageToWrite != null) {
                 float[] ctm = pollNotAppliedCtm();
-                writeNotAppliedGsParams(false, false, false);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
@@ -475,7 +653,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
 
             float[] ctm = pollNotAppliedCtm();
-            writeNotAppliedGsParams(false, false, false);
+            writeNotAppliedGsParams(false, false);
             openNotWrittenTags();
 
             getCanvas().addImage(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
@@ -531,7 +709,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (fill) {
             fillPath = filter.filterFillPath(path, path.getRule());
             if (!fillPath.isEmpty()) {
-                writeNotAppliedGsParams(true, false, true);
+                writeNotAppliedGsParams(true, false);
                 openNotWrittenTags();
                 writePath(fillPath);
                 if (path.getRule() == FillingRule.NONZERO_WINDING) {
@@ -546,7 +724,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             Path strokePath = filter.filterStrokePath(path);
             if (!strokePath.isEmpty()) {
                 // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
-                writeNotAppliedGsParams(false, false, true);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 writeStrokePath(strokePath, path.getStrokeColor());
             }
@@ -560,7 +738,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 clippingPath = filter.filterFillPath(path, path.getClippingRule());
             }
             if (!clippingPath.isEmpty()) {
-                writeNotAppliedGsParams(false, false, true);
+                writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
                 writePath(clippingPath);
                 if (path.getClippingRule() == FillingRule.NONZERO_WINDING) {
@@ -576,7 +754,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 // there is no visible content at all. But at the same time as we removed the clipping
                 // path, the invisible content would become visible. So, to emulate the correct result,
                 // we would simply put a degenerate clipping path which consists of a single point at (0, 0).
-                writeNotAppliedGsParams(false, false, false); // we still need to open all q operators
+                writeNotAppliedGsParams(false, false); // we still need to open all q operators
                 canvas.moveTo(0, 0).clip();
             }
             canvas.newPath();
@@ -586,7 +764,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private void writePath(Path path) {
         PdfCanvas canvas = getCanvas();
         for (Subpath subpath : path.getSubpaths()) {
-            canvas.moveTo((float)subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
+            canvas.moveTo((float) subpath.getStartPoint().getX(), (float) subpath.getStartPoint().getY());
 
             for (IShape segment : subpath.getSegments()) {
                 if (segment instanceof BezierCurve) {
@@ -602,7 +780,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 } else { // segment is Line
 
                     Point destination = segment.getBasePoints().get(1);
-                    canvas.lineTo((float)destination.getX(), (float) destination.getY());
+                    canvas.lineTo((float) destination.getX(), (float) destination.getY());
 
                 }
             }
@@ -667,31 +845,31 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         List<PdfObject> lastCtm = ctms.remove(ctms.size() - 1);
 
         float[] ctm = new float[6];
-        ctm[0] = ((PdfNumber)lastCtm.get(0)).floatValue();
-        ctm[1] = ((PdfNumber)lastCtm.get(1)).floatValue();
-        ctm[2] = ((PdfNumber)lastCtm.get(2)).floatValue();
-        ctm[3] = ((PdfNumber)lastCtm.get(3)).floatValue();
-        ctm[4] = ((PdfNumber)lastCtm.get(4)).floatValue();
-        ctm[5] = ((PdfNumber)lastCtm.get(5)).floatValue();
+        ctm[0] = ((PdfNumber) lastCtm.get(0)).floatValue();
+        ctm[1] = ((PdfNumber) lastCtm.get(1)).floatValue();
+        ctm[2] = ((PdfNumber) lastCtm.get(2)).floatValue();
+        ctm[3] = ((PdfNumber) lastCtm.get(3)).floatValue();
+        ctm[4] = ((PdfNumber) lastCtm.get(4)).floatValue();
+        ctm[5] = ((PdfNumber) lastCtm.get(5)).floatValue();
 
         return ctm;
     }
 
-    private void writeNotAppliedGsParams(boolean fill, boolean stroke, boolean isPath) {
+    private void writeNotAppliedGsParams(boolean fill, boolean stroke) {
         if (notAppliedGsParams.size() > 0) {
             while (notAppliedGsParams.size() != 1) {
                 NotAppliedGsParams gsParams = notAppliedGsParams.pollLast();
                 // We want to apply graphics state params of outer q/Q nesting level on it's level and not on the inner
                 // q/Q nesting level. Because of that we write all gs params for the outer q/Q, just in case it will be needed
                 // later (if we don't write it now, there will be no possibility to write it in the outer q/Q later).
-                applyGsParams(true, true, true, gsParams);
+                applyGsParams(true, true, gsParams);
                 getCanvas().saveState();
             }
-            applyGsParams(fill, stroke, isPath, notAppliedGsParams.peek());
+            applyGsParams(fill, stroke, notAppliedGsParams.peek());
         }
     }
 
-    private void applyGsParams(boolean fill, boolean stroke, boolean isPath, NotAppliedGsParams gsParams) {
+    private void applyGsParams(boolean fill, boolean stroke, NotAppliedGsParams gsParams) {
         for (PdfDictionary extGState : gsParams.extGStates) {
             getCanvas().setExtGState(extGState);
         }
@@ -709,7 +887,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             gsParams.ctms.clear();
         }
 
-        if (isPath) {
+        if (stroke) {
             for (List<PdfObject> strokeState : gsParams.lineStyleOperators.values()) {
                 writeOperands(getCanvas(), strokeState);
             }
@@ -733,20 +911,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     /**
      * Single instance of this class represents not applied graphics state params of the single q/Q nesting level.
      * For example:
-     *
+     * <p>
      * 0 g
      * 1 0 0 1 25 50 cm
-     *
+     * <p>
      * q
-     *
+     * <p>
      * 5 w
      * /Gs1 gs
      * 13 g
-     *
+     * <p>
      * Q
-     *
+     * <p>
      * 1 0 0 RG
-     *
+     * <p>
      * Operators "0 g", "1 0 0 1 25 50 cm" and "1 0 0 RG" belong to the outer q/Q nesting level;
      * Operators "5 w", "/Gs1 gs", "13 g" belong to the inner q/Q nesting level.
      * Operators of every level of the q/Q nesting are stored in different instances of this class.
