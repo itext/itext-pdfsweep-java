@@ -42,6 +42,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -53,6 +54,8 @@ import java.lang.reflect.Method;
 import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
 import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.LogMessage;
+import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -87,6 +90,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     }
 
     @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.CREATED_ROOT_TAG_HAS_MAPPING))
     public void bigTaggedDocument() throws IOException, InterruptedException {
         String input = inputPath + "chapter8_Interactive_features.pdf";
         String output = outputPath + "bigTaggedDocument.pdf";

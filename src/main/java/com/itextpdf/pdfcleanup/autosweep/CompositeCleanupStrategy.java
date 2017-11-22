@@ -42,7 +42,8 @@
  */
 package com.itextpdf.pdfcleanup.autosweep;
 
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
@@ -105,7 +106,7 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
                 return strategies.get(i).getRedactionColor(location);
             }
         }
-        return Color.BLACK;
+        return ColorConstants.BLACK;
     }
 
     @Override
