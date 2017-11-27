@@ -536,9 +536,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
         }
 
-        TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
         // if text wasn't modified cleanedText is null
         if (cleanedText == null || cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+            TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
             writeNotAppliedGsParamsForText(text);
             beginTextObjectAndOpenNotWrittenTags();
 
