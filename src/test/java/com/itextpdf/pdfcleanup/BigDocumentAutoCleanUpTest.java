@@ -57,11 +57,6 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.CharacterRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
@@ -116,7 +111,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactLipsum_");
+        compareResults(cmp, output, outputPath, "diff_redactLipsum_");
     }
 
     @Test
@@ -142,7 +137,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactTonySoprano_");
+        compareResults(cmp, output, outputPath, "diff_redactTonySoprano_");
     }
 
     @Test
@@ -164,7 +159,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactIPhoneUserManualMatchColor_");
+        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManualMatchColor_");
     }
 
     @Test
@@ -187,10 +182,10 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
+        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
+    private void compareResults(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
         String errorMessage = cmpTool.compareVisually(output, cmp, targetDir, diffPrefix + "_");
 

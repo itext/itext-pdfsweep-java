@@ -48,37 +48,37 @@ import com.itextpdf.io.source.ByteUtils;
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
+import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Subpath;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
-import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
-import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
-import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
-import com.itextpdf.kernel.pdf.canvas.CanvasTag;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
-import com.itextpdf.kernel.pdf.canvas.parser.EventType;
-import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
-import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
-import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfLiteral;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
+import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
+import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
+import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
+import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
+import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
+import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
@@ -512,7 +512,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void cleanText(String operator, List<PdfObject> operands) {
-        List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
+        List<TextRenderInfo> textChunks = null;
         PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
             PdfArray originalTJ = (PdfArray) operands.get(0);
@@ -520,6 +520,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             PdfTextArray newTJ = new PdfTextArray();
             for (PdfObject e : originalTJ) {
                 if (e.isString()) {
+                    if (null == textChunks) {
+                        textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
+                    }
                     PdfArray filteredText = filter.filterText(textChunks.get(i++)).getFilterResult();
                     newTJ.addAll(filteredText);
                 } else {
@@ -529,14 +532,17 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
             cleanedText = newTJ;
         } else { // if operator is Tj or ' or "
+            textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
             PdfCleanUpFilter.FilterResult<PdfArray> filterResult = filter.filterText(textChunks.get(0));
             if (filterResult.isModified()) {
                 cleanedText = filterResult.getFilterResult();
             }
         }
-
         // if text wasn't modified cleanedText is null
         if (cleanedText == null || cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+            if (null == textChunks) {
+                textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
+            }
             TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
             writeNotAppliedGsParamsForText(text);
             beginTextObjectAndOpenNotWrittenTags();
@@ -545,8 +551,15 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             textPositioning.writePositionedText(operator, operands, cleanedText, getCanvas());
         } else { // cleaned text is tj array with single number - it means that the whole text chunk was removed
             CanvasGraphicsState gs = getCanvas().getGraphicsState();
+            // process new lines if necessary
+            if ("'".equals(operator) || "\"".equals(operator)) {
+                List<PdfObject> newLineList = new ArrayList<>();
+                newLineList.add(new PdfLiteral("T*"));
+                textPositioning.appendPositioningOperator("T*", newLineList);
+            }
             textPositioning.appendTjArrayWithSingleNumber(cleanedText, gs.getFontSize(), gs.getHorizontalScaling());
         }
+
     }
 
     private void beginTextObjectAndOpenNotWrittenTags() {
