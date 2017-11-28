@@ -43,20 +43,13 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
@@ -405,7 +398,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "textAndImages.pdf";
         String cmp = inputPath + "cmp_textAndImages.pdf";
 
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f , 235f, 230f , 445f))));
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f, 235f, 230f, 445f))));
         compareByContent(cmp, output, outputPath, "diff_34");
     }
 
@@ -424,6 +417,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
      * However, we can't get the particular glyphs height and instead we have the same height for all glyphs.
      * Because of this, in case of the big font sizes such situations might occur, that even though visually glyph is
      * rather away from the cleanup location we still get it removed because it's bbox intersects with cleanup area rectangle.
+     *
      * @throws IOException
      * @throws InterruptedException
      */
@@ -485,12 +479,50 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_emptyTj.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1,  new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
+                new PdfCleanUpLocation(1, new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_40");
     }
 
+    @Test
+    public void cleanUpTest41() throws IOException, InterruptedException {
+        String input = inputPath + "newLines01.pdf";
+        String output = outputPath + "newLines01.pdf";
+        String cmp = inputPath + "cmp_newLines01.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(70f, 555f, 200f, 10f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_41");
+    }
+
+    @Test
+    public void cleanUpTest42() throws IOException, InterruptedException {
+        String input = inputPath + "newLines02.pdf";
+        String output = outputPath + "newLines02.pdf";
+        String cmp = inputPath + "cmp_newLines02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(36f, 733f, 270f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_42");
+    }
+
+    @Test
+    public void cleanUpTest43() throws IOException, InterruptedException {
+        String input = inputPath + "newLines03.pdf";
+        String output = outputPath + "newLines03.pdf";
+        String cmp = inputPath + "cmp_newLines03.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(36f, 733f, 230f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_43");
+    }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
