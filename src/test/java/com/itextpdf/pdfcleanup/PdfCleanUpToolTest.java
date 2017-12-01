@@ -474,9 +474,9 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
     @Test
     public void cleanUpTest40() throws IOException, InterruptedException {
-        String input = inputPath + "emptyTj.pdf";
-        String output = outputPath + "emptyTj.pdf";
-        String cmp = inputPath + "cmp_emptyTj.pdf";
+        String input = inputPath + "emptyTj01.pdf";
+        String output = outputPath + "emptyTj01.pdf";
+        String cmp = inputPath + "cmp_emptyTj01.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
                 new PdfCleanUpLocation(1, new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
@@ -522,6 +522,19 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_43");
+    }
+
+    @Test
+    public void cleanUpTest44() throws IOException, InterruptedException {
+        String input = inputPath + "emptyTj02.pdf";
+        String output = outputPath + "emptyTj02.pdf";
+        String cmp = inputPath + "cmp_emptyTj02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(70f, 565f, 200f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_44");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
