@@ -42,7 +42,7 @@
  */
 package com.itextpdf.pdfcleanup.autosweep;
 
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 

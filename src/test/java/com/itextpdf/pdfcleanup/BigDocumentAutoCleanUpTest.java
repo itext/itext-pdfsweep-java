@@ -47,7 +47,8 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -103,7 +104,7 @@ public class BigDocumentAutoCleanUpTest {
         String cmp = inputPath + "cmp_redactLipsum.pdf";
 
         CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
-        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(Color.GREEN));
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
 
         PdfWriter writer = new PdfWriter(output);
         writer.setCompressionLevel(0);
@@ -255,7 +256,7 @@ class CustomLocationExtractionStrategy extends RegexBasedLocationExtractionStrat
 
     @Override
     public Color getRedactionColor(IPdfTextLocation rect) {
-        return colorByRectangle.containsKey(rect.getRectangle()) ? colorByRectangle.get(rect.getRectangle()) : Color.BLACK;
+        return colorByRectangle.containsKey(rect.getRectangle()) ? colorByRectangle.get(rect.getRectangle()) : ColorConstants.BLACK;
     }
 
     public ICleanupStrategy reset()

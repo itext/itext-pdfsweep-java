@@ -45,7 +45,7 @@ package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.source.ByteUtils;
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Matrix;
@@ -79,6 +79,7 @@ import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
@@ -372,8 +373,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     @Override
-    public PdfCleanUpEventListener getEventListener() {
-        return (PdfCleanUpEventListener) eventListener;
+    public IEventListener getEventListener() {
+        return eventListener;
     }
 
     PdfCanvas popCleanedCanvas() {
@@ -512,7 +513,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void cleanText(String operator, List<PdfObject> operands) {
-        List<TextRenderInfo> textChunks = getEventListener().getEncounteredText();
+        List<TextRenderInfo> textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
         PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
             PdfArray originalTJ = (PdfArray) operands.get(0);
@@ -535,9 +536,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
         }
 
-        TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
         // if text wasn't modified cleanedText is null
         if (cleanedText == null || cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+            TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
             writeNotAppliedGsParamsForText(text);
             beginTextObjectAndOpenNotWrittenTags();
 
@@ -619,7 +620,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private void checkIfImageAndClean(List<PdfObject> operands) {
         PdfStream imageStream = getXObjectStream((PdfName) operands.get(0));
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
-            ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
+            ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
             PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
 
             PdfImageXObject imageToWrite = null;
@@ -643,7 +644,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void cleanInlineImage() {
-        ImageRenderInfo encounteredImage = getEventListener().getEncounteredImage();
+        ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
         PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
         ImageData filteredImage = imageFilterResult.getFilterResult();
         if (filteredImage != null) {
@@ -682,7 +683,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void writePath() {
-        PathRenderInfo path = getEventListener().getEncounteredPath();
+        PathRenderInfo path = ((PdfCleanUpEventListener) getEventListener()).getEncounteredPath();
 
         boolean stroke = (path.getOperation() & PathRenderInfo.STROKE) == PathRenderInfo.STROKE;
         boolean fill = (path.getOperation() & PathRenderInfo.FILL) == PathRenderInfo.FILL;

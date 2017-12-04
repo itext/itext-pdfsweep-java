@@ -43,7 +43,9 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.kernel.color.ColorConstants;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -474,6 +476,19 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_39");
+    }
+
+    @Test
+    public void cleanUpTest40() throws IOException, InterruptedException {
+        String input = inputPath + "emptyTj.pdf";
+        String output = outputPath + "emptyTj.pdf";
+        String cmp = inputPath + "cmp_emptyTj.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1,  new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_40");
     }
 
 
