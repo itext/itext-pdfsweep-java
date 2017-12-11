@@ -71,8 +71,6 @@ class TextPositioning {
 
     /**
      * Get the current leading
-     *
-     * @return
      */
     float getCurrLeading() {
         if (currLeading != null) {

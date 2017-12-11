@@ -46,6 +46,7 @@ import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.Version;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
@@ -74,13 +75,11 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
+
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
-
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -384,7 +383,6 @@ public class PdfCleanUpTool {
      * Convert a PdfArray of floats into a List of Rectangle objects
      *
      * @param quadPoints input PdfArray
-     * @return
      */
     private List<Rectangle> translateQuadPointsToRectangles(PdfArray quadPoints) {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
