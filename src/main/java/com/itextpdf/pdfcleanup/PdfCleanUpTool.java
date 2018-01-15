@@ -453,11 +453,17 @@ public class PdfCleanUpTool {
     }
 
     private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString defaultAppearance, int justification) throws IOException {
-        Map<String, List> parsedDA = parseDAParam(defaultAppearance);
+        Map<String, List> parsedDA;
+        try {
+            parsedDA = parseDAParam(defaultAppearance);
+        }catch (NullPointerException npe){
+            throw new PdfException(PdfException.DefaultAppearanceNotFound);
+        }
         PdfFont font;
         float fontSize = 12;
         List fontArgs = parsedDA.get("Tf");
-        if (fontArgs != null) {
+        PdfDictionary formDictionary = pdfDocument.getCatalog().getPdfObject().getAsDictionary(PdfName.AcroForm);
+        if (fontArgs != null && formDictionary != null) {
             font = getFontFromAcroForm((PdfName) fontArgs.get(0));
             fontSize = ((PdfNumber) fontArgs.get(1)).floatValue();
         } else {
