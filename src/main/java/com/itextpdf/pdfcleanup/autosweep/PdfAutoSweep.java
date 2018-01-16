@@ -40,15 +40,14 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.itextpdf.pdfcleanup.autosweep;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
@@ -58,7 +57,12 @@ import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Class that automatically extracts all regions of interest from a given PdfDocument and redacts them.
