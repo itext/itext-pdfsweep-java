@@ -54,7 +54,10 @@ import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
@@ -71,6 +74,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageInfo;
 import org.apache.commons.imaging.ImageReadException;
@@ -172,23 +176,34 @@ public class PdfCleanUpFilter {
         return new FilterResult<PdfArray>(true, textArray);
     }
 
+    FilteredImagesCache.FilteredImageKey createFilteredImageKey(ImageRenderInfo image, PdfDocument document) {
+        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(image), document);
+    }
+
     /**
      * Filter an ImageRenderInfo object
      *
      * @param image the ImageRenderInfo object to be filtered
      */
     FilterResult<ImageData> filterImage(ImageRenderInfo image) {
-        List<Rectangle> areasToBeCleaned = getImageAreasToBeCleaned(image);
-        if (areasToBeCleaned == null) {
+        return filterImage(image, getImageAreasToBeCleaned(image));
+    }
+
+    FilterResult<ImageData> filterImage(FilteredImagesCache.FilteredImageKey imageKey) {
+        return filterImage(imageKey.getImageRenderInfo(), imageKey.getCleanedAreas());
+    }
+
+    FilterResult<ImageData> filterImage(ImageRenderInfo image, List<Rectangle> imageAreasToBeCleaned) {
+        if (imageAreasToBeCleaned == null) {
             return new FilterResult<>(true, null);
-        } else if (areasToBeCleaned.isEmpty()) {
-            return new FilterResult<>(false, ImageDataFactory.create(image.getImage().getImageBytes()));
+        } else if (imageAreasToBeCleaned.isEmpty()) {
+            return new FilterResult<>(false, null);
         }
 
         byte[] filteredImageBytes;
         try {
             byte[] originalImageBytes = image.getImage().getImageBytes();
-            filteredImageBytes = processImage(originalImageBytes, areasToBeCleaned);
+            filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

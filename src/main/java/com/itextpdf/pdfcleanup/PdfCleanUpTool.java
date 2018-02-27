@@ -145,6 +145,8 @@ public class PdfCleanUpTool {
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
 
+    private FilteredImagesCache filteredImagesCache;
+
     private static final String PRODUCT_NAME = "pdfSweep";
     private static final int PRODUCT_MAJOR = 1;
     private static final int PRODUCT_MINOR = 0;
@@ -215,6 +217,7 @@ public class PdfCleanUpTool {
         }
         this.pdfDocument = pdfDocument;
         this.pdfCleanUpLocations = new HashMap<>();
+        this.filteredImagesCache = new FilteredImagesCache();
 
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
@@ -262,6 +265,7 @@ public class PdfCleanUpTool {
         if (redactAnnotations != null) { // if it isn't null, then we are in "extract locations from redact annots" mode
             removeRedactAnnots();
         }
+        pdfCleanUpLocations.clear();
     }
 
     /**
@@ -282,9 +286,10 @@ public class PdfCleanUpTool {
 
         PdfPage page = pdfDocument.getPage(pageNumber);
         PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
+        cleanUpProcessor.setFilteredImagesCache(filteredImagesCache);
         cleanUpProcessor.processPageContent(page);
-        if(processAnnotations){
-            cleanUpProcessor.processPageAnnotations(page,regions);
+        if (processAnnotations) {
+            cleanUpProcessor.processPageAnnotations(page, regions);
         }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
