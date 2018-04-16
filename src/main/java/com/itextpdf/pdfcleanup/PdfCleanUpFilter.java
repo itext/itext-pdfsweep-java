@@ -54,7 +54,10 @@ import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
@@ -71,6 +74,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageInfo;
 import org.apache.commons.imaging.ImageReadException;
@@ -120,8 +124,6 @@ public class PdfCleanUpFilter {
 
     /**
      * Generic class representing the result of filtering an object of type T
-     *
-     * @param <T>
      */
     static class FilterResult<T> {
         private boolean isModified;
@@ -143,8 +145,6 @@ public class PdfCleanUpFilter {
 
         /**
          * Get the result after filtering
-         *
-         * @return
          */
         T getFilterResult() {
             return filterResult;
@@ -155,7 +155,6 @@ public class PdfCleanUpFilter {
      * Filter a TextRenderInfo object
      *
      * @param text the TextRenderInfo to be filtered
-     * @return
      */
     FilterResult<PdfArray> filterText(TextRenderInfo text) {
         PdfTextArray textArray = new PdfTextArray();
@@ -177,24 +176,34 @@ public class PdfCleanUpFilter {
         return new FilterResult<PdfArray>(true, textArray);
     }
 
+    FilteredImagesCache.FilteredImageKey createFilteredImageKey(ImageRenderInfo image, PdfDocument document) {
+        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(image), document);
+    }
+
     /**
      * Filter an ImageRenderInfo object
      *
      * @param image the ImageRenderInfo object to be filtered
-     * @return
      */
     FilterResult<ImageData> filterImage(ImageRenderInfo image) {
-        List<Rectangle> areasToBeCleaned = getImageAreasToBeCleaned(image);
-        if (areasToBeCleaned == null) {
+        return filterImage(image, getImageAreasToBeCleaned(image));
+    }
+
+    FilterResult<ImageData> filterImage(FilteredImagesCache.FilteredImageKey imageKey) {
+        return filterImage(imageKey.getImageRenderInfo(), imageKey.getCleanedAreas());
+    }
+
+    FilterResult<ImageData> filterImage(ImageRenderInfo image, List<Rectangle> imageAreasToBeCleaned) {
+        if (imageAreasToBeCleaned == null) {
             return new FilterResult<>(true, null);
-        } else if (areasToBeCleaned.isEmpty()) {
-            return new FilterResult<>(false, ImageDataFactory.create(image.getImage().getImageBytes()));
+        } else if (imageAreasToBeCleaned.isEmpty()) {
+            return new FilterResult<>(false, null);
         }
 
         byte[] filteredImageBytes;
         try {
             byte[] originalImageBytes = image.getImage().getImageBytes();
-            filteredImageBytes = processImage(originalImageBytes, areasToBeCleaned);
+            filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -206,7 +215,6 @@ public class PdfCleanUpFilter {
      * Filter a PathRenderInfo object
      *
      * @param path the PathRenderInfo object to be filtered
-     * @return
      */
     com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
         PdfArray dashPattern = path.getLineDashPattern();
@@ -220,7 +228,6 @@ public class PdfCleanUpFilter {
      * Filter a PathRenderInfo object
      *
      * @param path the PathRenderInfo object to be filtered
-     * @return
      */
     com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
         return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
@@ -230,7 +237,6 @@ public class PdfCleanUpFilter {
      * Returns whether the given TextRenderInfo object needs to be cleaned up
      *
      * @param renderInfo the input TextRenderInfo object
-     * @return
      */
     private boolean isTextNotToBeCleaned(TextRenderInfo renderInfo) {
         Point[] textRect = getTextRectangle(renderInfo);
@@ -402,7 +408,6 @@ public class PdfCleanUpFilter {
      * Get the bytes of the BufferedImage (in JPG format)
      *
      * @param image input image
-     * @return
      */
     private byte[] getJPGBytes(BufferedImage image) {
         ByteArrayOutputStream outputStream = null;
@@ -465,10 +470,7 @@ public class PdfCleanUpFilter {
     /**
      * Note: this method will close all unclosed subpaths of the passed path.
      *
-     * @param path        path
-     * @param ctm         ctm
      * @param fillingRule If the subpath is contour, pass any value.
-     * @return filterFillPath
      */
     private com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path, Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
@@ -570,7 +572,6 @@ public class PdfCleanUpFilter {
      * Approximates a given Path with a List of Point objects
      *
      * @param path input path
-     * @return
      */
     private static List<Point> getPathApproximation(com.itextpdf.kernel.geom.Path path) {
         List<Point> approx = new ArrayList<Point>() {
@@ -634,7 +635,6 @@ public class PdfCleanUpFilter {
      *
      * @param center center of the circle
      * @param radius radius of the circle
-     * @return
      */
     private static BezierCurve[] approximateCircle(Point center, double radius) {
         // The circle is split into 4 sectors. Arc of each sector
@@ -693,7 +693,6 @@ public class PdfCleanUpFilter {
      * Get the bounding box of a TextRenderInfo object
      *
      * @param renderInfo input TextRenderInfo object
-     * @return
      */
     private Point[] getTextRectangle(TextRenderInfo renderInfo) {
         LineSegment ascent = renderInfo.getAscentLine();
@@ -711,7 +710,6 @@ public class PdfCleanUpFilter {
      * Convert a Rectangle object into 4 Points
      *
      * @param rect input Rectangle
-     * @return
      */
     private Point[] getRectangleVertices(Rectangle rect) {
         Point[] points = {
@@ -731,7 +729,6 @@ public class PdfCleanUpFilter {
      * @param p2 second Point
      * @param p3 third Point
      * @param p4 fourth Point
-     * @return
      */
     private Rectangle getAsRectangle(Point p1, Point p2, Point p3, Point p4) {
         List<Double> xs = Arrays.asList(p1.getX(), p2.getX(), p3.getX(), p4.getX());
@@ -750,7 +747,6 @@ public class PdfCleanUpFilter {
      *
      * @param rect1 first Rectangle
      * @param rect2 second Rectangle
-     * @return
      */
     private Rectangle getRectanglesIntersection(Rectangle rect1, Rectangle rect2) {
         float x1 = Math.max(rect1.getLeft(), rect2.getLeft());

@@ -326,7 +326,6 @@ public class LineDashPattern {
      * This is the Euclidean distance between the tip of the vector and the origin.
      *
      * @param vector input vector
-     * @return
      */
     private static double getVectorEuclideanNorm(Point vector) {
         return vector.distance(0, 0);
@@ -355,7 +354,6 @@ public class LineDashPattern {
      * @param segStart start of the line segment
      * @param segEnd   end of the line segment
      * @param point    query point
-     * @return
      */
     private static boolean liesOnSegment(Point segStart, Point segEnd, Point point) {
         return point.getX() >= Math.min(segStart.getX(), segEnd.getX()) &&

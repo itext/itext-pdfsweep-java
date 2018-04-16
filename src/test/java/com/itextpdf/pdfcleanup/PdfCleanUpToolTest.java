@@ -43,26 +43,25 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -73,6 +72,9 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
+
+    @Rule
+    public ExpectedException junitExpectedException = ExpectedException.none();
 
     @BeforeClass
     public static void before() {
@@ -405,7 +407,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String output = outputPath + "textAndImages.pdf";
         String cmp = inputPath + "cmp_textAndImages.pdf";
 
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f , 235f, 230f , 445f))));
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f, 235f, 230f, 445f))));
         compareByContent(cmp, output, outputPath, "diff_34");
     }
 
@@ -424,6 +426,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
      * However, we can't get the particular glyphs height and instead we have the same height for all glyphs.
      * Because of this, in case of the big font sizes such situations might occur, that even though visually glyph is
      * rather away from the cleanup location we still get it removed because it's bbox intersects with cleanup area rectangle.
+     *
      * @throws IOException
      * @throws InterruptedException
      */
@@ -480,17 +483,108 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
     @Test
     public void cleanUpTest40() throws IOException, InterruptedException {
-        String input = inputPath + "emptyTj.pdf";
-        String output = outputPath + "emptyTj.pdf";
-        String cmp = inputPath + "cmp_emptyTj.pdf";
+        String input = inputPath + "emptyTj01.pdf";
+        String output = outputPath + "emptyTj01.pdf";
+        String cmp = inputPath + "cmp_emptyTj01.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
-                new PdfCleanUpLocation(1,  new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
+                new PdfCleanUpLocation(1, new Rectangle(70f, 555f, 200f, 5f), ColorConstants.ORANGE));
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_40");
     }
 
+    @Test
+    public void cleanUpTest41() throws IOException, InterruptedException {
+        String input = inputPath + "newLines01.pdf";
+        String output = outputPath + "newLines01.pdf";
+        String cmp = inputPath + "cmp_newLines01.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(70f, 555f, 200f, 10f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_41");
+    }
+
+    @Test
+    public void cleanUpTest42() throws IOException, InterruptedException {
+        String input = inputPath + "newLines02.pdf";
+        String output = outputPath + "newLines02.pdf";
+        String cmp = inputPath + "cmp_newLines02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(36f, 733f, 270f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_42");
+    }
+
+    @Test
+    public void cleanUpTest43() throws IOException, InterruptedException {
+        String input = inputPath + "newLines03.pdf";
+        String output = outputPath + "newLines03.pdf";
+        String cmp = inputPath + "cmp_newLines03.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(36f, 733f, 230f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_43");
+    }
+
+    @Test
+    public void cleanUpTest44() throws IOException, InterruptedException {
+        String input = inputPath + "emptyTj02.pdf";
+        String output = outputPath + "emptyTj02.pdf";
+        String cmp = inputPath + "cmp_emptyTj02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(
+                new PdfCleanUpLocation(1, new Rectangle(70f, 565f, 200f, 5f), ColorConstants.ORANGE));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_44");
+    }
+
+    @Test
+    public void cleanUpTest45() throws IOException, InterruptedException {
+        String input = inputPath + "emptyPdf.pdf";
+        String output = outputPath + "emptyPdf.pdf";
+        String cmp = inputPath + "cmp_emptyPdf.pdf";
+
+        PdfAnnotation redactAnnotation = new PdfRedactAnnotation(new Rectangle(97, 405, 383, 40))
+                .setOverlayText(new PdfString("OverlayTest"))
+                .setDefaultAppearance(new PdfString("/Helv 0 Tf 0 g"));
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        pdfDocument.getFirstPage().addAnnotation(redactAnnotation);
+
+        new PdfCleanUpTool(pdfDocument, true).cleanUp();
+
+        pdfDocument.close();
+        compareByContent(cmp, output, outputPath, "diff_45");
+    }
+
+    @Test
+    public void cleanUpTest46() throws IOException {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(PdfException.DefaultAppearanceNotFound);
+        
+        String input = inputPath + "emptyPdf.pdf";
+        String output = outputPath + "emptyPdf.pdf";
+
+        PdfAnnotation redactAnnotation = new PdfRedactAnnotation(new Rectangle(97, 405, 383, 40))
+                .setOverlayText(new PdfString("OverlayTest"));
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        pdfDocument.getFirstPage().addAnnotation(redactAnnotation);
+
+        new PdfCleanUpTool(pdfDocument, true).cleanUp();
+
+        pdfDocument.close();
+    }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));

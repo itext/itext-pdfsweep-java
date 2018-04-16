@@ -44,41 +44,42 @@ package com.itextpdf.pdfcleanup;
 
 
 import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.source.ByteUtils;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
+import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.Subpath;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
-import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
-import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
-import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
-import com.itextpdf.kernel.pdf.canvas.CanvasTag;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
-import com.itextpdf.kernel.pdf.canvas.parser.EventType;
-import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
-import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
-import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfLiteral;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
+import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.annot.PdfTextMarkupAnnotation;
+import com.itextpdf.kernel.pdf.canvas.CanvasGraphicsState;
+import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants.FillingRule;
+import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
+import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
+import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.colorspace.PdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
@@ -163,6 +164,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private boolean btEncountered;
     private boolean isInText;
     private TextPositioning textPositioning;
+    private FilteredImagesCache filteredImagesCache;
 
     PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
         super(new PdfCleanUpEventListener());
@@ -201,6 +203,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 }
             }
         }
+    }
+
+    void setFilteredImagesCache(FilteredImagesCache cache) {
+        this.filteredImagesCache = cache;
     }
 
     private boolean processAnnotation(PdfAnnotation annotation, Rectangle region) {
@@ -505,7 +511,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if (fillColorOperators.contains(operator)) {
             notAppliedGsParams.peek().fillColor = getGraphicsState().getFillColor();
         } else if ("sh".equals(operator)) {
-            PdfShading shading = PdfShading.makeShading(getResources().getResource(PdfName.Shading).getAsDictionary((PdfName) operands.get(0)));
+            PdfShading shading = getResources().getShading((PdfName) operands.get(0));
             getCanvas().paintShading(shading);
         } else if (!ignoredOperators.contains(operator)) {
             writeOperands(getCanvas(), operands);
@@ -513,14 +519,22 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void cleanText(String operator, List<PdfObject> operands) {
-        List<TextRenderInfo> textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
+        List<TextRenderInfo> textChunks = null;
         PdfArray cleanedText = null;
         if ("TJ".equals(operator)) {
             PdfArray originalTJ = (PdfArray) operands.get(0);
+            if (originalTJ.isEmpty()) {
+                // empty TJ neither shows any text nor affects text positioning
+                // we can safely ignore it
+                return;
+            }
             int i = 0; // text chunk index in original TJ
             PdfTextArray newTJ = new PdfTextArray();
             for (PdfObject e : originalTJ) {
                 if (e.isString()) {
+                    if (null == textChunks) {
+                        textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
+                    }
                     PdfArray filteredText = filter.filterText(textChunks.get(i++)).getFilterResult();
                     newTJ.addAll(filteredText);
                 } else {
@@ -530,14 +544,17 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
             cleanedText = newTJ;
         } else { // if operator is Tj or ' or "
+            textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
             PdfCleanUpFilter.FilterResult<PdfArray> filterResult = filter.filterText(textChunks.get(0));
             if (filterResult.isModified()) {
                 cleanedText = filterResult.getFilterResult();
             }
         }
-
         // if text wasn't modified cleanedText is null
         if (cleanedText == null || cleanedText.size() != 1 || !cleanedText.get(0).isNumber()) {
+            if (null == textChunks) {
+                textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
+            }
             TextRenderInfo text = textChunks.get(0); // all text chunks even in case of TJ have the same graphics state
             writeNotAppliedGsParamsForText(text);
             beginTextObjectAndOpenNotWrittenTags();
@@ -546,8 +563,15 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             textPositioning.writePositionedText(operator, operands, cleanedText, getCanvas());
         } else { // cleaned text is tj array with single number - it means that the whole text chunk was removed
             CanvasGraphicsState gs = getCanvas().getGraphicsState();
+            // process new lines if necessary
+            if ("'".equals(operator) || "\"".equals(operator)) {
+                List<PdfObject> newLineList = new ArrayList<>();
+                newLineList.add(new PdfLiteral("T*"));
+                textPositioning.appendPositioningOperator("T*", newLineList);
+            }
             textPositioning.appendTjArrayWithSingleNumber(cleanedText, gs.getFontSize(), gs.getHorizontalScaling());
         }
+
     }
 
     private void beginTextObjectAndOpenNotWrittenTags() {
@@ -621,17 +645,22 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         PdfStream imageStream = getXObjectStream((PdfName) operands.get(0));
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
-            PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
 
-            PdfImageXObject imageToWrite = null;
-            if (imageFilterResult.isModified()) {
-                ImageData filteredImage = imageFilterResult.getFilterResult();
-                if (filteredImage != null) {
-                    imageToWrite = new PdfImageXObject(filteredImage);
-                    copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
+            FilteredImagesCache.FilteredImageKey filteredImageKey = filter.createFilteredImageKey(encounteredImage, document);
+            PdfImageXObject imageToWrite = getFilteredImagesCache().get(filteredImageKey);
+
+            if (imageToWrite == null) {
+                PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
+                if (imageFilterResult.isModified()) {
+                    ImageData filteredImage = imageFilterResult.getFilterResult();
+                    if (filteredImage != null) {
+                        imageToWrite = new PdfImageXObject(filteredImage);
+                        copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
+                        getFilteredImagesCache().put(filteredImageKey, imageToWrite);
+                    }
+                } else {
+                    imageToWrite = encounteredImage.getImage();
                 }
-            } else {
-                imageToWrite = encounteredImage.getImage();
             }
 
             if (imageToWrite != null) {
@@ -643,10 +672,19 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
+    private FilteredImagesCache getFilteredImagesCache() {
+        return filteredImagesCache != null ? filteredImagesCache : new FilteredImagesCache();
+    }
+
     private void cleanInlineImage() {
         ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
         PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
-        ImageData filteredImage = imageFilterResult.getFilterResult();
+        ImageData filteredImage;
+        if (imageFilterResult.isModified()) {
+            filteredImage = imageFilterResult.getFilterResult();
+        } else {
+            filteredImage = ImageDataFactory.create(encounteredImage.getImage().getImageBytes());
+        }
         if (filteredImage != null) {
             Boolean imageMaskFlag = encounteredImage.getImage().getPdfObject().getAsBool(PdfName.ImageMask);
             if (imageMaskFlag != null && (boolean) imageMaskFlag) {

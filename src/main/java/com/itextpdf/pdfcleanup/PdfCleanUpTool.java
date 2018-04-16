@@ -46,6 +46,7 @@ import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.Version;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
@@ -74,13 +75,11 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
+
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
-
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -145,6 +144,8 @@ public class PdfCleanUpTool {
      * Values - list of regions defined by redact annotation
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
+
+    private FilteredImagesCache filteredImagesCache;
 
     private static final String PRODUCT_NAME = "pdfSweep";
     private static final int PRODUCT_MAJOR = 1;
@@ -216,6 +217,7 @@ public class PdfCleanUpTool {
         }
         this.pdfDocument = pdfDocument;
         this.pdfCleanUpLocations = new HashMap<>();
+        this.filteredImagesCache = new FilteredImagesCache();
 
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
@@ -263,6 +265,7 @@ public class PdfCleanUpTool {
         if (redactAnnotations != null) { // if it isn't null, then we are in "extract locations from redact annots" mode
             removeRedactAnnots();
         }
+        pdfCleanUpLocations.clear();
     }
 
     /**
@@ -283,9 +286,10 @@ public class PdfCleanUpTool {
 
         PdfPage page = pdfDocument.getPage(pageNumber);
         PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
+        cleanUpProcessor.setFilteredImagesCache(filteredImagesCache);
         cleanUpProcessor.processPageContent(page);
-        if(processAnnotations){
-            cleanUpProcessor.processPageAnnotations(page,regions);
+        if (processAnnotations) {
+            cleanUpProcessor.processPageAnnotations(page, regions);
         }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
@@ -384,7 +388,6 @@ public class PdfCleanUpTool {
      * Convert a PdfArray of floats into a List of Rectangle objects
      *
      * @param quadPoints input PdfArray
-     * @return
      */
     private List<Rectangle> translateQuadPointsToRectangles(PdfArray quadPoints) {
         List<Rectangle> rectangles = new ArrayList<Rectangle>();
@@ -453,11 +456,17 @@ public class PdfCleanUpTool {
     }
 
     private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString defaultAppearance, int justification) throws IOException {
-        Map<String, List> parsedDA = parseDAParam(defaultAppearance);
+        Map<String, List> parsedDA;
+        try {
+            parsedDA = parseDAParam(defaultAppearance);
+        }catch (NullPointerException npe){
+            throw new PdfException(PdfException.DefaultAppearanceNotFound);
+        }
         PdfFont font;
         float fontSize = 12;
         List fontArgs = parsedDA.get("Tf");
-        if (fontArgs != null) {
+        PdfDictionary formDictionary = pdfDocument.getCatalog().getPdfObject().getAsDictionary(PdfName.AcroForm);
+        if (fontArgs != null && formDictionary != null) {
             font = getFontFromAcroForm((PdfName) fontArgs.get(0));
             fontSize = ((PdfNumber) fontArgs.get(1)).floatValue();
         } else {
