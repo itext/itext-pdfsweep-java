@@ -84,7 +84,6 @@ public class PdfCleanUpEventListener implements IEventListener {
         if (content.size() == 0) {
             throw new PdfException(textDataExpected);
         }
-
         ArrayList<TextRenderInfo> text = new ArrayList<>(content.size());
         for (IEventData data : content) {
             if (data instanceof TextRenderInfo) {

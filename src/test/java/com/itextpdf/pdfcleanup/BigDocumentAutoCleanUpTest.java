@@ -40,11 +40,6 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.kernel.color.Color;
@@ -57,11 +52,6 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.CharacterRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
@@ -81,9 +71,6 @@ import org.junit.experimental.categories.Category;
 
 import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
 
-/**
- * @author Joris Schellekens
- */
 @Category(IntegrationTest.class)
 public class BigDocumentAutoCleanUpTest {
 
@@ -116,7 +103,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactLipsum_");
+        compareResults(cmp, output, outputPath, "diff_redactLipsum_");
     }
 
     @Test
@@ -142,7 +129,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactTonySoprano_");
+        compareResults(cmp, output, outputPath, "diff_redactTonySoprano_");
     }
 
     @Test
@@ -164,7 +151,7 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactIPhoneUserManualMatchColor_");
+        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManualMatchColor_");
     }
 
     @Test
@@ -187,10 +174,10 @@ public class BigDocumentAutoCleanUpTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
+        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
+    private void compareResults(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
         String errorMessage = cmpTool.compareVisually(output, cmp, targetDir, diffPrefix + "_");
 
@@ -258,6 +245,7 @@ class CustomLocationExtractionStrategy extends RegexBasedLocationExtractionStrat
         return colorByRectangle.containsKey(rect.getRectangle()) ? colorByRectangle.get(rect.getRectangle()) : Color.BLACK;
     }
 
+    @Override
     public ICleanupStrategy reset()
     {
         return new CustomLocationExtractionStrategy(regex);

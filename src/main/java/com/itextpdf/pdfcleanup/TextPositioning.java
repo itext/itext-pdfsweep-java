@@ -93,9 +93,7 @@ class TextPositioning {
             return;
         }
 
-        if (removedTextShift != null) {
-            removedTextShift = null;
-        }
+        removedTextShift = null;
 
         if (prevOperator == null) {
             firstPositioningOperands = new ArrayList<>(operands);
@@ -187,20 +185,23 @@ class TextPositioning {
     private void writeText(String operator, List<PdfObject> operands, PdfArray cleanedText, PdfCanvas canvas) {
         CanvasGraphicsState canvasGs = canvas.getGraphicsState();
         boolean newLineShowText = "'".equals(operator) || "\"".equals(operator);
-        if (newLineShowText && canvasGs.getLeading() != currLeading) {
-            canvas.setLeading((float) currLeading);
+        if (newLineShowText) {
+            if (canvasGs.getLeading() != currLeading) {
+                canvas.setLeading((float) currLeading);
+            }
+            // after new line operator, removed text shift doesn't matter
+            removedTextShift = null;
         }
-        PdfTextArray tjShiftArray = new PdfTextArray();
+        PdfTextArray tjShiftArray = null;
         if (removedTextShift != null) {
             float tjShift = (float) removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
+            tjShiftArray = new PdfTextArray();
             tjShiftArray.add(new PdfNumber(tjShift));
         }
         if (cleanedText != null) {
             if (newLineShowText) {
                 // char spacing and word spacing are set via writeNotAppliedTextStateParams() method
                 canvas.newlineText();
-                // after new line operator, removed text shift doesn't matter
-                removedTextShift = null;
             }
             if (removedTextShift != null) {
                 tjShiftArray.addAll(cleanedText);
