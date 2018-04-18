@@ -58,17 +58,16 @@ import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
 
@@ -85,7 +84,6 @@ public class BigDocumentAutoCleanUpTest {
 
     @Test
     public void redactLipsum() throws IOException, InterruptedException {
-
         String input = inputPath + "Lipsum.pdf";
         String output = outputPath + "redactLipsum.pdf";
         String cmp = inputPath + "cmp_redactLipsum.pdf";
@@ -109,7 +107,6 @@ public class BigDocumentAutoCleanUpTest {
 
     @Test
     public void redactTonySoprano() throws IOException, InterruptedException {
-
         String input = inputPath + "TheSopranos.pdf";
         String output = outputPath + "redactTonySoprano.pdf";
         String cmp = inputPath + "cmp_redactTonySoprano.pdf";
@@ -135,7 +132,6 @@ public class BigDocumentAutoCleanUpTest {
 
     @Test
     public void redactIPhoneUserManualMatchColor() throws IOException, InterruptedException {
-
         String input = inputPath + "iphone_user_guide_untagged.pdf";
         String output = outputPath + "redactIPhoneUserManualMatchColor.pdf";
         String cmp = inputPath + "cmp_redactIPhoneUserManualMatchColor.pdf";
@@ -157,8 +153,6 @@ public class BigDocumentAutoCleanUpTest {
 
     @Test
     public void redactIPhoneUserManual() throws IOException, InterruptedException {
-
-
         String input = inputPath + "iphone_user_guide_untagged.pdf";
         String output = outputPath + "redactIPhoneUserManual.pdf";
         String cmp = inputPath + "cmp_redactIPhoneUserManual.pdf";
@@ -176,6 +170,26 @@ public class BigDocumentAutoCleanUpTest {
 
         // compare
         compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
+    }
+
+    @Test
+    public void redactIPhoneUserManualColored() throws IOException, InterruptedException {
+        String input = inputPath + "iphone_user_guide_untagged_small.pdf";
+        String output = outputPath + "redactIPhoneUserManualColored.pdf";
+        String cmp = inputPath + "cmp_redactIPhoneUserManualColored.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(iphone)|(iPhone)").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+
+        pdf.close();
+
+        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManualColored_");
     }
 
     private void compareResults(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {

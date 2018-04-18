@@ -78,6 +78,6 @@ public class RegexBasedCleanupStrategy extends RegexBasedLocationExtractionStrat
     }
 
     public ICleanupStrategy reset() {
-        return new RegexBasedCleanupStrategy(pattern);
+        return new RegexBasedCleanupStrategy(pattern).setRedactionColor(redactionColor);
     }
 }
