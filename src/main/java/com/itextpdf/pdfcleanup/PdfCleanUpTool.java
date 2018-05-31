@@ -51,6 +51,7 @@ import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.counter.EventCounterHandler;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -75,6 +76,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.pdfcleanup.events.PdfSweepEvent;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -266,6 +268,7 @@ public class PdfCleanUpTool {
             removeRedactAnnots();
         }
         pdfCleanUpLocations.clear();
+        EventCounterHandler.getInstance().onEvent(PdfSweepEvent.CLEANUP, getClass());
     }
 
     /**
