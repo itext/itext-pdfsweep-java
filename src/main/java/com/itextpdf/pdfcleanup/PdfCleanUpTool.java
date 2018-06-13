@@ -52,6 +52,7 @@ import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.counter.EventCounterHandler;
+import com.itextpdf.kernel.counter.event.IMetaInfo;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -115,6 +116,8 @@ public class PdfCleanUpTool {
     private PdfDocument pdfDocument;
 
     private boolean processAnnotations;
+
+    private IMetaInfo cleanupMetaInfo;
 
     /**
      * Check if page annotations will be processed
@@ -254,6 +257,18 @@ public class PdfCleanUpTool {
     }
 
     /**
+     * Sets the cleanup meta info that will be passed to the {@link com.itextpdf.kernel.counter.EventCounter}
+     * with {@link PdfSweepEvent} and can be used to determine event origin.
+     *
+     * @param metaInfo the meta info to set.
+     * @return this instance
+     */
+    public PdfCleanUpTool setEventCountingMetaInfo(IMetaInfo metaInfo) {
+        this.cleanupMetaInfo = metaInfo;
+        return this;
+    }
+
+    /**
      * Cleans the document by erasing all the areas which are either provided or
      * extracted from redaction annotations.
      *
@@ -268,7 +283,7 @@ public class PdfCleanUpTool {
             removeRedactAnnots();
         }
         pdfCleanUpLocations.clear();
-        EventCounterHandler.getInstance().onEvent(PdfSweepEvent.CLEANUP, getClass());
+        EventCounterHandler.getInstance().onEvent(PdfSweepEvent.CLEANUP, cleanupMetaInfo, getClass());
     }
 
     /**
