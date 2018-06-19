@@ -152,10 +152,6 @@ public class PdfCleanUpTool {
 
     private FilteredImagesCache filteredImagesCache;
 
-    private static final String PRODUCT_NAME = "pdfSweep";
-    private static final int PRODUCT_MAJOR = 1;
-    private static final int PRODUCT_MINOR = 0;
-
     /**
      * Creates a {@link PdfCleanUpTool} object. No regions for erasing are specified.
      * Use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)} method
