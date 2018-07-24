@@ -586,6 +586,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         pdfDocument.close();
     }
 
+    //Test will be fixed in DEVSIX-2056
+    @Test
+    public void cleanUpTestFontColor() throws IOException, InterruptedException {
+        String filename = "fontCleanup.pdf";
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath + filename), new PdfWriter(outputPath + filename));
+        new PdfCleanUpTool(pdfDoc, true).cleanUp();
+        pdfDoc.close();
+        Assert.assertNull(new CompareTool().compareVisually(outputPath + filename, inputPath + "cmp_" + filename, outputPath, "diff_"));
+    }
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
