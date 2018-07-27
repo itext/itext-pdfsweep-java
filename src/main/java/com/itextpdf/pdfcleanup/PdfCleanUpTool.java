@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2017 iText Group NV
+    Copyright (c) 1998-2018 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -51,6 +51,8 @@ import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.counter.EventCounterHandler;
+import com.itextpdf.kernel.counter.event.IMetaInfo;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -75,6 +77,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.pdfcleanup.events.PdfSweepEvent;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -114,6 +117,8 @@ public class PdfCleanUpTool {
 
     private boolean processAnnotations;
 
+    private IMetaInfo cleanupMetaInfo;
+
     /**
      * Check if page annotations will be processed
      * Default: True
@@ -146,10 +151,6 @@ public class PdfCleanUpTool {
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
 
     private FilteredImagesCache filteredImagesCache;
-
-    private static final String PRODUCT_NAME = "pdfSweep";
-    private static final int PRODUCT_MAJOR = 1;
-    private static final int PRODUCT_MINOR = 0;
 
     /**
      * Creates a {@link PdfCleanUpTool} object. No regions for erasing are specified.
@@ -252,6 +253,18 @@ public class PdfCleanUpTool {
     }
 
     /**
+     * Sets the cleanup meta info that will be passed to the {@link com.itextpdf.kernel.counter.EventCounter}
+     * with {@link PdfSweepEvent} and can be used to determine event origin.
+     *
+     * @param metaInfo the meta info to set.
+     * @return this instance
+     */
+    public PdfCleanUpTool setEventCountingMetaInfo(IMetaInfo metaInfo) {
+        this.cleanupMetaInfo = metaInfo;
+        return this;
+    }
+
+    /**
      * Cleans the document by erasing all the areas which are either provided or
      * extracted from redaction annotations.
      *
@@ -266,6 +279,7 @@ public class PdfCleanUpTool {
             removeRedactAnnots();
         }
         pdfCleanUpLocations.clear();
+        EventCounterHandler.getInstance().onEvent(PdfSweepEvent.CLEANUP, cleanupMetaInfo, getClass());
     }
 
     /**
