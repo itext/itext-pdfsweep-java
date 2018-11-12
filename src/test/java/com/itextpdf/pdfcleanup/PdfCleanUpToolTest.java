@@ -43,6 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
+import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
@@ -55,6 +56,8 @@ import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.LogMessage;
+import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -594,6 +597,32 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         new PdfCleanUpTool(pdfDoc, true).cleanUp();
         pdfDoc.close();
         Assert.assertNull(new CompareTool().compareVisually(outputPath + filename, inputPath + "cmp_" + filename, outputPath, "diff_"));
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
+    public void noPropertiesInResourcesTest() throws IOException, InterruptedException {
+        String fileName = "noPropertiesInResourcesTest";
+        String input = inputPath + fileName + ".pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(0, 0, 595, 842), ColorConstants.RED));
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_" + fileName);
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
+    public void incorrectBDCToBMCTest() throws IOException, InterruptedException {
+        String fileName = "incorrectBDCToBMCTest";
+        String input = inputPath + fileName + ".pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(0, 0, 10, 10), ColorConstants.RED));
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath, "diff_" + fileName);
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
