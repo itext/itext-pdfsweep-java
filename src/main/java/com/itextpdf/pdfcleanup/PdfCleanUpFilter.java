@@ -55,9 +55,7 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfNumber;
-import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
@@ -74,20 +72,8 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
-import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
-import org.apache.commons.imaging.ImageFormats;
-import org.apache.commons.imaging.ImageInfo;
-import org.apache.commons.imaging.ImageReadException;
-import org.apache.commons.imaging.Imaging;
-import org.apache.commons.imaging.ImagingConstants;
-import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.MemoryCacheImageOutputStream;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -101,6 +87,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import org.apache.commons.imaging.ImageFormats;
+import org.apache.commons.imaging.ImageInfo;
+import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.ImagingConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
 
 public class PdfCleanUpFilter {
 
@@ -120,35 +117,6 @@ public class PdfCleanUpFilter {
 
     public PdfCleanUpFilter(List<Rectangle> regions) {
         this.regions = regions;
-    }
-
-    /**
-     * Generic class representing the result of filtering an object of type T
-     */
-    static class FilterResult<T> {
-        private boolean isModified;
-        private T filterResult;
-
-        FilterResult(boolean isModified, T filterResult) {
-            this.isModified = isModified;
-            this.filterResult = filterResult;
-        }
-
-        /**
-         * Get whether the object was modified or not
-         *
-         * @return true if the object was modified, false otherwise
-         */
-        boolean isModified() {
-            return isModified;
-        }
-
-        /**
-         * Get the result after filtering
-         */
-        T getFilterResult() {
-            return filterResult;
-        }
     }
 
     /**
@@ -193,7 +161,7 @@ public class PdfCleanUpFilter {
         return filterImage(imageKey.getImageRenderInfo(), imageKey.getCleanedAreas());
     }
 
-    FilterResult<ImageData> filterImage(ImageRenderInfo image, List<Rectangle> imageAreasToBeCleaned) {
+    private FilterResult<ImageData> filterImage(ImageRenderInfo image, List<Rectangle> imageAreasToBeCleaned) {
         if (imageAreasToBeCleaned == null) {
             return new FilterResult<>(true, null);
         } else if (imageAreasToBeCleaned.isEmpty()) {
@@ -253,54 +221,6 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Return true if two given rectangles (specified by an array of points) intersect.
-     *
-     * @param rect1 the first rectangle, considered as a subject of intersection. Even if it's width is zero,
-     *              it still can be intersected by second rectangle.
-     * @param rect2 the second rectangle, considered as intersecting rectangle. If it has zero width rectangles
-     *              are never considered as intersecting.
-     * @return true if the rectangles intersect, false otherwise
-     */
-    static boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
-        IClipper clipper = new DefaultClipper();
-        ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP);
-        // According to clipper documentation:
-        // The function will return false if the path is invalid for clipping. A path is invalid for clipping when:
-        // - it has less than 2 vertices;
-        // - it has 2 vertices but is not an open path;
-        // - the vertices are all co-linear and it is not an open path.
-        // Reference: http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Classes/ClipperBase/Methods/AddPath.htm
-        // If addition returns false, this means that there are less than 3 distinct points, because of rectangle zero width.
-        // Let's in this case specify the path as polyline, because we still want to know if redaction area
-        // intersects even with zero-width rectangles.
-        boolean intersectionSubjectAdded = ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT);
-        if (intersectionSubjectAdded) {
-            // working with paths is considered to be a bit faster in terms of performance.
-            Paths paths = new Paths();
-            clipper.execute(ClipType.INTERSECTION, paths, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return !paths.isEmpty();
-        } else {
-            int rect1Size = rect1.length;
-            intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
-            if (!intersectionSubjectAdded) {
-                // According to the comment above,
-                // this could have happened only if all four passed points are actually the same point.
-                // Adding here a point really close to the original point, to make sure it's not covered by the
-                // intersecting rectangle.
-                double smallDiff = 0.01;
-                List<Point> rect1List = new ArrayList<Point>(Arrays.asList(rect1));
-                rect1List.add(new Point(rect1[0].getX() + smallDiff, rect1[0].getY()));
-                rect1 = rect1List.toArray(new Point[rect1Size]);
-                intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
-                assert intersectionSubjectAdded;
-            }
-            PolyTree polyTree = new PolyTree();
-            clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return !Paths.makePolyTreeToPaths(polyTree).isEmpty();
-        }
-    }
-
-    /**
      * Calculates intersection of the image and the render filter region in the coordinate system relative to the image.
      *
      * @return {@code null} if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
@@ -327,141 +247,6 @@ public class PdfCleanUpFilter {
         }
 
         return areasToBeCleaned;
-    }
-
-    /**
-     * @return Image boundary rectangle in device space.
-     */
-    private Rectangle calcImageRect(ImageRenderInfo renderInfo) {
-        Matrix ctm = renderInfo.getImageCtm();
-
-        if (ctm == null) {
-            return null;
-        }
-
-        Point[] points = transformPoints(ctm, false,
-                new Point(0, 0), new Point(0, 1),
-                new Point(1, 0), new Point(1, 1));
-
-        return getAsRectangle(points[0], points[1], points[2], points[3]);
-    }
-
-    /**
-     * Transforms the given Rectangle into the image coordinate system which is [0,1]x[0,1] by default
-     */
-    private Rectangle transformRectIntoImageCoordinates(Rectangle rect, Matrix imageCtm) {
-        Point[] points = transformPoints(imageCtm, true, new Point(rect.getLeft(), rect.getBottom()),
-                new Point(rect.getLeft(), rect.getTop()),
-                new Point(rect.getRight(), rect.getBottom()),
-                new Point(rect.getRight(), rect.getTop()));
-        return getAsRectangle(points[0], points[1], points[2], points[3]);
-    }
-
-    /**
-     * Clean up an image using a List of Rectangles that need to be redacted
-     *
-     * @param imageBytes       the image to be cleaned up
-     * @param areasToBeCleaned the List of Rectangles that need to be redacted out of the image
-     */
-    private byte[] processImage(byte[] imageBytes, List<Rectangle> areasToBeCleaned) {
-        if (areasToBeCleaned.isEmpty()) {
-            return imageBytes;
-        }
-
-        try {
-            BufferedImage image = getBuffer(imageBytes);
-            ImageInfo imageInfo = Imaging.getImageInfo(imageBytes);
-            cleanImage(image, areasToBeCleaned);
-
-            // Apache can only read JPEG, so we should use awt for writing in this format
-            if (imageInfo.getFormat() == ImageFormats.JPEG) {
-                return getJPGBytes(image);
-            } else {
-                Map<String, Object> params = new HashMap<>();
-
-                if (imageInfo.getFormat() == ImageFormats.TIFF) {
-                    params.put(ImagingConstants.PARAM_KEY_COMPRESSION, TiffConstants.TIFF_COMPRESSION_LZW);
-                }
-
-                return Imaging.writeImageToBytes(image, imageInfo.getFormat(), params);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Reads the image bytes into a {@link BufferedImage}.
-     * Isolates and catches known Apache Commons Imaging bug for JPEG:
-     * https://issues.apache.org/jira/browse/IMAGING-97
-     *
-     * @param imageBytes       the image to be read, as a byte array
-     * @return a BufferedImage, independent of the reading strategy
-     */
-    private BufferedImage getBuffer(byte[] imageBytes) throws IOException {
-        try {
-            return Imaging.getBufferedImage(imageBytes);
-        } catch (ImageReadException ire) {
-            return ImageIO.read(new ByteArrayInputStream(imageBytes));
-        }
-    }
-
-    /**
-     * Clean up a BufferedImage using a List of Rectangles that need to be redacted
-     *
-     * @param image            the image to be cleaned up
-     * @param areasToBeCleaned the List of Rectangles that need to be redacted out of the image
-     */
-    private void cleanImage(BufferedImage image, List<Rectangle> areasToBeCleaned) {
-        Graphics2D graphics = image.createGraphics();
-        graphics.setColor(CLEANED_AREA_FILL_COLOR);
-
-        // A rectangle in the areasToBeCleaned list is treated to be in standard [0,1]x[0,1] image space
-        // (y varies from bottom to top and x from left to right), so we should scale the rectangle and also
-        // invert and shear the y axe.
-        for (Rectangle rect : areasToBeCleaned) {
-            int scaledBottomY = (int) Math.ceil(rect.getBottom() * image.getHeight());
-            int scaledTopY = (int) Math.floor(rect.getTop() * image.getHeight());
-
-            int x = (int) Math.ceil(rect.getLeft() * image.getWidth());
-            int y = scaledTopY * -1 + image.getHeight();
-            int width = (int) Math.floor(rect.getRight() * image.getWidth()) - x;
-            int height = scaledTopY - scaledBottomY;
-
-            graphics.fillRect(x, y, width, height);
-        }
-
-        graphics.dispose();
-    }
-
-    /**
-     * Get the bytes of the BufferedImage (in JPG format)
-     *
-     * @param image input image
-     */
-    private byte[] getJPGBytes(BufferedImage image) {
-        ByteArrayOutputStream outputStream = null;
-
-        try {
-            ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-            ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
-            jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            jpgWriteParam.setCompressionQuality(1.0f);
-
-            outputStream = new ByteArrayOutputStream();
-            jpgWriter.setOutput(new MemoryCacheImageOutputStream((outputStream)));
-            IIOImage outputImage = new IIOImage(image, null, null);
-
-            jpgWriter.write(null, outputImage, jpgWriteParam);
-            jpgWriter.dispose();
-            outputStream.flush();
-
-            return outputStream.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            closeOutputStream(outputStream);
-        }
     }
 
     private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
@@ -523,6 +308,189 @@ public class PdfCleanUpFilter {
         clipper.execute(ClipType.DIFFERENCE, resultTree, fillType, PolyFillType.NON_ZERO);
 
         return ClipperBridge.convertToPath(resultTree);
+    }
+
+    /**
+     * Return true if two given rectangles (specified by an array of points) intersect.
+     *
+     * @param rect1 the first rectangle, considered as a subject of intersection. Even if it's width is zero,
+     *              it still can be intersected by second rectangle.
+     * @param rect2 the second rectangle, considered as intersecting rectangle. If it has zero width rectangles
+     *              are never considered as intersecting.
+     * @return true if the rectangles intersect, false otherwise
+     */
+    static boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
+        IClipper clipper = new DefaultClipper();
+        ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP);
+        // According to clipper documentation:
+        // The function will return false if the path is invalid for clipping. A path is invalid for clipping when:
+        // - it has less than 2 vertices;
+        // - it has 2 vertices but is not an open path;
+        // - the vertices are all co-linear and it is not an open path.
+        // Reference: http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Classes/ClipperBase/Methods/AddPath.htm
+        // If addition returns false, this means that there are less than 3 distinct points, because of rectangle zero width.
+        // Let's in this case specify the path as polyline, because we still want to know if redaction area
+        // intersects even with zero-width rectangles.
+        boolean intersectionSubjectAdded = ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT);
+        if (intersectionSubjectAdded) {
+            // working with paths is considered to be a bit faster in terms of performance.
+            Paths paths = new Paths();
+            clipper.execute(ClipType.INTERSECTION, paths, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
+            return !paths.isEmpty();
+        } else {
+            int rect1Size = rect1.length;
+            intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+            if (!intersectionSubjectAdded) {
+                // According to the comment above,
+                // this could have happened only if all four passed points are actually the same point.
+                // Adding here a point really close to the original point, to make sure it's not covered by the
+                // intersecting rectangle.
+                double smallDiff = 0.01;
+                List<Point> rect1List = new ArrayList<Point>(Arrays.asList(rect1));
+                rect1List.add(new Point(rect1[0].getX() + smallDiff, rect1[0].getY()));
+                rect1 = rect1List.toArray(new Point[rect1Size]);
+                intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+                assert intersectionSubjectAdded;
+            }
+            PolyTree polyTree = new PolyTree();
+            clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
+            return !Paths.makePolyTreeToPaths(polyTree).isEmpty();
+        }
+    }
+
+    /**
+     * @return Image boundary rectangle in device space.
+     */
+    private static Rectangle calcImageRect(ImageRenderInfo renderInfo) {
+        Matrix ctm = renderInfo.getImageCtm();
+
+        if (ctm == null) {
+            return null;
+        }
+
+        Point[] points = transformPoints(ctm, false,
+                new Point(0, 0), new Point(0, 1),
+                new Point(1, 0), new Point(1, 1));
+
+        return getAsRectangle(points[0], points[1], points[2], points[3]);
+    }
+
+    /**
+     * Transforms the given Rectangle into the image coordinate system which is [0,1]x[0,1] by default
+     */
+    private static Rectangle transformRectIntoImageCoordinates(Rectangle rect, Matrix imageCtm) {
+        Point[] points = transformPoints(imageCtm, true, new Point(rect.getLeft(), rect.getBottom()),
+                new Point(rect.getLeft(), rect.getTop()),
+                new Point(rect.getRight(), rect.getBottom()),
+                new Point(rect.getRight(), rect.getTop()));
+        return getAsRectangle(points[0], points[1], points[2], points[3]);
+    }
+
+    /**
+     * Clean up an image using a List of Rectangles that need to be redacted
+     *
+     * @param imageBytes       the image to be cleaned up
+     * @param areasToBeCleaned the List of Rectangles that need to be redacted out of the image
+     */
+    private static byte[] processImage(byte[] imageBytes, List<Rectangle> areasToBeCleaned) {
+        if (areasToBeCleaned.isEmpty()) {
+            return imageBytes;
+        }
+
+        try {
+            BufferedImage image = getBuffer(imageBytes);
+            ImageInfo imageInfo = Imaging.getImageInfo(imageBytes);
+            cleanImage(image, areasToBeCleaned);
+
+            // Apache can only read JPEG, so we should use awt for writing in this format
+            if (imageInfo.getFormat() == ImageFormats.JPEG) {
+                return getJPGBytes(image);
+            } else {
+                Map<String, Object> params = new HashMap<>();
+
+                if (imageInfo.getFormat() == ImageFormats.TIFF) {
+                    params.put(ImagingConstants.PARAM_KEY_COMPRESSION, TiffConstants.TIFF_COMPRESSION_LZW);
+                }
+
+                return Imaging.writeImageToBytes(image, imageInfo.getFormat(), params);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Reads the image bytes into a {@link BufferedImage}.
+     * Isolates and catches known Apache Commons Imaging bug for JPEG:
+     * https://issues.apache.org/jira/browse/IMAGING-97
+     *
+     * @param imageBytes the image to be read, as a byte array
+     * @return a BufferedImage, independent of the reading strategy
+     */
+    private static BufferedImage getBuffer(byte[] imageBytes) throws IOException {
+        try {
+            return Imaging.getBufferedImage(imageBytes);
+        } catch (ImageReadException ire) {
+            return ImageIO.read(new ByteArrayInputStream(imageBytes));
+        }
+    }
+
+    /**
+     * Clean up a BufferedImage using a List of Rectangles that need to be redacted
+     *
+     * @param image            the image to be cleaned up
+     * @param areasToBeCleaned the List of Rectangles that need to be redacted out of the image
+     */
+    private static void cleanImage(BufferedImage image, List<Rectangle> areasToBeCleaned) {
+        Graphics2D graphics = image.createGraphics();
+        graphics.setColor(CLEANED_AREA_FILL_COLOR);
+
+        // A rectangle in the areasToBeCleaned list is treated to be in standard [0,1]x[0,1] image space
+        // (y varies from bottom to top and x from left to right), so we should scale the rectangle and also
+        // invert and shear the y axe.
+        for (Rectangle rect : areasToBeCleaned) {
+            int scaledBottomY = (int) Math.ceil(rect.getBottom() * image.getHeight());
+            int scaledTopY = (int) Math.floor(rect.getTop() * image.getHeight());
+
+            int x = (int) Math.ceil(rect.getLeft() * image.getWidth());
+            int y = scaledTopY * -1 + image.getHeight();
+            int width = (int) Math.floor(rect.getRight() * image.getWidth()) - x;
+            int height = scaledTopY - scaledBottomY;
+
+            graphics.fillRect(x, y, width, height);
+        }
+
+        graphics.dispose();
+    }
+
+    /**
+     * Get the bytes of the BufferedImage (in JPG format)
+     *
+     * @param image input image
+     */
+    private static byte[] getJPGBytes(BufferedImage image) {
+        ByteArrayOutputStream outputStream = null;
+
+        try {
+            ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+            ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
+            jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            jpgWriteParam.setCompressionQuality(1.0f);
+
+            outputStream = new ByteArrayOutputStream();
+            jpgWriter.setOutput(new MemoryCacheImageOutputStream((outputStream)));
+            IIOImage outputImage = new IIOImage(image, null, null);
+
+            jpgWriter.write(null, outputImage, jpgWriteParam);
+            jpgWriter.dispose();
+            outputStream.flush();
+
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            closeOutputStream(outputStream);
+        }
     }
 
     /**
@@ -700,7 +668,7 @@ public class PdfCleanUpFilter {
         return approximation;
     }
 
-    private Point[] transformPoints(Matrix transformationMatrix, boolean inverse, Point... points) {
+    private static Point[] transformPoints(Matrix transformationMatrix, boolean inverse, Point... points) {
         AffineTransform t = new AffineTransform(transformationMatrix.get(Matrix.I11), transformationMatrix.get(Matrix.I12),
                 transformationMatrix.get(Matrix.I21), transformationMatrix.get(Matrix.I22),
                 transformationMatrix.get(Matrix.I31), transformationMatrix.get(Matrix.I32));
@@ -724,7 +692,7 @@ public class PdfCleanUpFilter {
      *
      * @param renderInfo input TextRenderInfo object
      */
-    private Point[] getTextRectangle(TextRenderInfo renderInfo) {
+    private static Point[] getTextRectangle(TextRenderInfo renderInfo) {
         LineSegment ascent = renderInfo.getAscentLine();
         LineSegment descent = renderInfo.getDescentLine();
 
@@ -741,7 +709,7 @@ public class PdfCleanUpFilter {
      *
      * @param rect input Rectangle
      */
-    private Point[] getRectangleVertices(Rectangle rect) {
+    private static Point[] getRectangleVertices(Rectangle rect) {
         Point[] points = {
                 new Point(rect.getLeft(), rect.getBottom()),
                 new Point(rect.getRight(), rect.getBottom()),
@@ -760,7 +728,7 @@ public class PdfCleanUpFilter {
      * @param p3 third Point
      * @param p4 fourth Point
      */
-    private Rectangle getAsRectangle(Point p1, Point p2, Point p3, Point p4) {
+    private static Rectangle getAsRectangle(Point p1, Point p2, Point p3, Point p4) {
         List<Double> xs = Arrays.asList(p1.getX(), p2.getX(), p3.getX(), p4.getX());
         List<Double> ys = Arrays.asList(p1.getY(), p2.getY(), p3.getY(), p4.getY());
 
@@ -778,7 +746,7 @@ public class PdfCleanUpFilter {
      * @param rect1 first Rectangle
      * @param rect2 second Rectangle
      */
-    private Rectangle getRectanglesIntersection(Rectangle rect1, Rectangle rect2) {
+    private static Rectangle getRectanglesIntersection(Rectangle rect1, Rectangle rect2) {
         float x1 = Math.max(rect1.getLeft(), rect2.getLeft());
         float y1 = Math.max(rect1.getBottom(), rect2.getBottom());
         float x2 = Math.min(rect1.getRight(), rect2.getRight());
@@ -788,13 +756,42 @@ public class PdfCleanUpFilter {
                 : null;
     }
 
-    private void closeOutputStream(OutputStream os) {
+    private static void closeOutputStream(OutputStream os) {
         if (os != null) {
             try {
                 os.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * Generic class representing the result of filtering an object of type T
+     */
+    static class FilterResult<T> {
+        private boolean isModified;
+        private T filterResult;
+
+        FilterResult(boolean isModified, T filterResult) {
+            this.isModified = isModified;
+            this.filterResult = filterResult;
+        }
+
+        /**
+         * Get whether the object was modified or not
+         *
+         * @return true if the object was modified, false otherwise
+         */
+        boolean isModified() {
+            return isModified;
+        }
+
+        /**
+         * Get the result after filtering
+         */
+        T getFilterResult() {
+            return filterResult;
         }
     }
 
