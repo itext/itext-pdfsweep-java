@@ -303,7 +303,7 @@ public class PdfCleanUpTool {
         cleanUpProcessor.setFilteredImagesCache(filteredImagesCache);
         cleanUpProcessor.processPageContent(page);
         if (processAnnotations) {
-            cleanUpProcessor.processPageAnnotations(page, regions);
+            cleanUpProcessor.processPageAnnotations(page, regions, redactAnnotations != null);
         }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
@@ -429,10 +429,13 @@ public class PdfCleanUpTool {
     private void removeRedactAnnots() throws IOException {
         for (PdfRedactAnnotation annotation : redactAnnotations.keySet()) {
             PdfPage page = annotation.getPage();
-            page.removeAnnotation(annotation);
-            PdfPopupAnnotation popup = annotation.getPopup();
-            if (popup != null) {
-                page.removeAnnotation(popup);
+            if (page != null) {
+                page.removeAnnotation(annotation);
+
+                PdfPopupAnnotation popup = annotation.getPopup();
+                if (popup != null) {
+                    page.removeAnnotation(popup);
+                }
             }
 
             PdfCanvas canvas = new PdfCanvas(page);
