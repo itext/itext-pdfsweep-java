@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2018 iText Group NV
+    Copyright (c) 1998-2019 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -303,7 +303,7 @@ public class PdfCleanUpTool {
         cleanUpProcessor.setFilteredImagesCache(filteredImagesCache);
         cleanUpProcessor.processPageContent(page);
         if (processAnnotations) {
-            cleanUpProcessor.processPageAnnotations(page, regions);
+            cleanUpProcessor.processPageAnnotations(page, regions, redactAnnotations != null);
         }
 
         PdfCanvas pageCleanedContents = cleanUpProcessor.popCleanedCanvas();
@@ -429,10 +429,13 @@ public class PdfCleanUpTool {
     private void removeRedactAnnots() throws IOException {
         for (PdfRedactAnnotation annotation : redactAnnotations.keySet()) {
             PdfPage page = annotation.getPage();
-            page.removeAnnotation(annotation);
-            PdfPopupAnnotation popup = annotation.getPopup();
-            if (popup != null) {
-                page.removeAnnotation(popup);
+            if (page != null) {
+                page.removeAnnotation(annotation);
+
+                PdfPopupAnnotation popup = annotation.getPopup();
+                if (popup != null) {
+                    page.removeAnnotation(popup);
+                }
             }
 
             PdfCanvas canvas = new PdfCanvas(page);

@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2018 iText Group NV
+    Copyright (c) 1998-2019 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -49,21 +49,15 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Category(IntegrationTest.class)
 public class CleanUpAnnotationTest extends ExtendedITextTest {
@@ -96,7 +90,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation linkLoc = new PdfCleanUpLocation(1,new Rectangle(235,740,30,16), ColorConstants.BLUE);
+        PdfCleanUpLocation linkLoc = new PdfCleanUpLocation(1, new Rectangle(235, 740, 30, 16), ColorConstants.BLUE);
         cleanUpLocations.add(linkLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -112,7 +106,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation textLoc = new PdfCleanUpLocation(1,new Rectangle(150,650,0,0), ColorConstants.RED);
+        PdfCleanUpLocation textLoc = new PdfCleanUpLocation(1, new Rectangle(150, 650, 0, 0), ColorConstants.RED);
         cleanUpLocations.add(textLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -127,12 +121,27 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation lineLoc = new PdfCleanUpLocation(1,new Rectangle(20,20,555,0), ColorConstants.GREEN);
+        PdfCleanUpLocation lineLoc = new PdfCleanUpLocation(1, new Rectangle(20, 20, 555, 0), ColorConstants.GREEN);
         cleanUpLocations.add(lineLoc);
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_Annotation_line01");
 
+    }
+
+    @Test
+    public void cleanLineAnnotation02() throws IOException, InterruptedException {
+        String input = inputPath + "lineAnnotationLeaders.pdf";
+        String output = outputPath + "cleanLineAnnotation02.pdf";
+        String cmp = inputPath + "cmp_cleanLineAnnotation02.pdf";
+
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+
+        PdfCleanUpLocation lineLoc = new PdfCleanUpLocation(1, new Rectangle(100, 560, 200, 30), ColorConstants.GREEN);
+        cleanUpLocations.add(lineLoc);
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath);
     }
 
     @Test
@@ -142,7 +151,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_cleanAnnotation_highlight01.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(105,500,70,10), ColorConstants.BLACK);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1, new Rectangle(105, 500, 70, 10), ColorConstants.BLACK);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);
@@ -150,30 +159,70 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
     }
 
     @Test
-    public void cleanFormAnnotations01() throws IOException,InterruptedException{
+    public void cleanStrikeOutAnnotation01() throws IOException, InterruptedException {
+        String input = inputPath + "strikeOutAnnotQuadOutsideRect.pdf";
+        String output = outputPath + "cleanStrikeOutAnnotation01.pdf";
+        String cmp = inputPath + "cmp_cleanStrikeOutAnnotation01.pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+
+        cleanUpLocations.add(new PdfCleanUpLocation(1, new Rectangle(10, 490, 10, 30), ColorConstants.BLACK));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath);
+    }
+
+    @Test
+    public void cleanStrikeOutAnnotation02() throws IOException, InterruptedException {
+        String input = inputPath + "strikeOutAnnotQuadOutsideRect.pdf";
+        String output = outputPath + "cleanStrikeOutAnnotation02.pdf";
+        String cmp = inputPath + "cmp_cleanStrikeOutAnnotation02.pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+
+        cleanUpLocations.add(new PdfCleanUpLocation(1, new Rectangle(0, 0, 200, 200), ColorConstants.BLACK));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath);
+    }
+
+    @Test
+    public void cleanFreeTextAnnotation01() throws IOException, InterruptedException {
+        String input = inputPath + "freeTextAnnotation.pdf";
+        String output = outputPath + "cleanFreeTextAnnotation01.pdf";
+        String cmp = inputPath + "cmp_cleanFreeTextAnnotation01.pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+
+        cleanUpLocations.add(new PdfCleanUpLocation(1, new Rectangle(100, 560, 200, 30), ColorConstants.BLACK));
+
+        cleanUp(input, output, cleanUpLocations);
+        compareByContent(cmp, output, outputPath);
+    }
+
+    @Test
+    public void cleanFormAnnotations01() throws IOException, InterruptedException {
         String input = inputPath + "formAnnotation.pdf";
         String output = outputPath + "formAnnotation01.pdf";
         String cmp = inputPath + "cmp_formAnnotation01.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,500,170), ColorConstants.YELLOW);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1, new Rectangle(20, 600, 500, 170), ColorConstants.YELLOW);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_form01");
     }
+
     @Test
-    public void cleanFormAnnotations02() throws IOException,InterruptedException{
+    public void cleanFormAnnotations02() throws IOException, InterruptedException {
         String input = inputPath + "formAnnotation.pdf";
         String output = outputPath + "formAnnotation02.pdf";
         String cmp = inputPath + "cmp_formAnnotation02.pdf";
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
 
-        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1,new Rectangle(20,600,300,100), ColorConstants.YELLOW);
+        PdfCleanUpLocation highLightLoc = new PdfCleanUpLocation(1, new Rectangle(20, 600, 300, 100), ColorConstants.YELLOW);
         cleanUpLocations.add(highLightLoc);
 
         cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_form01");
+        compareByContent(cmp, output, outputPath, "diff_form02");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
@@ -185,6 +234,10 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         cleaner.cleanUp();
 
         pdfDocument.close();
+    }
+
+    private void compareByContent(String cmp, String output, String targetDir) throws IOException, InterruptedException {
+        compareByContent(cmp, output, targetDir, null);
     }
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {

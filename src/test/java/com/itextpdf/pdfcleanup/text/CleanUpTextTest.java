@@ -40,20 +40,26 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup;
+package com.itextpdf.pdfcleanup.text;
 
+import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.utils.CompareTool;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import com.itextpdf.pdfcleanup.PdfCleanupProductInfo;
-import com.itextpdf.kernel.Version;
+import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
+import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.LogMessage;
+import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -61,72 +67,26 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(IntegrationTest.class)
-public class CleanUpTaggedPdfTest extends ExtendedITextTest {
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/";
+public class CleanUpTextTest extends ExtendedITextTest{
+    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/text/CleanUpTextTest/";
+    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/text/CleanUpTextTest/";
+
     @BeforeClass
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
 
     @Test
-    public void cleanTextFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanText_full.pdf";
-        String output = outputPath + "cleanText_full.pdf";
-        String cmp = inputPath + "cmp_cleanText_full.pdf";
+    @LogMessages(messages = {
+            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
+            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
+    public void cleanZeroWidthTextInvalidFont() throws IOException, InterruptedException {
+        String input = inputPath + "cleanZeroWidthTextInvalidFont.pdf";
+        String output = outputPath + "cleanZeroWidthTextInvalidFont.pdf";
+        String cmp = inputPath + "cmp_cleanZeroWidthTextInvalidFont.pdf";
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_text_full");
-    }
-
-    @Test
-    public void cleanTextPartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanText_partial.pdf";
-        String output = outputPath + "cleanText_partial.pdf";
-        String cmp = inputPath + "cmp_cleanText_partial.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_text_partial");
-    }
-
-    @Test
-    public void cleanImageFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanImage_full.pdf";
-        String output = outputPath + "cleanImage_full.pdf";
-        String cmp = inputPath + "cmp_cleanImage_full.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_image_full");
-    }
-
-    @Test
-    public void cleanImagePartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanImage_partial.pdf";
-        String output = outputPath + "cleanImage_partial.pdf";
-        String cmp = inputPath + "cmp_cleanImage_partial.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_image_partial");
-    }
-
-    @Test
-    public void cleanPathFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanPath_full.pdf";
-        String output = outputPath + "cleanPath_full.pdf";
-        String cmp = inputPath + "cmp_cleanPath_full.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_path_full");
-    }
-
-    @Test
-    public void cleanPathPartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanPath_partial.pdf";
-        String output = outputPath + "cleanPath_partial.pdf";
-        String cmp = inputPath + "cmp_cleanPath_partial.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_path_partial");
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(50, 50, 500, 500))));
+        compareByContent(cmp, output, outputPath);
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
@@ -140,9 +100,9 @@ public class CleanUpTaggedPdfTest extends ExtendedITextTest {
         pdfDocument.close();
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
+    private void compareByContent(String cmp, String output, String targetDir) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
+        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir);
 
         if (errorMessage != null) {
             Assert.fail(errorMessage);
