@@ -83,29 +83,6 @@ public class BigDocumentAutoCleanUpTest {
     }
 
     @Test
-    public void redactLipsum() throws IOException, InterruptedException {
-        String input = inputPath + "Lipsum.pdf";
-        String output = outputPath + "redactLipsum.pdf";
-        String cmp = inputPath + "cmp_redactLipsum.pdf";
-
-        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
-        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
-
-        PdfWriter writer = new PdfWriter(output);
-        writer.setCompressionLevel(0);
-        PdfDocument pdf = new PdfDocument(new PdfReader(input), writer);
-
-        // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
-
-        pdf.close();
-
-        // compare
-        compareResults(cmp, output, outputPath, "diff_redactLipsum_");
-    }
-
-    @Test
     public void redactTonySoprano() throws IOException, InterruptedException {
         String input = inputPath + "TheSopranos.pdf";
         String output = outputPath + "redactTonySoprano.pdf";

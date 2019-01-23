@@ -42,8 +42,11 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.io.util.MessageFormatUtil;
+import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Line;
@@ -98,6 +101,8 @@ import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.ImagingConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PdfCleanUpFilter {
 
@@ -112,6 +117,8 @@ public class PdfCleanUpFilter {
      * However, a better approximation is possible using 0.55191502449
      */
     private static final double CIRCLE_APPROXIMATION_CONST = 0.55191502449;
+
+    private static final float EPS = 1e-4f;
 
     private List<Rectangle> regions;
 
@@ -294,8 +301,18 @@ public class PdfCleanUpFilter {
         ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
 
         for (Rectangle rectangle : regions) {
-            Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
-            ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
+            try {
+                Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
+                ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
+            } catch (PdfException e) {
+                if (!(e.getCause() instanceof NoninvertibleTransformException)) {
+                    throw e;
+                } else {
+                    Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
+                    logger.error(MessageFormatUtil.format(LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
+                }
+            }
+
         }
 
         PolyFillType fillType = PolyFillType.NON_ZERO;
@@ -321,7 +338,42 @@ public class PdfCleanUpFilter {
      */
     static boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
         IClipper clipper = new DefaultClipper();
-        ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP);
+        // If the redaction area is degenerate, the result will be false
+        if (!ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP)) {
+            // If the content area is not degenerate (and the redaction area is), let's return false:
+            // even if they overlaps somehow, we do not consider it as an intersection.
+            // If the content area is degenerate, let's process this case specifically
+            if (!ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT)) {
+                // Clipper fails to process degenerate redaction areas. However that's vital for pdfAutoSweep,
+                // because in some cases (for example, noninvertible cm) the text's area might be degenerate,
+                // but we still need to sweep the content.
+                // The idea is as follows:
+                // a) if the degenerate redaction area represents a point, there is no intersection
+                // b) if the degenerate redaction area represents a line, let's check that there the redaction line
+                // equals to one of the edges of the content's area. That is implemented in respect to area generation,
+                // because the redaction line corresponds to the descent line of the content.
+                if (!ClipperBridge.addPolylineSubjectToClipper(clipper, rect2)) {
+                    return false;
+                }
+                if (rect1.length != rect2.length) {
+                    return false;
+                }
+                Point startPoint = rect2[0];
+                Point endPoint = rect2[0];
+                for (int i = 1; i < rect2.length; i++) {
+                    if (rect2[i].distance(startPoint) > EPS) {
+                        endPoint = rect2[i];
+                        break;
+                    }
+                }
+                for (int i = 0; i < rect1.length; i++) {
+                    if (isPointOnALineSegment(rect1[i], startPoint, endPoint, true)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
         // According to clipper documentation:
         // The function will return false if the path is invalid for clipping. A path is invalid for clipping when:
         // - it has less than 2 vertices;
@@ -356,6 +408,35 @@ public class PdfCleanUpFilter {
             clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
             return !Paths.makePolyTreeToPaths(polyTree).isEmpty();
         }
+    }
+
+    private static boolean isPointOnALineSegment(Point currPoint, Point linePoint1, Point linePoint2, boolean isBetweenLinePoints) {
+        double dxc = currPoint.x - linePoint1.x;
+        double dyc = currPoint.y - linePoint1.y;
+
+        double dxl = linePoint2.x - linePoint1.x;
+        double dyl = linePoint2.y - linePoint1.y;
+
+        double cross = dxc * dyl - dyc * dxl;
+
+        // if point is on a line, let's check whether it's between provided line points
+        if (Math.abs(cross) <= EPS) {
+            if (isBetweenLinePoints) {
+                if (Math.abs(dxl) >= Math.abs(dyl)) {
+                    return dxl > 0 ?
+                            linePoint1.x - EPS <= currPoint.x && currPoint.x <= linePoint2.x + EPS :
+                            linePoint2.x - EPS <= currPoint.x && currPoint.x <= linePoint1.x + EPS;
+                } else {
+                    return dyl > 0 ?
+                            linePoint1.y - EPS <= currPoint.y && currPoint.y <= linePoint2.y + EPS :
+                            linePoint2.y - EPS <= currPoint.y && currPoint.y <= linePoint1.y + EPS;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -678,7 +759,7 @@ public class PdfCleanUpFilter {
             try {
                 t = t.createInverse();
             } catch (NoninvertibleTransformException e) {
-                throw new RuntimeException(e);
+                throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
             }
         }
 
