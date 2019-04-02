@@ -65,8 +65,8 @@ import java.util.List;
 @Category(IntegrationTest.class)
 public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
 
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
+    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/";
+    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/";
 
     @BeforeClass
     public static void before() {

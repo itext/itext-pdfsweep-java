@@ -642,22 +642,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
 
-            FilteredImagesCache.FilteredImageKey filteredImageKey = filter.createFilteredImageKey(encounteredImage, document);
-            PdfImageXObject imageToWrite = getFilteredImagesCache().get(filteredImageKey);
-
-            if (imageToWrite == null) {
-                PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
-                if (imageFilterResult.isModified()) {
-                    ImageData filteredImage = imageFilterResult.getFilterResult();
-                    if (filteredImage != null) {
-                        imageToWrite = new PdfImageXObject(filteredImage);
-                        copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
-                        getFilteredImagesCache().put(filteredImageKey, imageToWrite);
-                    }
-                } else {
-                    imageToWrite = encounteredImage.getImage();
-                }
-            }
+            FilteredImagesCache.FilteredImageKey key = filter.createFilteredImageKey(encounteredImage.getImage(), encounteredImage.getImageCtm(), document);
+            PdfImageXObject imageToWrite = getFilteredImage(key, encounteredImage.getImageCtm());
 
             if (imageToWrite != null) {
                 float[] ctm = pollNotAppliedCtm();
@@ -665,6 +651,69 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 openNotWrittenTags();
                 getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
+        }
+    }
+
+    private PdfImageXObject getFilteredImage(FilteredImagesCache.FilteredImageKey filteredImageKey, Matrix ctmForMasksFiltering) {
+        PdfImageXObject originalImage = filteredImageKey.getImageXObject();
+        PdfImageXObject imageToWrite = getFilteredImagesCache().get(filteredImageKey);
+
+        if (imageToWrite == null) {
+            PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
+            if (imageFilterResult.isModified()) {
+                ImageData filteredImageData = imageFilterResult.getFilterResult();
+                if (Boolean.TRUE.equals(originalImage.getPdfObject().getAsBool(PdfName.ImageMask))) {
+                    if (!PdfCleanUpFilter.imageSupportsDirectCleanup(originalImage)) {
+                        Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
+                        logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+                    } else {
+                        filteredImageData.makeMask();
+                    }
+                }
+                if (filteredImageData != null) {
+                    imageToWrite = new PdfImageXObject(filteredImageData);
+                    getFilteredImagesCache().put(filteredImageKey, imageToWrite);
+                    if (ctmForMasksFiltering != null && !filteredImageData.isMask()) {
+                        filterImageMask(originalImage, PdfName.SMask, ctmForMasksFiltering, imageToWrite);
+                        filterImageMask(originalImage, PdfName.Mask, ctmForMasksFiltering, imageToWrite);
+
+                        PdfArray colourKeyMaskingArr = originalImage.getPdfObject().getAsArray(PdfName.Mask);
+                        if (colourKeyMaskingArr != null) {
+                            // In general we should be careful about images that might have changed their color space
+                            // or have been converted to lossy format during filtering.
+                            // However we have been copying Mask entry non-conditionally before and also I'm not sure
+                            // that cases described above indeed take place.
+                            imageToWrite.put(PdfName.Mask, colourKeyMaskingArr);
+                        }
+
+                        if (originalImage.getPdfObject().containsKey(PdfName.SMaskInData)) {
+                            // This entry will likely lose meaning after image conversion to bitmap and back again, but let's leave as is for now.
+                            imageToWrite.put(PdfName.SMaskInData, originalImage.getPdfObject().get(PdfName.SMaskInData));
+                        }
+                    }
+                }
+            } else {
+                imageToWrite = originalImage;
+            }
+        }
+        return imageToWrite;
+    }
+
+    private void filterImageMask(PdfImageXObject originalImage, PdfName maskKey, Matrix ctmForMasksFiltering, PdfImageXObject imageToWrite) {
+        PdfStream maskStream = originalImage.getPdfObject().getAsStream(maskKey);
+        if (maskStream == null || ctmForMasksFiltering == null) {
+            return;
+        }
+        PdfImageXObject maskImageXObject = new PdfImageXObject(maskStream);
+        if (!PdfCleanUpFilter.imageSupportsDirectCleanup(maskImageXObject)) {
+            Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
+            logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+            return;
+        }
+        FilteredImagesCache.FilteredImageKey k = filter.createFilteredImageKey(maskImageXObject, ctmForMasksFiltering, document);
+        PdfImageXObject maskToWrite = getFilteredImage(k, null);
+        if (maskToWrite != null) {
+            imageToWrite.getPdfObject().put(maskKey, maskToWrite.getPdfObject());
         }
     }
 
@@ -700,20 +749,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
         // IMPORTANT: If writing of pdf stream of not changed inline image will be implemented, don't forget to ensure that
         // inline image color space is present in new resources if necessary.
-    }
-
-    private void copySMaskData(PdfStream imageStream, PdfStream filteredImageStream) {
-        if (imageStream.containsKey(PdfName.SMask)) {
-            filteredImageStream.put(PdfName.SMask, imageStream.get(PdfName.SMask));
-        }
-
-        if (imageStream.containsKey(PdfName.Mask)) {
-            filteredImageStream.put(PdfName.Mask, imageStream.get(PdfName.Mask));
-        }
-
-        if (imageStream.containsKey(PdfName.SMaskInData)) {
-            filteredImageStream.put(PdfName.SMaskInData, imageStream.get(PdfName.SMaskInData));
-        }
     }
 
     private void writePath() {
