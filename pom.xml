@@ -13,6 +13,22 @@
   <version>2.0.5-SNAPSHOT</version>
 
   <name>pdfSweep</name>
+  <url>https://itextpdf.com/products/itext-7/pdfsweep</url>
+  <description>
+    Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but they
+    include some confidential, sensitive information which should not be shared, pdfSweep is your solution. Redact a PDF
+    containing sensitive, confidential information, such as personal medical information, account numbers, national
+    identification numbers, personal details or social security numbers in a reliable and secure way. Data redaction
+    with pdfSweep removes such data including any underlying information, making it impossible for such information to
+    be recovered. With pdfSweep you can also redact drawings or parts of drawings you do not want your competition to
+    see. PDF Data redaction with pdfSweep gives you the piece of mind that your companies confidential information
+    remains just that, confidential.
+  </description>
+
+  <scm>
+    <connection>scm:git:ssh://git@git.itextsupport.com:7999/i7j/cleanup.git</connection>
+    <url>https://git.itextsupport.com/projects/I7J/repos/cleanup</url>
+  </scm>
 
   <properties>
     <itext.version>${project.parent.version}</itext.version>
