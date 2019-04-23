@@ -227,7 +227,7 @@ public class PdfAutoSweep {
         List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
 
         // random title generation
-        Random rnd = new Random(SystemUtil.getTimeBasedSeed());
+        Random rnd = new Random(SystemUtil.getTimeBasedIntSeed());
         Set<String> usedTitles = new HashSet<>();
 
         for (PdfCleanUpLocation loc : cleanUpLocations) {

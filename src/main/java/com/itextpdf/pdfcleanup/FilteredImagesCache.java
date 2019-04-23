@@ -46,11 +46,8 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,8 +57,8 @@ import java.util.Set;
 class FilteredImagesCache {
     private Map<PdfIndirectReference, List<FilteredImageKey>> cache = new HashMap<>();
 
-    static FilteredImageKey createFilteredImageKey(ImageRenderInfo image, List<Rectangle> areasToBeCleaned, PdfDocument document) {
-        PdfStream imagePdfObject = image.getImage().getPdfObject();
+    static FilteredImageKey createFilteredImageKey(PdfImageXObject image, List<Rectangle> areasToBeCleaned, PdfDocument document) {
+        PdfStream imagePdfObject = image.getPdfObject();
         if (imagePdfObject.getIndirectReference() == null) {
             imagePdfObject.makeIndirect(document);
         }
@@ -125,12 +122,12 @@ class FilteredImagesCache {
     }
 
     static class FilteredImageKey {
-        private ImageRenderInfo image;
+        private PdfImageXObject image;
         private List<Rectangle> cleanedAreas;
         private PdfImageXObject filteredImage;
 
-        FilteredImageKey(ImageRenderInfo imageInfo, List<Rectangle> cleanedAreas) {
-            this.image = imageInfo;
+        FilteredImageKey(PdfImageXObject image, List<Rectangle> cleanedAreas) {
+            this.image = image;
             this.cleanedAreas = cleanedAreas;
         }
 
@@ -138,12 +135,12 @@ class FilteredImagesCache {
             return cleanedAreas;
         }
 
-        ImageRenderInfo getImageRenderInfo() {
+        PdfImageXObject getImageXObject() {
             return image;
         }
 
         PdfIndirectReference getImageIndRef() {
-            return image.getImage().getPdfObject().getIndirectReference();
+            return image.getPdfObject().getIndirectReference();
         }
 
         PdfImageXObject getFilteredImage() {

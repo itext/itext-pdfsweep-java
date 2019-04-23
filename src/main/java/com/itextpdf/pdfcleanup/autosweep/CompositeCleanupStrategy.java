@@ -50,7 +50,15 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
  * This class is a composite pattern for {@code ICleanupStrategy}

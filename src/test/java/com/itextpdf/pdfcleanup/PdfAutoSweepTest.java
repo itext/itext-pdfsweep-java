@@ -43,11 +43,14 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.io.LogMessageConstant;
-import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
+import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
+import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
@@ -58,15 +61,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @Category(IntegrationTest.class)
-public class BigDocumentCleanUpTest extends ExtendedITextTest {
+public class PdfAutoSweepTest extends ExtendedITextTest {
 
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/BigDocumentCleanUpTest/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/BigDocumentCleanUpTest/";
+    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
+    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
+
 
     @BeforeClass
     public static void before() {
@@ -74,60 +75,50 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     }
 
     @Test
-    public void bigUntaggedDocument() throws IOException, InterruptedException {
-        String input = inputPath + "iphone_user_guide_untagged.pdf";
-        String output = outputPath + "bigUntaggedDocument.pdf";
-        String cmp = inputPath + "cmp_bigUntaggedDocument.pdf";
+    public void redactLipsum() throws IOException, InterruptedException {
+        String input = inputPath + "Lipsum.pdf";
+        String output = outputPath + "redactLipsum.pdf";
+        String cmp = inputPath + "cmp_redactLipsum.pdf";
 
-        List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 260f));
-        cleanUp(input, output, initLocations(rects, 130));
-        compareByContent(cmp, output, outputPath, "diff_bigUntagged_");
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfWriter writer = new PdfWriter(output);
+        writer.setCompressionLevel(0);
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), writer);
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_redactLipsum_");
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.CREATED_ROOT_TAG_HAS_MAPPING))
-    public void bigTaggedDocument() throws IOException, InterruptedException {
-        String input = inputPath + "chapter8_Interactive_features.pdf";
-        String output = outputPath + "bigTaggedDocument.pdf";
-        String cmp = inputPath + "cmp_bigTaggedDocument.pdf";
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 2))
+    public void redactPdfWithNoninvertibleMatrix() throws IOException, InterruptedException {
+        String input = inputPath + "noninvertibleMatrix.pdf";
+        String output = outputPath + "redactPdfWithNoninvertibleMatrix.pdf";
+        String cmp = inputPath + "cmp_redactPdfWithNoninvertibleMatrix.pdf";
 
-        List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 270f));
-        cleanUp(input, output, initLocations(rects, 131));
-        compareByContent(cmp, output, outputPath, "diff_bigTagged_");
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("Hello World!").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_redactPdfWithNoninvertibleMatrix_");
     }
 
-    @Test
-    public void textPositioning() throws IOException, InterruptedException {
-        String input = inputPath + "textPositioning.pdf";
-        String output = outputPath + "textPositioning.pdf";
-        String cmp = inputPath + "cmp_textPositioning.pdf";
-
-        List<Rectangle> rects = Arrays.asList(new Rectangle(0f, 0f, 1f, 1f)); // just to enable cleanup processing of the pages
-        cleanUp(input, output, initLocations(rects, 163));
-        compareByContent(cmp, output, outputPath, "diff_txtPos_");
-    }
-
-
-
-    private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
-        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
-
-        PdfCleanUpTool cleaner = new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
-
-        pdfDocument.close();
-    }
-
-    private List<PdfCleanUpLocation> initLocations(List<Rectangle> rects, int pagesNum) {
-        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<>();
-        for (int i = 0; i < pagesNum; ++i) {
-            for (int j = 0; j < rects.size(); ++j) {
-                cleanUpLocations.add(new PdfCleanUpLocation(i + 1, rects.get(j)));
-            }
-        }
-
-        return cleanUpLocations;
-    }
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();

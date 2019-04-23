@@ -42,8 +42,11 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.io.util.MessageFormatUtil;
+import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Line;
@@ -55,7 +58,10 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfObject;
+import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvasConstants;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperBridge;
@@ -72,6 +78,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -85,8 +92,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -98,6 +107,8 @@ import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.ImagingConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PdfCleanUpFilter {
 
@@ -112,6 +123,13 @@ public class PdfCleanUpFilter {
      * However, a better approximation is possible using 0.55191502449
      */
     private static final double CIRCLE_APPROXIMATION_CONST = 0.55191502449;
+
+    private static final float EPS = 1e-4f;
+
+    private static final Set<PdfName> NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+            PdfName.JBIG2Decode, PdfName.DCTDecode, PdfName.JPXDecode))
+    );
+
 
     private List<Rectangle> regions;
 
@@ -144,8 +162,8 @@ public class PdfCleanUpFilter {
         return new FilterResult<PdfArray>(true, textArray);
     }
 
-    FilteredImagesCache.FilteredImageKey createFilteredImageKey(ImageRenderInfo image, PdfDocument document) {
-        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(image), document);
+    FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
+        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(imageCtm), document);
     }
 
     /**
@@ -154,14 +172,14 @@ public class PdfCleanUpFilter {
      * @param image the ImageRenderInfo object to be filtered
      */
     FilterResult<ImageData> filterImage(ImageRenderInfo image) {
-        return filterImage(image, getImageAreasToBeCleaned(image));
+        return filterImage(image.getImage(), getImageAreasToBeCleaned(image.getImageCtm()));
     }
 
     FilterResult<ImageData> filterImage(FilteredImagesCache.FilteredImageKey imageKey) {
-        return filterImage(imageKey.getImageRenderInfo(), imageKey.getCleanedAreas());
+        return filterImage(imageKey.getImageXObject(), imageKey.getCleanedAreas());
     }
 
-    private FilterResult<ImageData> filterImage(ImageRenderInfo image, List<Rectangle> imageAreasToBeCleaned) {
+    private FilterResult<ImageData> filterImage(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
         if (imageAreasToBeCleaned == null) {
             return new FilterResult<>(true, null);
         } else if (imageAreasToBeCleaned.isEmpty()) {
@@ -170,8 +188,22 @@ public class PdfCleanUpFilter {
 
         byte[] filteredImageBytes;
         try {
-            byte[] originalImageBytes = image.getImage().getImageBytes();
-            filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
+            if (imageSupportsDirectCleanup(image)) {
+                byte[] imageStreamBytes = processImageDirectly(image, imageAreasToBeCleaned);
+                // Creating imageXObject clone in order to avoid modification of the original XObject in the document.
+                // We require to set filtered image bytes to the image XObject only for the sake of simplifying code:
+                // in this method we return ImageData, so in order to convert PDF image to the common image format we
+                // reuse PdfImageXObject#getImageBytes method.
+                // I think this is acceptable here, because monochrome and grayscale images are not very common,
+                // so the overhead would be not that big. But anyway, this should be refactored in future if this
+                // direct image bytes cleaning approach would be found useful and will be preserved in future.
+                PdfImageXObject tempImageClone = new PdfImageXObject((PdfStream) image.getPdfObject().clone());
+                tempImageClone.getPdfObject().setData(imageStreamBytes);
+                filteredImageBytes = tempImageClone.getImageBytes();
+            } else {
+                byte[] originalImageBytes = image.getImageBytes();
+                filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -226,8 +258,8 @@ public class PdfCleanUpFilter {
      * @return {@code null} if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
      * {@link Rectangle} objects otherwise.
      */
-    private List<Rectangle> getImageAreasToBeCleaned(ImageRenderInfo image) {
-        Rectangle imageRect = calcImageRect(image);
+    private List<Rectangle> getImageAreasToBeCleaned(Matrix imageCtm) {
+        Rectangle imageRect = calcImageRect(imageCtm);
         if (imageRect == null) {
             return null;
         }
@@ -242,7 +274,7 @@ public class PdfCleanUpFilter {
                     return null;
                 }
 
-                areasToBeCleaned.add(transformRectIntoImageCoordinates(intersectionRect, image.getImageCtm()));
+                areasToBeCleaned.add(transformRectIntoImageCoordinates(intersectionRect, imageCtm));
             }
         }
 
@@ -294,8 +326,18 @@ public class PdfCleanUpFilter {
         ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
 
         for (Rectangle rectangle : regions) {
-            Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
-            ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
+            try {
+                Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
+                ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
+            } catch (PdfException e) {
+                if (!(e.getCause() instanceof NoninvertibleTransformException)) {
+                    throw e;
+                } else {
+                    Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
+                    logger.error(MessageFormatUtil.format(LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
+                }
+            }
+
         }
 
         PolyFillType fillType = PolyFillType.NON_ZERO;
@@ -321,7 +363,42 @@ public class PdfCleanUpFilter {
      */
     static boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
         IClipper clipper = new DefaultClipper();
-        ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP);
+        // If the redaction area is degenerate, the result will be false
+        if (!ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP)) {
+            // If the content area is not degenerate (and the redaction area is), let's return false:
+            // even if they overlaps somehow, we do not consider it as an intersection.
+            // If the content area is degenerate, let's process this case specifically
+            if (!ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT)) {
+                // Clipper fails to process degenerate redaction areas. However that's vital for pdfAutoSweep,
+                // because in some cases (for example, noninvertible cm) the text's area might be degenerate,
+                // but we still need to sweep the content.
+                // The idea is as follows:
+                // a) if the degenerate redaction area represents a point, there is no intersection
+                // b) if the degenerate redaction area represents a line, let's check that there the redaction line
+                // equals to one of the edges of the content's area. That is implemented in respect to area generation,
+                // because the redaction line corresponds to the descent line of the content.
+                if (!ClipperBridge.addPolylineSubjectToClipper(clipper, rect2)) {
+                    return false;
+                }
+                if (rect1.length != rect2.length) {
+                    return false;
+                }
+                Point startPoint = rect2[0];
+                Point endPoint = rect2[0];
+                for (int i = 1; i < rect2.length; i++) {
+                    if (rect2[i].distance(startPoint) > EPS) {
+                        endPoint = rect2[i];
+                        break;
+                    }
+                }
+                for (int i = 0; i < rect1.length; i++) {
+                    if (isPointOnALineSegment(rect1[i], startPoint, endPoint, true)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
         // According to clipper documentation:
         // The function will return false if the path is invalid for clipping. A path is invalid for clipping when:
         // - it has less than 2 vertices;
@@ -358,17 +435,69 @@ public class PdfCleanUpFilter {
         }
     }
 
+    private static boolean isPointOnALineSegment(Point currPoint, Point linePoint1, Point linePoint2, boolean isBetweenLinePoints) {
+        double dxc = currPoint.x - linePoint1.x;
+        double dyc = currPoint.y - linePoint1.y;
+
+        double dxl = linePoint2.x - linePoint1.x;
+        double dyl = linePoint2.y - linePoint1.y;
+
+        double cross = dxc * dyl - dyc * dxl;
+
+        // if point is on a line, let's check whether it's between provided line points
+        if (Math.abs(cross) <= EPS) {
+            if (isBetweenLinePoints) {
+                if (Math.abs(dxl) >= Math.abs(dyl)) {
+                    return dxl > 0 ?
+                            linePoint1.x - EPS <= currPoint.x && currPoint.x <= linePoint2.x + EPS :
+                            linePoint2.x - EPS <= currPoint.x && currPoint.x <= linePoint1.x + EPS;
+                } else {
+                    return dyl > 0 ?
+                            linePoint1.y - EPS <= currPoint.y && currPoint.y <= linePoint2.y + EPS :
+                            linePoint2.y - EPS <= currPoint.y && currPoint.y <= linePoint1.y + EPS;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static boolean imageSupportsDirectCleanup(PdfImageXObject image) {
+        PdfObject filter = image.getPdfObject().get(PdfName.Filter);
+        boolean supportedFilterForDirectCleanup = isSupportedFilterForDirectImageCleanup(filter);
+        boolean deviceGrayOrNoCS = PdfName.DeviceGray.equals(image.getPdfObject().getAsName(PdfName.ColorSpace))
+                || !image.getPdfObject().containsKey(PdfName.ColorSpace);
+        return deviceGrayOrNoCS && supportedFilterForDirectCleanup;
+    }
+
+    private static boolean isSupportedFilterForDirectImageCleanup(PdfObject filter) {
+        if (filter == null) {
+            return true;
+        }
+        if (filter.isName()) {
+            return !NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP.contains(filter);
+        } else if (filter.isArray()) {
+            PdfArray filterArray = (PdfArray) filter;
+            for (int i = 0; i < filterArray.size(); ++i) {
+                if (NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP.contains(filterArray.getAsName(i))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * @return Image boundary rectangle in device space.
      */
-    private static Rectangle calcImageRect(ImageRenderInfo renderInfo) {
-        Matrix ctm = renderInfo.getImageCtm();
-
-        if (ctm == null) {
+    private static Rectangle calcImageRect(Matrix imageCtm) {
+        if (imageCtm == null) {
             return null;
         }
 
-        Point[] points = transformPoints(ctm, false,
+        Point[] points = transformPoints(imageCtm, false,
                 new Point(0, 0), new Point(0, 1),
                 new Point(1, 0), new Point(1, 1));
 
@@ -420,6 +549,68 @@ public class PdfCleanUpFilter {
     }
 
     /**
+     * Filters image content using direct manipulation over PDF image samples stream. Implemented according to ISO 32000-2,
+     * "8.9.3 Sample representation".
+     *
+     * @param image image XObject which will be filtered
+     * @param imageAreasToBeCleaned list of rectangle areas for clean up with coordinates in (0,1)x(0,1) space
+     * @return raw bytes of the PDF image samples stream which is already cleaned.
+     */
+    private byte[] processImageDirectly(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
+        int X = 0;
+        int Y = 1;
+        int W = 2;
+        int H = 3;
+
+        byte[] originalImageBytes = image.getPdfObject().getBytes();
+
+        PdfNumber bpcVal = image.getPdfObject().getAsNumber(PdfName.BitsPerComponent);
+        if (bpcVal == null) {
+            throw new IllegalArgumentException("/BitsPerComponent entry is required for image dictionaries.");
+        }
+        int bpc = bpcVal.intValue();
+        if (bpc != 1 && bpc != 2 && bpc != 4 && bpc != 8 && bpc != 16) {
+            throw new IllegalArgumentException("/BitsPerComponent only allowed values are: 1, 2, 4, 8 and 16.");
+        }
+
+        double bytesInComponent = (double)bpc / 8;
+        int firstComponentInByte = 0;
+        if (bpc < 16) {
+            for (int i = 0; i < bpc; ++i) {
+                firstComponentInByte += (int) Math.pow(2, 7 - i);
+            }
+        }
+
+        double width = image.getWidth();
+        double height = image.getHeight();
+        int rowPadding = 0;
+        if ((width * bpc) % 8 > 0) {
+            rowPadding = (int) (8 - (width * bpc) % 8);
+        }
+        for (Rectangle rect : imageAreasToBeCleaned) {
+            int[] cleanImgRect = getImageRectToClean(rect, (int)width, (int)height);
+            for (int j = cleanImgRect[Y]; j < cleanImgRect[Y] + cleanImgRect[H]; ++j) {
+                for (int i = cleanImgRect[X]; i < cleanImgRect[X] + cleanImgRect[W]; ++i) {
+                    // based on assumption that numOfComponents always equals 1, because this method is only for monochrome and grayscale images
+                    double pixelPos = j * ((width * bpc + rowPadding) / 8) + i * bytesInComponent;
+                    int pixelByteInd = (int) pixelPos;
+                    byte byteWithSample = originalImageBytes[pixelByteInd];
+
+                    if (bpc == 16) {
+                        originalImageBytes[pixelByteInd] = 0;
+                        originalImageBytes[pixelByteInd + 1] = 0;
+                    } else {
+                        int reset = ~(firstComponentInByte >> (int) ((pixelPos - pixelByteInd) * 8)) & 0xFF;
+                        originalImageBytes[pixelByteInd] = (byte) (byteWithSample & reset);
+                    }
+                }
+            }
+        }
+
+        return originalImageBytes;
+    }
+
+    /**
      * Reads the image bytes into a {@link BufferedImage}.
      * Isolates and catches known Apache Commons Imaging bug for JPEG:
      * https://issues.apache.org/jira/browse/IMAGING-97
@@ -449,18 +640,26 @@ public class PdfCleanUpFilter {
         // (y varies from bottom to top and x from left to right), so we should scale the rectangle and also
         // invert and shear the y axe.
         for (Rectangle rect : areasToBeCleaned) {
-            int scaledBottomY = (int) Math.ceil(rect.getBottom() * image.getHeight());
-            int scaledTopY = (int) Math.floor(rect.getTop() * image.getHeight());
+            int imgHeight = image.getHeight();
+            int imgWidth = image.getWidth();
+            int[] scaledRectToClean = getImageRectToClean(rect, imgWidth, imgHeight);
 
-            int x = (int) Math.ceil(rect.getLeft() * image.getWidth());
-            int y = scaledTopY * -1 + image.getHeight();
-            int width = (int) Math.floor(rect.getRight() * image.getWidth()) - x;
-            int height = scaledTopY - scaledBottomY;
-
-            graphics.fillRect(x, y, width, height);
+            graphics.fillRect(scaledRectToClean[0], scaledRectToClean[1], scaledRectToClean[2], scaledRectToClean[3]);
         }
 
         graphics.dispose();
+    }
+
+    private static int[] getImageRectToClean(Rectangle rect, int imgWidth, int imgHeight) {
+        int scaledBottomY = (int) Math.ceil(rect.getBottom() * imgHeight);
+        int scaledTopY = (int) Math.floor(rect.getTop() * imgHeight);
+
+
+        int x = (int) Math.ceil(rect.getLeft() * imgWidth);
+        int y = imgHeight - scaledTopY;
+        int w = (int) Math.floor(rect.getRight() * imgWidth) - x;
+        int h = scaledTopY - scaledBottomY;
+        return new int[] {x, y, w, h};
     }
 
     /**
@@ -678,7 +877,7 @@ public class PdfCleanUpFilter {
             try {
                 t = t.createInverse();
             } catch (NoninvertibleTransformException e) {
-                throw new RuntimeException(e);
+                throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
             }
         }
 

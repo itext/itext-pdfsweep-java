@@ -40,22 +40,21 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup.text;
+package com.itextpdf.pdfcleanup.transparency;
 
-import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.LogMessage;
-import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -63,9 +62,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(IntegrationTest.class)
-public class CleanUpTextTest extends ExtendedITextTest{
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/text/CleanUpTextTest/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/text/CleanUpTextTest/";
+public class MaskedImagesTest extends ExtendedITextTest {
+
+    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/";
+    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/";
 
     @BeforeClass
     public static void before() {
@@ -73,35 +73,70 @@ public class CleanUpTextTest extends ExtendedITextTest{
     }
 
     @Test
-    @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
-    public void cleanZeroWidthTextInvalidFont() throws IOException, InterruptedException {
-        String input = inputPath + "cleanZeroWidthTextInvalidFont.pdf";
-        String output = outputPath + "cleanZeroWidthTextInvalidFont.pdf";
-        String cmp = inputPath + "cmp_cleanZeroWidthTextInvalidFont.pdf";
-
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(50, 50, 500, 500))));
-        compareByContent(cmp, output, outputPath);
+    public void imageTransparencyImageMask() throws IOException, InterruptedException {
+        runTest("imageIsMask");
     }
 
-    private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
+    @Test
+    public void imageTransparencyMask() throws IOException, InterruptedException {
+        runTest("imageMask");
+    }
+
+    @Test
+    public void imageTransparencySMask() throws IOException, InterruptedException {
+        runTest("imageSMask");
+    }
+
+    @Test
+    public void imageTransparencySMaskAIS() throws IOException, InterruptedException {
+        runTest("imageSMaskAIS");
+    }
+
+    @Test
+    public void imageTransparencyColorKeyMaskArray() throws IOException, InterruptedException {
+        runTest("imageColorKeyMaskArray");
+    }
+
+    @Test
+    public void imageTransparencyTextOnTransparentField() throws IOException, InterruptedException {
+        String fileName = "textOnTransparentField";
+        String input = inputPath + fileName + ".pdf";
+        String output = outputPath + fileName + "_cleaned.pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = Collections.singletonList(
+                new PdfCleanUpLocation(1, new Rectangle(280, 360, 200, 75))
+        );
+
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
+        PdfCleanUpTool cleaner = new PdfCleanUpTool(pdfDocument, cleanUpLocations);
+        cleaner.cleanUp();
+
+        new PdfCanvas(pdfDocument.getFirstPage().newContentStreamBefore(), pdfDocument.getFirstPage().getResources(), pdfDocument)
+                .setColor(ColorConstants.LIGHT_GRAY, true)
+                .rectangle(0, 0, 1000, 1000)
+                .fill()
+                .setColor(ColorConstants.BLACK, true);
+
+        pdfDocument.close();
+
+        Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
+    }
+
+    private static void runTest(String fileName) throws IOException, InterruptedException {
+        String input = inputPath + fileName + ".pdf";
+        String output = outputPath + fileName + "_cleaned.pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+        List<PdfCleanUpLocation> cleanUpLocations = Collections.singletonList(
+                new PdfCleanUpLocation(1, new Rectangle(308, 520, 200, 75))
+        );
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        PdfCleanUpTool cleaner = new PdfCleanUpTool(pdfDocument, cleanUpLocations);
         cleaner.cleanUp();
 
         pdfDocument.close();
-    }
-
-    private void compareByContent(String cmp, String output, String targetDir) throws IOException, InterruptedException {
-        CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir);
-
-        if (errorMessage != null) {
-            Assert.fail(errorMessage);
-        }
+        Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
     }
 }

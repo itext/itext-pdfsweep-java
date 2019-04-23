@@ -59,16 +59,16 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @Category(IntegrationTest.class)
 public class PdfCleanUpToolTest extends ExtendedITextTest {
@@ -222,9 +222,9 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
     @Test
     public void cleanUpTest13() throws IOException, InterruptedException {
-        String input = inputPath + "smaskImage.pdf";
-        String output = outputPath + "smaskImage.pdf";
-        String cmp = inputPath + "cmp_smaskImage.pdf";
+        String input = inputPath + "maskImage.pdf";
+        String output = outputPath + "maskImage.pdf";
+        String cmp = inputPath + "cmp_maskImage.pdf";
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(97f, 405f, 480f - 97f, 445f - 405f), ColorConstants.GRAY));
         cleanUp(input, output, cleanUpLocations);
@@ -573,7 +573,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     public void cleanUpTest46() throws IOException {
         junitExpectedException.expect(PdfException.class);
         junitExpectedException.expectMessage(PdfException.DefaultAppearanceNotFound);
-        
+
         String input = inputPath + "emptyPdf.pdf";
         String output = outputPath + "emptyPdf.pdf";
 
@@ -623,6 +623,66 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(0, 0, 10, 10), ColorConstants.RED));
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_" + fileName);
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    public void noninvertibleMatrixRemoveAllTest() throws IOException, InterruptedException {
+        String fileName = "noninvertibleMatrixRemoveAllTest";
+        String input = inputPath + "noninvertibleMatrix.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        PdfCleanUpLocation wholePageLocation = new PdfCleanUpLocation(1, new Rectangle(0, 0, 595, 842), null);
+
+        cleanUp(input, output, Arrays.asList(wholePageLocation));
+        compareByContent(cmp, output, outputPath, "diff_noninvertibleMatrixRemoveAllTest");
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    public void noninvertibleMatrixRemoveAllTest02() throws IOException, InterruptedException {
+        String fileName = "noninvertibleMatrixRemoveAllTest02";
+        String input = inputPath + "noninvertibleMatrix.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        PdfCleanUpLocation wholePageLocation = new PdfCleanUpLocation(1, new Rectangle(-1000, -1000, 2000, 2000), null);
+
+        cleanUp(input, output, Arrays.asList(wholePageLocation));
+        compareByContent(cmp, output, outputPath, "diff_noninvertibleMatrixRemoveAllTest");
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    public void noninvertibleMatrixRemoveNothingTest() throws IOException, InterruptedException {
+        String fileName = "noninvertibleMatrixRemoveNothingTest";
+        String input = inputPath + "noninvertibleMatrix.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        PdfCleanUpLocation dummyLocation = new PdfCleanUpLocation(1, new Rectangle(0, 0, 0, 0), null);
+
+        cleanUp(input, output, Arrays.asList(dummyLocation));
+        compareByContent(cmp, output, outputPath, "diff_noninvertibleMatrixRemoveNothingTest");
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 7))
+    public void pathAndIncorrectCMTest() throws IOException, InterruptedException {
+        String fileName = "pathAndIncorrectCM";
+        String input = inputPath + "pathAndIncorrectCM.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        List<PdfCleanUpLocation> dummyLocationsList = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            dummyLocationsList.add(new PdfCleanUpLocation(i + 1, new Rectangle(0, 0, 0, 0), null));
+        }
+
+        cleanUp(input, output, dummyLocationsList);
+        compareByContent(cmp, output, outputPath, "diff_pathAndIncorrectCMTest");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

@@ -106,34 +106,34 @@ import org.slf4j.LoggerFactory;
 
 public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
-    private static final Set<String> textShowingOperators = new HashSet<String>(Arrays.asList("TJ", "Tj", "'", "\""));
-    private static final Set<String> pathConstructionOperators = new HashSet<String>(Arrays.asList("m", "l", "c", "v", "y", "h", "re"));
-    private static final Set<String> strokeOperators = new HashSet<String>(Arrays.asList("S", "s", "B", "B*", "b", "b*"));
-    private static final Set<String> nwFillOperators = new HashSet<String>(Arrays.asList("f", "F", "B", "b"));
-    private static final Set<String> eoFillOperators = new HashSet<String>(Arrays.asList("f*", "B*", "b*"));
-    private static final Set<String> pathPaintingOperators = new HashSet<String>();
+    private static final Set<String> TEXT_SHOWING_OPERATORS = new HashSet<String>(Arrays.asList("TJ", "Tj", "'", "\""));
+    private static final Set<String> PATH_CONSTRUCTION_OPERATORS = new HashSet<String>(Arrays.asList("m", "l", "c", "v", "y", "h", "re"));
+    private static final Set<String> STROKE_OPERATORS = new HashSet<String>(Arrays.asList("S", "s", "B", "B*", "b", "b*"));
+    private static final Set<String> NW_FILL_OPERATORS = new HashSet<String>(Arrays.asList("f", "F", "B", "b"));
+    private static final Set<String> EO_FILL_OPERATORS = new HashSet<String>(Arrays.asList("f*", "B*", "b*"));
+    private static final Set<String> PATH_PAINTING_OPERATORS = new HashSet<String>();
 
-    private static final Set<String> clippingPathOperators = new HashSet<String>(Arrays.asList("W", "W*"));
-    private static final Set<String> lineStyleOperators = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
+    private static final Set<String> CLIPPING_PATH_OPERATORS = new HashSet<String>(Arrays.asList("W", "W*"));
+    private static final Set<String> LINE_STYLE_OPERATORS = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
 
-    private static final Set<String> strokeColorOperators = new HashSet<String>(Arrays.asList("CS", "SC", "SCN", "G", "RG", "K"));
-    private static final Set<String> fillColorOperators = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
+    private static final Set<String> STROKE_COLOR_OPERATORS = new HashSet<String>(Arrays.asList("CS", "SC", "SCN", "G", "RG", "K"));
+    private static final Set<String> FILL_COLOR_OPERATORS = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
 
-    private static final Set<String> textPositioningOperators = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
+    private static final Set<String> TEXT_POSITIONING_OPERATORS = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
             "TL")); // TL actually is not a text positioning operator, but we need to process it with them
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
     private static final Set<String> ignoredOperators = new HashSet<String>();
 
     static {
-        pathPaintingOperators.addAll(strokeOperators);
-        pathPaintingOperators.addAll(nwFillOperators);
-        pathPaintingOperators.addAll(eoFillOperators);
-        pathPaintingOperators.add("n");
+        PATH_PAINTING_OPERATORS.addAll(STROKE_OPERATORS);
+        PATH_PAINTING_OPERATORS.addAll(NW_FILL_OPERATORS);
+        PATH_PAINTING_OPERATORS.addAll(EO_FILL_OPERATORS);
+        PATH_PAINTING_OPERATORS.add("n");
 
-        ignoredOperators.addAll(pathConstructionOperators);
-        ignoredOperators.addAll(clippingPathOperators);
-        ignoredOperators.addAll(lineStyleOperators);
+        ignoredOperators.addAll(PATH_CONSTRUCTION_OPERATORS);
+        ignoredOperators.addAll(CLIPPING_PATH_OPERATORS);
+        ignoredOperators.addAll(LINE_STYLE_OPERATORS);
         ignoredOperators.addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
         ignoredOperators.addAll(Arrays.asList("BMC", "BDC"));
     }
@@ -467,13 +467,13 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     }
 
     private void filterContent(String operator, List<PdfObject> operands) {
-        if (textShowingOperators.contains(operator)) {
+        if (TEXT_SHOWING_OPERATORS.contains(operator)) {
             cleanText(operator, operands);
         } else if ("Do".equals(operator)) {
             checkIfImageAndClean(operands);
         } else if ("EI".equals(operator)) {
             cleanInlineImage();
-        } else if (pathPaintingOperators.contains(operator)) {
+        } else if (PATH_PAINTING_OPERATORS.contains(operator)) {
             writePath();
         } else if ("q".equals(operator)) {
             notAppliedGsParams.push(new NotAppliedGsParams());
@@ -492,19 +492,19 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
             btEncountered = false;
             textPositioning.clear();
-        } else if (textPositioningOperators.contains(operator)) {
+        } else if (TEXT_POSITIONING_OPERATORS.contains(operator)) {
             textPositioning.appendPositioningOperator(operator, operands);
         } else if ("EMC".equals(operator)) { // BMC and BDC are handled with BeginMarkedContent method
             removeOrCloseTag();
-        } else if (lineStyleOperators.contains(operator)) {
+        } else if (LINE_STYLE_OPERATORS.contains(operator)) {
             notAppliedGsParams.peek().lineStyleOperators.put(operator, new ArrayList<>(operands));
         } else if ("gs".equals(operator)) {
             notAppliedGsParams.peek().extGStates.add(getResources().getResource(PdfName.ExtGState).getAsDictionary((PdfName) operands.get(0)));
         } else if ("cm".equals(operator)) {
             notAppliedGsParams.peek().ctms.add(new ArrayList<>(operands));
-        } else if (strokeColorOperators.contains(operator)) {
+        } else if (STROKE_COLOR_OPERATORS.contains(operator)) {
             notAppliedGsParams.peek().strokeColor = getGraphicsState().getStrokeColor();
-        } else if (fillColorOperators.contains(operator)) {
+        } else if (FILL_COLOR_OPERATORS.contains(operator)) {
             notAppliedGsParams.peek().fillColor = getGraphicsState().getFillColor();
         } else if ("sh".equals(operator)) {
             PdfShading shading = getResources().getShading((PdfName) operands.get(0));
@@ -642,22 +642,8 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (PdfName.Image.equals(imageStream.getAsName(PdfName.Subtype))) {
             ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
 
-            FilteredImagesCache.FilteredImageKey filteredImageKey = filter.createFilteredImageKey(encounteredImage, document);
-            PdfImageXObject imageToWrite = getFilteredImagesCache().get(filteredImageKey);
-
-            if (imageToWrite == null) {
-                PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
-                if (imageFilterResult.isModified()) {
-                    ImageData filteredImage = imageFilterResult.getFilterResult();
-                    if (filteredImage != null) {
-                        imageToWrite = new PdfImageXObject(filteredImage);
-                        copySMaskData(encounteredImage.getImage().getPdfObject(), imageToWrite.getPdfObject());
-                        getFilteredImagesCache().put(filteredImageKey, imageToWrite);
-                    }
-                } else {
-                    imageToWrite = encounteredImage.getImage();
-                }
-            }
+            FilteredImagesCache.FilteredImageKey key = filter.createFilteredImageKey(encounteredImage.getImage(), encounteredImage.getImageCtm(), document);
+            PdfImageXObject imageToWrite = getFilteredImage(key, encounteredImage.getImageCtm());
 
             if (imageToWrite != null) {
                 float[] ctm = pollNotAppliedCtm();
@@ -665,6 +651,69 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 openNotWrittenTags();
                 getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
+        }
+    }
+
+    private PdfImageXObject getFilteredImage(FilteredImagesCache.FilteredImageKey filteredImageKey, Matrix ctmForMasksFiltering) {
+        PdfImageXObject originalImage = filteredImageKey.getImageXObject();
+        PdfImageXObject imageToWrite = getFilteredImagesCache().get(filteredImageKey);
+
+        if (imageToWrite == null) {
+            PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
+            if (imageFilterResult.isModified()) {
+                ImageData filteredImageData = imageFilterResult.getFilterResult();
+                if (Boolean.TRUE.equals(originalImage.getPdfObject().getAsBool(PdfName.ImageMask))) {
+                    if (!PdfCleanUpFilter.imageSupportsDirectCleanup(originalImage)) {
+                        Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
+                        logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+                    } else {
+                        filteredImageData.makeMask();
+                    }
+                }
+                if (filteredImageData != null) {
+                    imageToWrite = new PdfImageXObject(filteredImageData);
+                    getFilteredImagesCache().put(filteredImageKey, imageToWrite);
+                    if (ctmForMasksFiltering != null && !filteredImageData.isMask()) {
+                        filterImageMask(originalImage, PdfName.SMask, ctmForMasksFiltering, imageToWrite);
+                        filterImageMask(originalImage, PdfName.Mask, ctmForMasksFiltering, imageToWrite);
+
+                        PdfArray colourKeyMaskingArr = originalImage.getPdfObject().getAsArray(PdfName.Mask);
+                        if (colourKeyMaskingArr != null) {
+                            // In general we should be careful about images that might have changed their color space
+                            // or have been converted to lossy format during filtering.
+                            // However we have been copying Mask entry non-conditionally before and also I'm not sure
+                            // that cases described above indeed take place.
+                            imageToWrite.put(PdfName.Mask, colourKeyMaskingArr);
+                        }
+
+                        if (originalImage.getPdfObject().containsKey(PdfName.SMaskInData)) {
+                            // This entry will likely lose meaning after image conversion to bitmap and back again, but let's leave as is for now.
+                            imageToWrite.put(PdfName.SMaskInData, originalImage.getPdfObject().get(PdfName.SMaskInData));
+                        }
+                    }
+                }
+            } else {
+                imageToWrite = originalImage;
+            }
+        }
+        return imageToWrite;
+    }
+
+    private void filterImageMask(PdfImageXObject originalImage, PdfName maskKey, Matrix ctmForMasksFiltering, PdfImageXObject imageToWrite) {
+        PdfStream maskStream = originalImage.getPdfObject().getAsStream(maskKey);
+        if (maskStream == null || ctmForMasksFiltering == null) {
+            return;
+        }
+        PdfImageXObject maskImageXObject = new PdfImageXObject(maskStream);
+        if (!PdfCleanUpFilter.imageSupportsDirectCleanup(maskImageXObject)) {
+            Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
+            logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+            return;
+        }
+        FilteredImagesCache.FilteredImageKey k = filter.createFilteredImageKey(maskImageXObject, ctmForMasksFiltering, document);
+        PdfImageXObject maskToWrite = getFilteredImage(k, null);
+        if (maskToWrite != null) {
+            imageToWrite.getPdfObject().put(maskKey, maskToWrite.getPdfObject());
         }
     }
 
@@ -700,20 +749,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
         // IMPORTANT: If writing of pdf stream of not changed inline image will be implemented, don't forget to ensure that
         // inline image color space is present in new resources if necessary.
-    }
-
-    private void copySMaskData(PdfStream imageStream, PdfStream filteredImageStream) {
-        if (imageStream.containsKey(PdfName.SMask)) {
-            filteredImageStream.put(PdfName.SMask, imageStream.get(PdfName.SMask));
-        }
-
-        if (imageStream.containsKey(PdfName.Mask)) {
-            filteredImageStream.put(PdfName.Mask, imageStream.get(PdfName.Mask));
-        }
-
-        if (imageStream.containsKey(PdfName.SMaskInData)) {
-            filteredImageStream.put(PdfName.SMaskInData, imageStream.get(PdfName.SMaskInData));
-        }
     }
 
     private void writePath() {
