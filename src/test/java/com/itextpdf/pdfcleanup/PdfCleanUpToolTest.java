@@ -684,6 +684,44 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_pathAndIncorrectCMTest");
     }
 
+    @Test
+    public void simpleCleanUpOnRotatedPages() throws IOException, InterruptedException {
+        String fileName = "simpleCleanUpOnRotatedPages";
+        String input = inputPath + "documentWithRotatedPages.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        List<PdfCleanUpLocation> locationsList = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            locationsList.add(new PdfCleanUpLocation(i + 1, new Rectangle(100, 100, 200, 100), ColorConstants.GREEN));
+        }
+
+        cleanUp(input, output, locationsList);
+        compareByContent(cmp, output, outputPath, "diff_pathAndIncorrectCMTest");
+    }
+
+    @Test
+    public void simpleCleanUpOnRotatedPagesIgnoreRotation() throws IOException, InterruptedException {
+        String fileName = "simpleCleanUpOnRotatedPagesIgnoreRotation";
+        String input = inputPath + "documentWithRotatedPages.pdf";
+        String output = outputPath + fileName + ".pdf";
+        String cmp = inputPath + "cmp_" + fileName + ".pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        List<PdfCleanUpLocation> locationsList = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            locationsList.add(new PdfCleanUpLocation(i + 1, Rectangle.getRectangleOnRotatedPage(new Rectangle(100, 100, 200, 100), pdfDocument.getPage(i+1)), ColorConstants.GREEN));
+        }
+
+        PdfCleanUpTool cleaner = new PdfCleanUpTool(pdfDocument, locationsList);
+        cleaner.cleanUp();
+
+        pdfDocument.close();
+        compareByContent(cmp, output, outputPath, "diff_pathAndIncorrectCMTest");
+    }
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 

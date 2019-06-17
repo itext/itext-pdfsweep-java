@@ -501,7 +501,7 @@ public class PdfCleanUpFilter {
                 new Point(0, 0), new Point(0, 1),
                 new Point(1, 0), new Point(1, 1));
 
-        return getAsRectangle(points[0], points[1], points[2], points[3]);
+        return Rectangle.calculateBBox(Arrays.asList(points));
     }
 
     /**
@@ -512,7 +512,7 @@ public class PdfCleanUpFilter {
                 new Point(rect.getLeft(), rect.getTop()),
                 new Point(rect.getRight(), rect.getBottom()),
                 new Point(rect.getRight(), rect.getTop()));
-        return getAsRectangle(points[0], points[1], points[2], points[3]);
+        return Rectangle.calculateBBox(Arrays.asList(points));
     }
 
     /**
@@ -917,26 +917,6 @@ public class PdfCleanUpFilter {
         };
 
         return points;
-    }
-
-    /**
-     * Convert 4 Point objects into a Rectangle
-     *
-     * @param p1 first Point
-     * @param p2 second Point
-     * @param p3 third Point
-     * @param p4 fourth Point
-     */
-    private static Rectangle getAsRectangle(Point p1, Point p2, Point p3, Point p4) {
-        List<Double> xs = Arrays.asList(p1.getX(), p2.getX(), p3.getX(), p4.getX());
-        List<Double> ys = Arrays.asList(p1.getY(), p2.getY(), p3.getY(), p4.getY());
-
-        double left = Collections.min(xs);
-        double bottom = Collections.min(ys);
-        double right = Collections.max(xs);
-        double top = Collections.max(ys);
-
-        return new Rectangle((float) left, (float) bottom, (float) (right - left), (float) (top - bottom));
     }
 
     /**
