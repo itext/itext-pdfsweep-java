@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Class name="com.itextpdf.pdfcleanup.PdfCleanUpFilter"/>
+        <Or>
+            <Method name="closeOutputStream"/>
+            <Method name="filterImage" params="com.itextpdf.kernel.pdf.xobject.PdfImageXObject, java.util.List"/>
+            <Method name="getJPGBytes"/>
+            <Method name="processImage"/>
+            <Method name="transformPoints"/>
+        </Or>
+        <Bug pattern="EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS"/>
+    </Match>
+    <Match>
+        <Class name="com.itextpdf.pdfcleanup.PdfCleanUpTool"/>
+        <Or>
+            <Method name="&lt;init&gt;" params="com.itextpdf.kernel.pdf.PdfDocument, boolean"/>
+        </Or>
+        <Bug pattern="EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS"/>
+    </Match>
+    <Match>
+        <Class name="com.itextpdf.pdfcleanup.PdfCleanUpTool"/>
+        <Or>
+            <Method name="parseDAParam"/>
+        </Or>
+        <Bug pattern="LSC_LITERAL_STRING_COMPARISON"/>
+    </Match>
+</FindBugsFilter>
