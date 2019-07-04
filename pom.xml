@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>com.itextpdf</groupId>
     <artifactId>root</artifactId>
     <version>7.1.8-SNAPSHOT</version>
-    <relativePath/>
+    <relativePath />
   </parent>
+
   <artifactId>cleanup</artifactId>
   <version>2.0.5-SNAPSHOT</version>
+
   <name>pdfSweep</name>
-  <url>http://itextpdf.com/</url>
+
   <properties>
     <itext.version>${project.parent.version}</itext.version>
   </properties>
+
   <repositories>
     <repository>
       <releases>
@@ -49,6 +53,7 @@
       <url>https://repo.itextsupport.com/releases</url>
     </repository>
   </repositories>
+
   <dependencies>
     <dependency>
       <groupId>com.itextpdf</groupId>
@@ -77,6 +82,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
@@ -98,7 +104,6 @@
             <include>**/*Test.java</include>
           </includes>
           <groups>${integrationtests}</groups>
-          <argLine>${env.SUREFIRE_OPTS}</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -123,7 +128,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>3.0.1</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -139,8 +144,43 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire.version}</version>
         <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
           <groups>${unittests}</groups>
-          <argLine>${env.SUREFIRE_OPTS}</argLine>
+        </configuration>
+      </plugin>
+      <!-- Compute test coverage for Sonar BEWARE: Sonar
+                              doesn't run the verify phase, it has to be forced by setting -Dsonar.phase=verify -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>site</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <propertyName>jacoco.agent.argLine</propertyName>
+          <!-- default: argLine -->
+          <includes>
+            <include>com/itextpdf/**</include>
+          </includes>
+          <destFile>${project.build.directory}/jacoco-integration.exec</destFile>
+          <!-- agent -->
+          <dataFile>${project.build.directory}/jacoco-integration.exec</dataFile>
+          <!-- report -->
         </configuration>
       </plugin>
     </plugins>
