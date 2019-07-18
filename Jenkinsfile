@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+@Library('pipeline-library')_
 
 def schedule = env.BRANCH_NAME.contains('master') ? '@monthly' : env.BRANCH_NAME == 'develop' ? '@midnight' : ''
 def sonarBranchName = env.BRANCH_NAME.contains('master') ? '-Dsonar.branch.name=master' : '-Dsonar.branch.name=' + env.BRANCH_NAME
@@ -130,6 +131,20 @@ pipeline {
         }
         changed {
             echo 'Things were different before... \uD83E\uDD14'
+        }
+        fixed {
+            script {
+                if ((env.BRANCH_NAME == 'master') || (env.BRANCH_NAME == 'develop')) {
+                    slackNotifier("#ci", currentBuild.currentResult, "${env.BRANCH_NAME} - Back to normal")
+                }
+            }
+        }
+        regression {
+            script {
+                if ((env.BRANCH_NAME == 'master') || (env.BRANCH_NAME == 'develop')) {
+                    slackNotifier("#ci", currentBuild.currentResult, "${env.BRANCH_NAME} - First failure")
+                }
+            }
         }
     }
 
