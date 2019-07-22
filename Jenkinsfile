@@ -92,7 +92,6 @@ pipeline {
                     branch "develop"
                     branch "7.0"
                     branch "7.0-master"
-                    branch "sonarqube-master"
                 }
             }
             steps {
@@ -134,14 +133,14 @@ pipeline {
         }
         fixed {
             script {
-                if ((env.BRANCH_NAME == 'master') || (env.BRANCH_NAME == 'develop')) {
+                if (env.BRANCH_NAME.contains('master') || (env.BRANCH_NAME == 'develop')) {
                     slackNotifier("#ci", currentBuild.currentResult, "${env.BRANCH_NAME} - Back to normal")
                 }
             }
         }
         regression {
             script {
-                if ((env.BRANCH_NAME == 'master') || (env.BRANCH_NAME == 'develop')) {
+                if (env.BRANCH_NAME.contains('master') || (env.BRANCH_NAME == 'develop')) {
                     slackNotifier("#ci", currentBuild.currentResult, "${env.BRANCH_NAME} - First failure")
                 }
             }
