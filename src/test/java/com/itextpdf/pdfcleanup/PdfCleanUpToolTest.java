@@ -127,6 +127,17 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
+    // TODO: update cmp file after DEVSIX-3185 fixed
+    public void cleanUpTestSvg() throws IOException, InterruptedException {
+        String input = inputPath + "line_chart.pdf";
+        String output = outputPath + "line_chart.pdf";
+        String cmp = inputPath + "cmp_line_chart.pdf";
+
+        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 780f, 60f, 45f), ColorConstants.GRAY)));
+        compareByContent(cmp, output, outputPath, "diff_Svg");
+    }
+
+    @Test
     public void cleanUpTest04() throws IOException, InterruptedException {
         String input = inputPath + "hello_05.pdf";
         String output = outputPath + "hello_05.pdf";
