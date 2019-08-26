@@ -18,11 +18,4 @@
         </Or>
         <Bug pattern="EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS"/>
     </Match>
-    <Match>
-        <Class name="com.itextpdf.pdfcleanup.PdfCleanUpTool"/>
-        <Or>
-            <Method name="parseDAParam"/>
-        </Or>
-        <Bug pattern="LSC_LITERAL_STRING_COMPARISON"/>
-    </Match>
 </FindBugsFilter>

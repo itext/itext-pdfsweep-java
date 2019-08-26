@@ -554,9 +554,9 @@ public class PdfCleanUpTool {
             if (tokeniser.getTokenType() == PdfTokenizer.TokenType.Other) {
                 String key = tokeniser.getStringValue();
 
-                if (key.equals("RG") || key.equals("G") || key.equals("K")) {
+                if ("RG".equals(key) || "G".equals(key) || "K".equals(key)) {
                     key = "StrokeColor";
-                } else if (key.equals("rg") || key.equals("g") || key.equals("k")) {
+                } else if ("rg".equals(key) || "g".equals(key) || "k".equals(key)) {
                     key = "FillColor";
                 }
 
