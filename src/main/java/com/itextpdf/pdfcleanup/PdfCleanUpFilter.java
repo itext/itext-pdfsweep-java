@@ -187,27 +187,22 @@ public class PdfCleanUpFilter {
         }
 
         byte[] filteredImageBytes;
-        try {
-            if (imageSupportsDirectCleanup(image)) {
-                byte[] imageStreamBytes = processImageDirectly(image, imageAreasToBeCleaned);
-                // Creating imageXObject clone in order to avoid modification of the original XObject in the document.
-                // We require to set filtered image bytes to the image XObject only for the sake of simplifying code:
-                // in this method we return ImageData, so in order to convert PDF image to the common image format we
-                // reuse PdfImageXObject#getImageBytes method.
-                // I think this is acceptable here, because monochrome and grayscale images are not very common,
-                // so the overhead would be not that big. But anyway, this should be refactored in future if this
-                // direct image bytes cleaning approach would be found useful and will be preserved in future.
-                PdfImageXObject tempImageClone = new PdfImageXObject((PdfStream) image.getPdfObject().clone());
-                tempImageClone.getPdfObject().setData(imageStreamBytes);
-                filteredImageBytes = tempImageClone.getImageBytes();
-            } else {
-                byte[] originalImageBytes = image.getImageBytes();
-                filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (imageSupportsDirectCleanup(image)) {
+            byte[] imageStreamBytes = processImageDirectly(image, imageAreasToBeCleaned);
+            // Creating imageXObject clone in order to avoid modification of the original XObject in the document.
+            // We require to set filtered image bytes to the image XObject only for the sake of simplifying code:
+            // in this method we return ImageData, so in order to convert PDF image to the common image format we
+            // reuse PdfImageXObject#getImageBytes method.
+            // I think this is acceptable here, because monochrome and grayscale images are not very common,
+            // so the overhead would be not that big. But anyway, this should be refactored in future if this
+            // direct image bytes cleaning approach would be found useful and will be preserved in future.
+            PdfImageXObject tempImageClone = new PdfImageXObject((PdfStream) image.getPdfObject().clone());
+            tempImageClone.getPdfObject().setData(imageStreamBytes);
+            filteredImageBytes = tempImageClone.getImageBytes();
+        } else {
+            byte[] originalImageBytes = image.getImageBytes();
+            filteredImageBytes = processImage(originalImageBytes, imageAreasToBeCleaned);
         }
-
         return new FilterResult<>(true, ImageDataFactory.create(filteredImageBytes));
     }
 
@@ -685,7 +680,7 @@ public class PdfCleanUpFilter {
             outputStream.flush();
 
             return outputStream.toByteArray();
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             closeOutputStream(outputStream);

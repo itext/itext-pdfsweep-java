@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
     <Match>
+        <!-- Rethrow IO exceptions as RuntimeException -->
         <Class name="com.itextpdf.pdfcleanup.PdfCleanUpFilter"/>
         <Or>
             <Method name="closeOutputStream"/>
-            <Method name="filterImage" params="com.itextpdf.kernel.pdf.xobject.PdfImageXObject, java.util.List"/>
             <Method name="getJPGBytes"/>
             <Method name="processImage"/>
             <Method name="transformPoints"/>
@@ -12,6 +12,7 @@
         <Bug pattern="EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS"/>
     </Match>
     <Match>
+        <!-- License loading, we shall keep it as is -->
         <Class name="com.itextpdf.pdfcleanup.PdfCleanUpTool"/>
         <Or>
             <Method name="&lt;init&gt;" params="com.itextpdf.kernel.pdf.PdfDocument, boolean"/>
