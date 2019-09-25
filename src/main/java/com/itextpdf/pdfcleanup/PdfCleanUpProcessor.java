@@ -158,11 +158,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      * <li>
      * first - right before writing text content, text state in current gs is compare to the text state of the text
      * render info gs and difference is applied to current gs;
-     * </li>
      * <li>
      * second - through list of the not applied gs params. Right before writing some content, this list is checked,
      * and if something affecting content is stored in this list it will be applied.
-     * </li>
      * </ul>
      */
     private Deque<NotAppliedGsParams> notAppliedGsParams;
