@@ -57,6 +57,7 @@ import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
+import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -72,7 +73,7 @@ import java.util.Map;
 import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
 
 @Category(IntegrationTest.class)
-public class BigDocumentAutoCleanUpTest {
+public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/BigDocumentAutoCleanUpTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/BigDocumentAutoCleanUpTest/";

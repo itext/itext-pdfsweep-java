@@ -43,13 +43,14 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.kernel.geom.Point;
+import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.UnitTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(UnitTest.class)
-public class PdfCleanUpFilterUnitTest {
+public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
 
     @Test
     public void checkIfRectanglesIntersect_completelyCoveredBasic() {
