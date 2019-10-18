@@ -79,7 +79,7 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
         createOrClearDestinationFolder(outputPath);
     }
 
-@Ignore ("test works with differs in Java and .Net, cause the one doesn't work with 8-byte images")
+    @Ignore("Test works differently in Java and .Net, because currently .NET version doesn't work with 8-byte images. Update after DEVSIX-1908 is fixed")
     @Test
     // TODO: update cmp file after DEVSIX-1908 fixed
     public void cleanUpTestColorSpace() throws IOException, InterruptedException {
