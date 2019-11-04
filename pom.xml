@@ -108,6 +108,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${javadoc.version}</version>
+        <configuration>
+          <sourceFileExcludes>
+            <!-- ProductInfo -->
+            <sourceFileExclude>**/PdfCleanupProductInfo.java</sourceFileExclude>
+          </sourceFileExcludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
