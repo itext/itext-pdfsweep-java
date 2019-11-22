@@ -99,7 +99,7 @@
         <version>${failsafe.version}</version>
         <configuration>
           <includes>
-            <include>**/*Test.java</include>
+            <include>**/*.java</include>
           </includes>
           <groups>${integrationtests}</groups>
         </configuration>
@@ -120,9 +120,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire.version}</version>
         <configuration>
-          <includes>
-            <include>**/*Test.java</include>
-          </includes>
           <groups>${unittests}</groups>
         </configuration>
       </plugin>
