@@ -42,8 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
-import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.source.ByteUtils;
@@ -329,7 +327,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (annotationType.equals(PdfName.Watermark)) {
             // TODO /FixedPrint entry effect is not fully investigated: DEVSIX-2471
             Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
-            logger.warn(LogMessageConstant.REDACTION_OF_ANNOTATION_TYPE_WATERMARK_IS_NOT_SUPPORTED);
+            logger.warn(CleanUpLogMessageConstant.REDACTION_OF_ANNOTATION_TYPE_WATERMARK_IS_NOT_SUPPORTED);
         }
 
         PdfArray rectAsArray = annotation.getRectangle();
@@ -663,7 +661,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 if (Boolean.TRUE.equals(originalImage.getPdfObject().getAsBool(PdfName.ImageMask))) {
                     if (!PdfCleanUpFilter.imageSupportsDirectCleanup(originalImage)) {
                         Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
-                        logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+                        logger.error(CleanUpLogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
                     } else {
                         filteredImageData.makeMask();
                     }
@@ -671,6 +669,20 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 if (filteredImageData != null) {
                     imageToWrite = new PdfImageXObject(filteredImageData);
                     getFilteredImagesCache().put(filteredImageKey, imageToWrite);
+
+                    // While having been processed with java libraries, only the number of components mattered.
+                    // However now we should put the correct color space dictionary as an image's resource,
+                    // because it'd be have been considered by pdf browsers before rendering it.
+                    // Additional checks required as if an image format has been changed,
+                    // then the old colorspace may produce an error with the new image data.
+                    if (areColorSpacesDifferent(originalImage, imageToWrite)
+                            && filter.isOriginalCsCompatible(originalImage, imageToWrite)) {
+                        PdfObject originalCS = originalImage.getPdfObject().get(PdfName.ColorSpace);
+                        if (originalCS != null) {
+                            imageToWrite.put(PdfName.ColorSpace, originalCS);
+                        }
+                    }
+
                     if (ctmForMasksFiltering != null && !filteredImageData.isMask()) {
                         filterImageMask(originalImage, PdfName.SMask, ctmForMasksFiltering, imageToWrite);
                         filterImageMask(originalImage, PdfName.Mask, ctmForMasksFiltering, imageToWrite);
@@ -705,7 +717,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         PdfImageXObject maskImageXObject = new PdfImageXObject(maskStream);
         if (!PdfCleanUpFilter.imageSupportsDirectCleanup(maskImageXObject)) {
             Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
-            logger.error(LogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+            logger.error(CleanUpLogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
             return;
         }
         FilteredImagesCache.FilteredImageKey k = filter.createFilteredImageKey(maskImageXObject, ctmForMasksFiltering, document);
@@ -974,6 +986,35 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
             gsParams.strokeColor = null;
         }
+    }
+
+    static boolean areColorSpacesDifferent(PdfImageXObject originalImage, PdfImageXObject clearedImage) {
+        PdfObject originalImageCS = originalImage.getPdfObject().get(PdfName.ColorSpace);
+        PdfObject clearedImageCS = clearedImage.getPdfObject().get(PdfName.ColorSpace);
+
+        if (originalImageCS == clearedImageCS) {
+            return false;
+        } else if (originalImageCS == null || clearedImageCS == null) {
+            return true;
+        } else if (originalImageCS.equals(clearedImageCS)) {
+            return false;
+        } else if (originalImageCS.isArray() && clearedImageCS.isArray()) {
+            PdfArray originalCSArray = (PdfArray) originalImageCS;
+            PdfArray clearedCSArray = (PdfArray) clearedImageCS;
+            if (originalCSArray.size() != clearedCSArray.size()) {
+                return true;
+            }
+            for (int i = 0; i < originalCSArray.size(); ++i) {
+                PdfObject objectFromOriginal = originalCSArray.get(i);
+                PdfObject objectFromCleared = clearedCSArray.get(i);
+                if (!objectFromOriginal.equals(objectFromCleared)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return true;
     }
 
     /**

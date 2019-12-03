@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -98,7 +97,7 @@ public class PdfAutoSweepTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 2))
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 2))
     public void redactPdfWithNoninvertibleMatrix() throws IOException, InterruptedException {
         String input = inputPath + "noninvertibleMatrix.pdf";
         String output = outputPath + "redactPdfWithNoninvertibleMatrix.pdf";

@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-
 import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.colors.ColorConstants;
@@ -59,6 +58,7 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -636,7 +636,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
     public void noninvertibleMatrixRemoveAllTest() throws IOException, InterruptedException {
         String fileName = "noninvertibleMatrixRemoveAllTest";
         String input = inputPath + "noninvertibleMatrix.pdf";
@@ -650,7 +650,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
     public void noninvertibleMatrixRemoveAllTest02() throws IOException, InterruptedException {
         String fileName = "noninvertibleMatrixRemoveAllTest02";
         String input = inputPath + "noninvertibleMatrix.pdf";
@@ -664,7 +664,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX))
     public void noninvertibleMatrixRemoveNothingTest() throws IOException, InterruptedException {
         String fileName = "noninvertibleMatrixRemoveNothingTest";
         String input = inputPath + "noninvertibleMatrix.pdf";
@@ -678,7 +678,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 7))
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 7))
     public void pathAndIncorrectCMTest() throws IOException, InterruptedException {
         String fileName = "pathAndIncorrectCM";
         String input = inputPath + "pathAndIncorrectCM.pdf";

@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.util.MessageFormatUtil;
@@ -79,6 +78,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -101,16 +101,20 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
+import org.apache.commons.imaging.ImageFormat;
 import org.apache.commons.imaging.ImageFormats;
 import org.apache.commons.imaging.ImageInfo;
+import org.apache.commons.imaging.ImageInfo.ColorType;
 import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.ImageWriteException;
 import org.apache.commons.imaging.Imaging;
-import org.apache.commons.imaging.ImagingConstants;
-import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+import org.apache.commons.imaging.formats.png.PngConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PdfCleanUpFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
 
     private static final Color CLEANED_AREA_FILL_COLOR = Color.WHITE;
 
@@ -164,6 +168,20 @@ public class PdfCleanUpFilter {
 
     FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
         return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(imageCtm), document);
+    }
+
+    boolean isOriginalCsCompatible(PdfImageXObject originalImage, PdfImageXObject clearedImage) {
+        try {
+            ImageInfo cmpInfo = Imaging.getImageInfo(originalImage.getImageBytes());
+            ImageInfo toCompareInfo = Imaging.getImageInfo(clearedImage.getImageBytes());
+            return (cmpInfo.getColorType() == toCompareInfo.getColorType()
+                    && cmpInfo.isTransparent() == toCompareInfo.isTransparent()
+                    && cmpInfo.getBitsPerPixel() == toCompareInfo.getBitsPerPixel())
+                    || isCSApplicable(originalImage, toCompareInfo);
+        } catch (ImageReadException | IOException e) {
+            logger.error(CleanUpLogMessageConstant.CANNOT_OBTAIN_IMAGE_INFO_AFTER_FILTERING);
+            return false;
+        }
     }
 
     /**
@@ -226,6 +244,25 @@ public class PdfCleanUpFilter {
      */
     com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
         return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
+    }
+
+    private boolean isCSApplicable(PdfImageXObject originalImage, ImageInfo clearedImageInfo) {
+        PdfObject pdfColorSpace = originalImage.getPdfObject().get(PdfName.ColorSpace);
+        PdfName name = null;
+        if (pdfColorSpace.isArray()) {
+            name = ((PdfArray) pdfColorSpace).getAsName(0);
+        } else if (pdfColorSpace.isName()) {
+            name = (PdfName) pdfColorSpace;
+        }
+
+        // With use of pdf color space we can assume the image colorspace type
+        // For Separation and DeviceGray color spaces we need to be sure that
+        // the result image is 8 bit grayscale image
+        if (PdfName.Separation.equals(name) || PdfName.DeviceGray.equals(name)) {
+            return clearedImageInfo.getBitsPerPixel() == 8
+                    && clearedImageInfo.getColorType() == ColorType.GRAYSCALE;
+        }
+        return false;
     }
 
     /**
@@ -328,8 +365,7 @@ public class PdfCleanUpFilter {
                 if (!(e.getCause() instanceof NoninvertibleTransformException)) {
                     throw e;
                 } else {
-                    Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
-                    logger.error(MessageFormatUtil.format(LogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
+                    logger.error(MessageFormatUtil.format(CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
                 }
             }
 
@@ -516,30 +552,36 @@ public class PdfCleanUpFilter {
      * @param imageBytes       the image to be cleaned up
      * @param areasToBeCleaned the List of Rectangles that need to be redacted out of the image
      */
-    private static byte[] processImage(byte[] imageBytes, List<Rectangle> areasToBeCleaned) {
+    private byte[] processImage(byte[] imageBytes, List<Rectangle> areasToBeCleaned) {
         if (areasToBeCleaned.isEmpty()) {
             return imageBytes;
         }
 
         try {
-            BufferedImage image = getBuffer(imageBytes);
             ImageInfo imageInfo = Imaging.getImageInfo(imageBytes);
+            BufferedImage image = getBuffer(imageBytes, imageInfo.getFormat());
             cleanImage(image, areasToBeCleaned);
-
-            // Apache can only read JPEG, so we should use awt for writing in this format
-            if (imageInfo.getFormat() == ImageFormats.JPEG) {
-                return getJPGBytes(image);
-            } else {
-                Map<String, Object> params = new HashMap<>();
-
-                if (imageInfo.getFormat() == ImageFormats.TIFF) {
-                    params.put(ImagingConstants.PARAM_KEY_COMPRESSION, TiffConstants.TIFF_COMPRESSION_LZW);
-                }
-
-                return Imaging.writeImageToBytes(image, imageInfo.getFormat(), params);
-            }
+            return writeImage(image, imageInfo);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private byte[] writeImage(BufferedImage imageToWrite, ImageInfo originalImageInfo) throws IOException, ImageWriteException {
+        // Apache can only read JPEG, so we should use awt for writing in this format
+        if (originalImageInfo.getFormat() == ImageFormats.JPEG) {
+            return getJPGBytes(imageToWrite);
+        } else {
+            Map<String, Object> params = new HashMap<>();
+
+            // At least for PNG images if the resulted image can be grayscale, then Imaging makes
+            // it grayscale. As we do not want to change image format at all, then we need to
+            // force true color (if the image is not grayscale, then Imaging always uses true color).
+            if (originalImageInfo.getFormat() == ImageFormats.PNG && originalImageInfo.getColorType() != ColorType.GRAYSCALE) {
+                params.put(PngConstants.PARAM_KEY_PNG_FORCE_TRUE_COLOR, true);
+            }
+
+            return Imaging.writeImageToBytes(imageToWrite, originalImageInfo.getFormat(), params);
         }
     }
 
@@ -613,7 +655,10 @@ public class PdfCleanUpFilter {
      * @param imageBytes the image to be read, as a byte array
      * @return a BufferedImage, independent of the reading strategy
      */
-    private static BufferedImage getBuffer(byte[] imageBytes) throws IOException {
+    private static BufferedImage getBuffer(byte[] imageBytes, ImageFormat imageFormat) throws IOException {
+        if (imageFormat == ImageFormats.JPEG) {
+            return ImageIO.read(new ByteArrayInputStream(imageBytes));
+        }
         try {
             return Imaging.getBufferedImage(imageBytes);
         } catch (ImageReadException ire) {

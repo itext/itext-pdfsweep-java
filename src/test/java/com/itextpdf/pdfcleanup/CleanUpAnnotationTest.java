@@ -50,9 +50,13 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.LogMessage;
+import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -223,6 +227,19 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
 
         cleanUp(input, output, cleanUpLocations);
         compareByContent(cmp, output, outputPath, "diff_form02");
+    }
+
+    @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.REDACTION_OF_ANNOTATION_TYPE_WATERMARK_IS_NOT_SUPPORTED))
+    // TODO: update cmp file after DEVSIX-2471 fix
+    public void cleanWatermarkAnnotation() throws IOException, InterruptedException {
+        String input = inputPath + "watermarkAnnotation.pdf";
+        String output = outputPath + "watermarkAnnotation.pdf";
+        String cmp = inputPath + "cmp_watermarkAnnotation.pdf";
+
+        cleanUp(input, output, Collections.singletonList(new PdfCleanUpLocation(1,
+                new Rectangle(410, 410, 50, 50), ColorConstants.YELLOW)));
+        compareByContent(cmp, output, outputPath);
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

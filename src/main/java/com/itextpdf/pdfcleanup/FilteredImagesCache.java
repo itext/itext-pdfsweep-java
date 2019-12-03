@@ -71,6 +71,7 @@ class FilteredImagesCache {
      * e.g. if one set is { (0, 0, 50, 100), (50, 0, 50, 100)} and another one is {(0, 0, 100, 100)},
      * even though filtering results are essentially the same, current {@link FilteredImagesCache}
      * will treat this two cases as different filtering results.
+     *
      * @param imageKey the defining filtering case
      * @return result of image filtering based on given set of cleaning areas if such was already processed and saved,
      * null otherwise.

@@ -53,17 +53,16 @@ import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 
 @Category(IntegrationTest.class)
 public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
@@ -79,18 +78,42 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
         createOrClearDestinationFolder(outputPath);
     }
 
-    @Ignore("Test works differently in Java and .Net, because currently .NET version doesn't work with 8-byte images. Update after DEVSIX-1908 is fixed")
     @Test
-    // TODO: update cmp file after DEVSIX-1908 fixed
     public void cleanUpTestColorSpace() throws IOException, InterruptedException {
         String input = inputPath + "imgSeparationCs.pdf";
         String output = outputPath + "imgSeparationCs.pdf";
         String cmp = inputPath + "cmp_imgSeparationCs.pdf";
 
-        cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 780f, 60f, 45f), ColorConstants.GREEN)));
-        compareByContent(cmp, output, outputPath, "diff_imgSeparationCs");
+        cleanUp(input, output,
+                Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 780f, 60f, 45f), ColorConstants.GREEN)));
+        compareByContent(cmp, output, outputPath);
     }
 
+    @Test
+    public void cleanUpTestColorSpaceJpegBaselineEncoded() throws IOException, InterruptedException {
+        // cleanup jpeg image with baseline encoded data
+        String input = inputPath + "imgSeparationCsJpegBaselineEncoded.pdf";
+        String output = outputPath + "imgSeparationCsJpegBaselineEncoded.pdf";
+        String cmp = inputPath + "cmp_imgSeparationCsJpegBaselineEncoded.pdf";
+
+        cleanUp(input, output,
+                Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 600f, 100f, 50f), ColorConstants.GREEN)));
+        compareByContent(cmp, output, outputPath);
+    }
+
+    @Test
+    public void cleanUpTestColorSpaceJpegBaselineEncodedWithApp14Segment() throws IOException, InterruptedException {
+        // cleanup jpeg image with baseline encoded data and app14 segment with unknown color type
+        // Adobe Photoshop will always add an APP14 segment into the resulting jpeg file.
+        // To make Unknown color type we have set the quality of an image to maximum during the "save as" operation
+        String input = inputPath + "imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf";
+        String output = outputPath + "imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf";
+        String cmp = inputPath + "cmp_imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf";
+
+        cleanUp(input, output,
+                Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 600f, 100f, 50f), ColorConstants.GREEN)));
+        compareByContent(cmp, output, outputPath);
+    }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
@@ -103,9 +126,10 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
         pdfDocument.close();
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
+    private void compareByContent(String cmp, String output, String targetDir)
+            throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
+        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir);
 
         if (errorMessage != null) {
             Assert.fail(errorMessage);
