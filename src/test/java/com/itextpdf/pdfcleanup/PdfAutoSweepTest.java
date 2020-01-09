@@ -97,6 +97,24 @@ public class PdfAutoSweepTest extends ExtendedITextTest {
     }
 
     @Test
+    public void redactLipsumPatternStartsWithWhiteSpace() throws IOException, InterruptedException {
+        String input = inputPath + "Lipsum.pdf";
+        String output = outputPath + "redactLipsumPatternStartsWithWhitespace.pdf";
+        String cmp = inputPath + "cmp_redactLipsumPatternStartsWithWhitespace.pdf";
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("\\s(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+        PdfWriter writer = new PdfWriter(output);
+        writer.setCompressionLevel(0);
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), writer);
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+        pdf.close();
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_redactLipsumPatternStartsWithWhitespace_");
+    }
+
+    @Test
     @LogMessages(messages = @LogMessage(messageTemplate = CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX, count = 2))
     public void redactPdfWithNoninvertibleMatrix() throws IOException, InterruptedException {
         String input = inputPath + "noninvertibleMatrix.pdf";
