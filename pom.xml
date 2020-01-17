@@ -4,13 +4,27 @@
   <parent>
     <groupId>com.itextpdf</groupId>
     <artifactId>root</artifactId>
-    <version>7.1.6</version>
+    <version>7.1.10</version>
     <relativePath/>
   </parent>
   <artifactId>cleanup</artifactId>
-  <version>2.0.4</version>
+  <version>2.0.5</version>
   <name>pdfSweep</name>
-  <url>http://itextpdf.com/</url>
+  <url>https://itextpdf.com/products/itext-7/pdfsweep</url>
+  <description>
+    Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but they
+    include some confidential, sensitive information which should not be shared, pdfSweep is your solution. Redact a PDF
+    containing sensitive, confidential information, such as personal medical information, account numbers, national
+    identification numbers, personal details or social security numbers in a reliable and secure way. Data redaction
+    with pdfSweep removes such data including any underlying information, making it impossible for such information to
+    be recovered. With pdfSweep you can also redact drawings or parts of drawings you do not want your competition to
+    see. PDF Data redaction with pdfSweep gives you the piece of mind that your companies confidential information
+    remains just that, confidential.
+  </description>
+  <scm>
+    <connection>scm:git:ssh://git@git.itextsupport.com:7999/i7j/cleanup.git</connection>
+    <url>https://git.itextsupport.com/projects/I7J/repos/cleanup</url>
+  </scm>
   <properties>
     <itext.version>${project.parent.version}</itext.version>
   </properties>
@@ -85,44 +99,21 @@
         <version>${failsafe.version}</version>
         <configuration>
           <includes>
-            <include>**/*Test.java</include>
+            <include>**/*.java</include>
           </includes>
           <groups>${integrationtests}</groups>
-          <argLine>${env.SUREFIRE_OPTS}</argLine>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${javadoc.version}</version>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
-          <quiet>true</quiet>
-          <failOnError>true</failOnError>
-          <subpackages>com.itextpdf.pdfcleanup</subpackages>
+          <sourceFileExcludes>
+            <!-- ProductInfo -->
+            <sourceFileExclude>**/PdfCleanupProductInfo.java</sourceFileExclude>
+          </sourceFileExcludes>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>3.0.1</version>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -130,7 +121,39 @@
         <version>${surefire.version}</version>
         <configuration>
           <groups>${unittests}</groups>
-          <argLine>${env.SUREFIRE_OPTS}</argLine>
+        </configuration>
+      </plugin>
+      <!-- Compute test coverage for Sonar BEWARE: Sonar
+                              doesn't run the verify phase, it has to be forced by setting -Dsonar.phase=verify -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>site</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <propertyName>jacoco.agent.argLine</propertyName>
+          <!-- default: argLine -->
+          <includes>
+            <include>com/itextpdf/**</include>
+          </includes>
+          <destFile>${project.build.directory}/jacoco-integration.exec</destFile>
+          <!-- agent -->
+          <dataFile>${project.build.directory}/jacoco-integration.exec</dataFile>
+          <!-- report -->
         </configuration>
       </plugin>
     </plugins>

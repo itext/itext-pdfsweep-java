@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2019 iText Group NV
+    Copyright (c) 1998-2020 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -71,6 +71,7 @@ class FilteredImagesCache {
      * e.g. if one set is { (0, 0, 50, 100), (50, 0, 50, 100)} and another one is {(0, 0, 100, 100)},
      * even though filtering results are essentially the same, current {@link FilteredImagesCache}
      * will treat this two cases as different filtering results.
+     *
      * @param imageKey the defining filtering case
      * @return result of image filtering based on given set of cleaning areas if such was already processed and saved,
      * null otherwise.

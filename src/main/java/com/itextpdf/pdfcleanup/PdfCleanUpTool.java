@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2019 iText Group NV
+    Copyright (c) 1998-2020 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -554,9 +554,9 @@ public class PdfCleanUpTool {
             if (tokeniser.getTokenType() == PdfTokenizer.TokenType.Other) {
                 String key = tokeniser.getStringValue();
 
-                if (key.equals("RG") || key.equals("G") || key.equals("K")) {
+                if ("RG".equals(key) || "G".equals(key) || "K".equals(key)) {
                     key = "StrokeColor";
-                } else if (key.equals("rg") || key.equals("g") || key.equals("k")) {
+                } else if ("rg".equals(key) || "g".equals(key) || "k".equals(key)) {
                     key = "FillColor";
                 }
 
