@@ -72,6 +72,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.EndType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.JoinType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyFillType;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.IClipper.PolyType;
+import com.itextpdf.kernel.pdf.canvas.parser.clipper.LongRect;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.Paths;
 import com.itextpdf.kernel.pdf.canvas.parser.clipper.PolyTree;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
@@ -276,6 +277,8 @@ public class PdfCleanUpFilter {
         for (Rectangle region : regions) {
             Point[] redactRect = getRectangleVertices(region);
 
+            // Text rectangle might be rotated, hence we are using precise polygon intersection checker and not
+            // just intersecting two rectangles that are parallel to the x and y coordinate vectors
             if (checkIfRectanglesIntersect(textRect, redactRect)) {
                 return false;
             }
@@ -444,7 +447,8 @@ public class PdfCleanUpFilter {
             // working with paths is considered to be a bit faster in terms of performance.
             Paths paths = new Paths();
             clipper.execute(ClipType.INTERSECTION, paths, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return !paths.isEmpty();
+            return !checkIfIntersectionRectangleDegenerate(paths.getBounds(), false)
+                    && !paths.isEmpty();
         } else {
             int rect1Size = rect1.length;
             intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
@@ -462,8 +466,28 @@ public class PdfCleanUpFilter {
             }
             PolyTree polyTree = new PolyTree();
             clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return !Paths.makePolyTreeToPaths(polyTree).isEmpty();
+            Paths paths = Paths.makePolyTreeToPaths(polyTree);
+            return !checkIfIntersectionRectangleDegenerate(paths.getBounds(), true)
+                    && !paths.isEmpty();
         }
+    }
+
+    /**
+     * Checks if the input intersection rectangle is degenerate.
+     * In case of intersection subject is degenerate (isIntersectSubjectDegenerate
+     * is true) and it is included into intersecting rectangle, this method returns false,
+     * despite of the intersection rectangle is degenerate.
+     *
+     * @param rect intersection rectangle
+     * @param isIntersectSubjectDegenerate value, specifying if the intersection subject
+     *                                     is degenerate.
+     * @return true - if the intersection rectangle is degenerate.
+     */
+    private static boolean checkIfIntersectionRectangleDegenerate(LongRect rect,
+                                                                  boolean isIntersectSubjectDegenerate) {
+        float width = (float)(Math.abs(rect.left - rect.right) / ClipperBridge.floatMultiplier);
+        float height = (float)(Math.abs(rect.top - rect.bottom) / ClipperBridge.floatMultiplier);
+        return isIntersectSubjectDegenerate ? (width < EPS && height < EPS) : (width < EPS || height < EPS);
     }
 
     private static boolean isPointOnALineSegment(Point currPoint, Point linePoint1, Point linePoint2, boolean isBetweenLinePoints) {
@@ -691,13 +715,16 @@ public class PdfCleanUpFilter {
     }
 
     private static int[] getImageRectToClean(Rectangle rect, int imgWidth, int imgHeight) {
-        int scaledBottomY = (int) Math.ceil(rect.getBottom() * imgHeight);
-        int scaledTopY = (int) Math.floor(rect.getTop() * imgHeight);
+        double bottom = (double)rect.getBottom() * imgHeight;
+        int scaledBottomY = (int) Math.ceil(bottom - EPS);
+        double top = (double)rect.getTop() * imgHeight;
+        int scaledTopY = (int) Math.floor(top + EPS);
 
-
-        int x = (int) Math.ceil(rect.getLeft() * imgWidth);
+        double left = (double)rect.getLeft() * imgWidth;
+        int x = (int) Math.ceil(left - EPS);
         int y = imgHeight - scaledTopY;
-        int w = (int) Math.floor(rect.getRight() * imgWidth) - x;
+        double right = (double)rect.getRight() * imgWidth;
+        int w = (int) Math.floor(right + EPS) - x;
         int h = scaledTopY - scaledBottomY;
         return new int[] {x, y, w, h};
     }

@@ -54,6 +54,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
@@ -154,7 +155,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_BigImage-jpg.pdf";
 
         cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_05");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -422,7 +432,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_textAndImages.pdf";
 
         cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f, 235f, 230f, 445f))));
-        compareByContent(cmp, output, outputPath, "diff_34");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1.2");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -492,7 +511,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
                 new PdfCleanUpLocation(1, new Rectangle(100, 350, 100, 200), ColorConstants.ORANGE));
 
         cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_39");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1.2");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test

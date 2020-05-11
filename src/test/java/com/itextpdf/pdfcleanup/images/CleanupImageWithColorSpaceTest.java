@@ -48,7 +48,7 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import com.itextpdf.test.ExtendedITextTest;
@@ -79,18 +79,18 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
     }
 
     @Test
-    public void cleanUpTestColorSpace() throws IOException, InterruptedException {
+    public void cleanUpTestColorSpace() throws Exception {
         String input = inputPath + "imgSeparationCs.pdf";
         String output = outputPath + "imgSeparationCs.pdf";
         String cmp = inputPath + "cmp_imgSeparationCs.pdf";
 
         cleanUp(input, output,
                 Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 780f, 60f, 45f), ColorConstants.GREEN)));
-        compareByContent(cmp, output, outputPath);
+        compareByContent(cmp, output, outputPath, "9");
     }
 
     @Test
-    public void cleanUpTestColorSpaceJpegBaselineEncoded() throws IOException, InterruptedException {
+    public void cleanUpTestColorSpaceJpegBaselineEncoded() throws Exception {
         // cleanup jpeg image with baseline encoded data
         String input = inputPath + "imgSeparationCsJpegBaselineEncoded.pdf";
         String output = outputPath + "imgSeparationCsJpegBaselineEncoded.pdf";
@@ -98,11 +98,11 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
 
         cleanUp(input, output,
                 Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 600f, 100f, 50f), ColorConstants.GREEN)));
-        compareByContent(cmp, output, outputPath);
+        compareByContent(cmp, output, outputPath, "11");
     }
 
     @Test
-    public void cleanUpTestColorSpaceJpegBaselineEncodedWithApp14Segment() throws IOException, InterruptedException {
+    public void cleanUpTestColorSpaceJpegBaselineEncodedWithApp14Segment() throws Exception {
         // cleanup jpeg image with baseline encoded data and app14 segment with unknown color type
         // Adobe Photoshop will always add an APP14 segment into the resulting jpeg file.
         // To make Unknown color type we have set the quality of an image to maximum during the "save as" operation
@@ -112,7 +112,7 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
 
         cleanUp(input, output,
                 Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(60f, 600f, 100f, 50f), ColorConstants.GREEN)));
-        compareByContent(cmp, output, outputPath);
+        compareByContent(cmp, output, outputPath, "10");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
@@ -126,12 +126,17 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
         pdfDocument.close();
     }
 
-    private void compareByContent(String cmp, String output, String targetDir)
+    private void compareByContent(String cmp, String output, String targetDir, String fuzzValue)
             throws IOException, InterruptedException {
-        CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir);
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        cmpTool.useGsImageExtracting(true);
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, targetDir, fuzzValue);
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, targetDir);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
 
-        if (errorMessage != null) {
+        if (!errorMessage.equals("")) {
             Assert.fail(errorMessage);
         }
     }

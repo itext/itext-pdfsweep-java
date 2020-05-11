@@ -50,7 +50,7 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
-import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
@@ -89,7 +89,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
         }
 
         cleanUp(pdfDocument, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 1);
     }
 
@@ -128,7 +128,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
         }
 
         cleanUp(pdfDocument, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 5);
     }
 
@@ -148,7 +148,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
         }
 
         cleanUp(pdfDocument, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 2);
     }
 
@@ -178,7 +178,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
         }
 
         cleanUp(pdfDocument, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 1);
     }
 
@@ -205,7 +205,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
 
         pdfDocument.close();
 
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 1);
     }
 
@@ -232,7 +232,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
 
         pdfDocument.close();
 
-        compareByContent(cmp, output, outputPath, "diff");
+        compareByContent(cmp, output, outputPath, "1.2");
         assertNumberXObjects(output, 1);
     }
 
@@ -256,11 +256,16 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
         Assert.assertEquals(n, xObjCount);
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
-        CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
+    private void compareByContent(String cmp, String output, String targetDir, String fuzzValue)
+            throws IOException, InterruptedException {
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, targetDir, fuzzValue);
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, targetDir);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
 
-        if (errorMessage != null) {
+        if (!errorMessage.equals("")) {
             Assert.fail(errorMessage);
         }
     }

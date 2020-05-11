@@ -47,7 +47,7 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
@@ -81,7 +81,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
 
         List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 260f));
         cleanUp(input, output, initLocations(rects, 130));
-        compareByContent(cmp, output, outputPath, "diff_bigUntagged_");
+        compareByContent(cmp, output, outputPath, "4");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
 
         List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 270f));
         cleanUp(input, output, initLocations(rects, 131));
-        compareByContent(cmp, output, outputPath, "diff_bigTagged_");
+        compareByContent(cmp, output, outputPath, "4");
     }
 
     @Test
@@ -104,7 +104,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
 
         List<Rectangle> rects = Arrays.asList(new Rectangle(0f, 0f, 1f, 1f)); // just to enable cleanup processing of the pages
         cleanUp(input, output, initLocations(rects, 163));
-        compareByContent(cmp, output, outputPath, "diff_txtPos_");
+        compareByContent(cmp, output, outputPath, "4");
     }
 
 
@@ -129,11 +129,16 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
         return cleanUpLocations;
     }
 
-    private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
-        CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
+    private void compareByContent(String cmp, String output, String targetDir, String fuzzValue)
+            throws IOException, InterruptedException {
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, targetDir, fuzzValue);
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, targetDir);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
 
-        if (errorMessage != null) {
+        if (!errorMessage.equals("")) {
             Assert.fail(errorMessage);
         }
     }

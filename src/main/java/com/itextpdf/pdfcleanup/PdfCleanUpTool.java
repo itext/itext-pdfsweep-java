@@ -337,10 +337,19 @@ public class PdfCleanUpTool {
         if (pdfDocument.isTagged()) {
             canvas.openTag(new CanvasArtifact());
         }
+
+        // To avoid the float calculation precision differences in Java and .Net,
+        // the values of rectangles to be drawn are rounded
+        float x = (float)(Math.floor(location.getRegion().getX() * 2.0) / 2.0);
+        float y = (float)(Math.floor(location.getRegion().getY() * 2.0) / 2.0);
+        float width = (float)(Math.floor(location.getRegion().getWidth() * 2.0) / 2.0);
+        float height = (float)(Math.floor(location.getRegion().getHeight() * 2.0) / 2.0);
+        Rectangle rect = new Rectangle(x, y, width, height);
+
         canvas
                 .saveState()
                 .setFillColor(location.getCleanUpColor())
-                .rectangle(location.getRegion())
+                .rectangle(rect)
                 .fill()
                 .restoreState();
 
