@@ -26,6 +26,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.test.ExtendedITextTest;
+import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,8 +36,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 
+@Category(IntegrationTest.class)
 public class CleanUpInvalidPdfTest extends ExtendedITextTest {
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpInvalidPdfTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpInvalidPdfTest/";
