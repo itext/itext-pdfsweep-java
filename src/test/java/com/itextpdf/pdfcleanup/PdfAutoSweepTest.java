@@ -56,6 +56,7 @@ import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -136,6 +137,25 @@ public class PdfAutoSweepTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_redactPdfWithNoninvertibleMatrix_");
     }
 
+    @Test
+    @Ignore("DEVSIX-4047")
+    public void lineArtsDrawingOnCanvasTest() throws IOException, InterruptedException {
+        String input = inputPath + "lineArtsDrawingOnCanvas.pdf";
+        String output = outputPath + "lineArtsDrawingOnCanvas.pdf";
+        String cmp = inputPath + "cmp_lineArtsDrawingOnCanvas.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(iphone)|(iPhone)"));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+
+        pdf.close();
+
+        compareByContent(cmp, output, outputPath, "diff_lineArtsDrawingOnCanvasTest_");
+    }
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
         CompareTool cmpTool = new CompareTool();
