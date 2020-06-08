@@ -47,6 +47,13 @@ pipeline {
     }
 
     stages {
+	    stage('Abort possible previous builds') {
+            steps {
+                script {
+                    abortPreviousBuilds()
+                }
+            }
+        }
         stage('Wait for blocking jobs') {
             steps {
                 script {
