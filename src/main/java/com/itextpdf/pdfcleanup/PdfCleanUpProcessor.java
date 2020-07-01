@@ -99,6 +99,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+
+import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -676,7 +678,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                     // Additional checks required as if an image format has been changed,
                     // then the old colorspace may produce an error with the new image data.
                     if (areColorSpacesDifferent(originalImage, imageToWrite)
-                            && filter.isOriginalCsCompatible(originalImage, imageToWrite)) {
+                            && CleanUpCsCompareUtil.isOriginalCsCompatible(originalImage, imageToWrite)) {
                         PdfObject originalCS = originalImage.getPdfObject().get(PdfName.ColorSpace);
                         if (originalCS != null) {
                             imageToWrite.put(PdfName.ColorSpace, originalCS);
