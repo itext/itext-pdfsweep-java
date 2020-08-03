@@ -321,6 +321,35 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
+    /**
+     * Returns the last canvas without removing it.
+     *
+     * @return the last canvas in canvasStack.
+     */
+    PdfCanvas getCanvas() {
+        return canvasStack.peek();
+    }
+
+    /**
+     * Adds tag to the deque of not written tags.
+     *
+     * @param tag tag to be added.
+     */
+    void addNotWrittenTag(CanvasTag tag) {
+        notWrittenTags.push(tag);
+    }
+
+    /**
+     * Opens all tags from deque of not written tags. Should be called before some content is drawn.
+     */
+    void openNotWrittenTags() {
+        CanvasTag tag = notWrittenTags.pollLast();
+        while (tag != null) {
+            getCanvas().openTag(tag);
+            tag = notWrittenTags.pollLast();
+        }
+    }
+
     private boolean annotationIsToBeRedacted(PdfAnnotation annotation, Rectangle redactRegion) {
         // TODO(DEVSIX-1605,DEVSIX-1606,DEVSIX-1607,DEVSIX-1608,DEVSIX-1609)
         removeAnnotIfPartOverlap = true;
@@ -879,19 +908,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         canvas.saveState().setFillColor(strokeColor);
         writePath(strokePath);
         canvas.fill().restoreState();
-    }
-
-    private PdfCanvas getCanvas() {
-        return canvasStack.peek();
-    }
-
-    // should be called before some content is drawn
-    private void openNotWrittenTags() {
-        CanvasTag tag = notWrittenTags.pollLast();
-        while (tag != null) {
-            getCanvas().openTag(tag);
-            tag = notWrittenTags.pollLast();
-        }
     }
 
     private void removeOrCloseTag() {
