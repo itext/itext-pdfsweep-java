@@ -828,7 +828,6 @@ public class PdfCleanUpFilter {
     }
 
     private static class ApproxPointList<T> extends ArrayList<Point> {
-        private static final long serialVersionUID = -4341683299104210671L;
 
         public ApproxPointList() {
             super();
