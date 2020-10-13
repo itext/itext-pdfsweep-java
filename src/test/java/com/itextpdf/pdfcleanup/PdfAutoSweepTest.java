@@ -43,10 +43,12 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.pdf.CompressionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.autosweep.CommonRegex;
 import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
@@ -54,6 +56,9 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
+
+import java.io.ByteArrayOutputStream;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -77,8 +82,8 @@ public class PdfAutoSweepTest extends ExtendedITextTest {
     @Test
     public void redactLipsum() throws IOException, InterruptedException {
         String input = inputPath + "Lipsum.pdf";
-        String output = outputPath + "redactLipsum.pdf";
-        String cmp = inputPath + "cmp_redactLipsum.pdf";
+        String output = outputPath + "cleanUpDocument.pdf";
+        String cmp = inputPath + "cmp_cleanUpDocument.pdf";
 
         CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
         strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
@@ -94,7 +99,92 @@ public class PdfAutoSweepTest extends ExtendedITextTest {
         pdf.close();
 
         // compare
-        compareByContent(cmp, output, outputPath, "diff_redactLipsum_");
+        compareByContent(cmp, output, outputPath, "diff_cleanUpDocument_");
+    }
+
+    @Test
+    public void cleanUpPageTest() throws IOException, InterruptedException {
+        String input = inputPath + "Lipsum.pdf";
+        String output = outputPath + "cleanUpPage.pdf";
+        String cmp = inputPath + "cmp_cleanUpPage.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfWriter writer = new PdfWriter(output);
+        writer.setCompressionLevel(0);
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), writer);
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf.getPage(1));
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_cleanUpPage_");
+    }
+
+    @Test
+    public void tentativeCleanUpTest() throws IOException, InterruptedException {
+        String input = inputPath + "Lipsum.pdf";
+        String output = outputPath + "tentativeCleanUp.pdf";
+        String cmp = inputPath + "cmp_tentativeCleanUp.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output).setCompressionLevel(0));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.tentativeCleanUp(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_tentativeCleanUp_");
+    }
+
+    @Test
+    public void getPdfCleanUpLocationsTest() throws IOException {
+        String input = inputPath + "Lipsum.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor"));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        List cleanUpLocations = (List) autoSweep.getPdfCleanUpLocations(pdf.getPage(1));
+
+        pdf.close();
+
+        // compare
+        Assert.assertEquals(2, cleanUpLocations.size());
+    }
+
+    @Test
+    public void highlightTest() throws IOException, InterruptedException {
+        String input = inputPath + "Lipsum.pdf";
+        String output = outputPath + "highlightTest.pdf";
+        String cmp = inputPath + "cmp_highlightTest.pdf";
+
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output)
+                .setCompressionLevel(CompressionConstants.NO_COMPRESSION));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.highlight(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, outputPath, "diff_highlightTest_");
     }
 
     @Test

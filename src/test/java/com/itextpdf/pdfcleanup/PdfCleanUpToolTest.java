@@ -60,6 +60,7 @@ import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -635,6 +636,35 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         new PdfCleanUpTool(pdfDoc, true).cleanUp();
         pdfDoc.close();
         Assert.assertNull(new CompareTool().compareVisually(outputPath + filename, inputPath + "cmp_" + filename, outputPath, "diff_"));
+    }
+
+    @Test
+    public void cleanUpAnnotationSetterTest() throws IOException {
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath + "fontCleanup.pdf"),
+                new PdfWriter(new ByteArrayOutputStream()));
+        PdfCleanUpTool cleanUpTool = new PdfCleanUpTool(pdfDoc);
+
+        Assert.assertTrue(cleanUpTool.isProcessAnnotations());
+        cleanUpTool.setProcessAnnotations(false);
+        Assert.assertFalse(cleanUpTool.isProcessAnnotations());
+    }
+
+    @Test
+    public void documentInNonStampingModeTest() throws IOException {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(inputPath + "fontCleanup.pdf"));
+
+        new PdfCleanUpTool(pdfDocument);
+    }
+
+    @Test
+    public void documentWithoutReaderTest() {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        PdfDocument pdfDocument = new PdfDocument (new PdfWriter(new ByteArrayOutputStream()));
+
+        new PdfCleanUpTool(pdfDocument);
     }
 
     @Test
