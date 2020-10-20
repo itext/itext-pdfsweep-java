@@ -92,6 +92,7 @@ import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -106,36 +107,49 @@ import org.slf4j.LoggerFactory;
 
 public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
-    private static final Set<String> TEXT_SHOWING_OPERATORS = new HashSet<String>(Arrays.asList("TJ", "Tj", "'", "\""));
-    private static final Set<String> PATH_CONSTRUCTION_OPERATORS = new HashSet<String>(Arrays.asList("m", "l", "c", "v", "y", "h", "re"));
-    private static final Set<String> STROKE_OPERATORS = new HashSet<String>(Arrays.asList("S", "s", "B", "B*", "b", "b*"));
-    private static final Set<String> NW_FILL_OPERATORS = new HashSet<String>(Arrays.asList("f", "F", "B", "b"));
-    private static final Set<String> EO_FILL_OPERATORS = new HashSet<String>(Arrays.asList("f*", "B*", "b*"));
-    private static final Set<String> PATH_PAINTING_OPERATORS = new HashSet<String>();
+    private static final Set<String> TEXT_SHOWING_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("TJ", "Tj", "'", "\"")));
+    private static final Set<String> PATH_CONSTRUCTION_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("m", "l", "c", "v", "y", "h", "re")));
+    private static final Set<String> STROKE_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("S", "s", "B", "B*", "b", "b*")));
+    private static final Set<String> NW_FILL_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("f", "F", "B", "b")));
+    private static final Set<String> EO_FILL_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("f*", "B*", "b*")));
+    private static final Set<String> PATH_PAINTING_OPERATORS;
+    private static final Set<String> CLIPPING_PATH_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("W", "W*")));
+    private static final Set<String> LINE_STYLE_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("w", "J", "j", "M", "d")));
+    private static final Set<String> STROKE_COLOR_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("CS", "SC", "SCN", "G", "RG", "K")));
+    private static final Set<String> FILL_COLOR_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
+            Arrays.asList("cs", "sc", "scn", "g", "rg", "k")));
 
-    private static final Set<String> CLIPPING_PATH_OPERATORS = new HashSet<String>(Arrays.asList("W", "W*"));
-    private static final Set<String> LINE_STYLE_OPERATORS = new HashSet<String>(Arrays.asList("w", "J", "j", "M", "d"));
-
-    private static final Set<String> STROKE_COLOR_OPERATORS = new HashSet<String>(Arrays.asList("CS", "SC", "SCN", "G", "RG", "K"));
-    private static final Set<String> FILL_COLOR_OPERATORS = new HashSet<String>(Arrays.asList("cs", "sc", "scn", "g", "rg", "k"));
-
-    private static final Set<String> TEXT_POSITIONING_OPERATORS = new HashSet<>(Arrays.asList("Td", "TD", "Tm", "T*",
-            "TL")); // TL actually is not a text positioning operator, but we need to process it with them
+    // TL actually is not a text positioning operator, but we need to process it with them
+    private static final Set<String> TEXT_POSITIONING_OPERATORS = Collections.unmodifiableSet(new HashSet<>(
+            Arrays.asList("Td", "TD", "Tm", "T*", "TL")));
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
-    private static final Set<String> ignoredOperators = new HashSet<String>();
+    private static final Set<String> IGNORED_OPERATORS;
 
     static {
-        PATH_PAINTING_OPERATORS.addAll(STROKE_OPERATORS);
-        PATH_PAINTING_OPERATORS.addAll(NW_FILL_OPERATORS);
-        PATH_PAINTING_OPERATORS.addAll(EO_FILL_OPERATORS);
-        PATH_PAINTING_OPERATORS.add("n");
+        // HashSet is required in order to autoport correctly in .Net
+        HashSet<String> tempSet = new HashSet<>();
+        tempSet.addAll(STROKE_OPERATORS);
+        tempSet.addAll(NW_FILL_OPERATORS);
+        tempSet.addAll(EO_FILL_OPERATORS);
+        tempSet.add("n");
+        PATH_PAINTING_OPERATORS = Collections.unmodifiableSet(tempSet);
 
-        ignoredOperators.addAll(PATH_CONSTRUCTION_OPERATORS);
-        ignoredOperators.addAll(CLIPPING_PATH_OPERATORS);
-        ignoredOperators.addAll(LINE_STYLE_OPERATORS);
-        ignoredOperators.addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
-        ignoredOperators.addAll(Arrays.asList("BMC", "BDC"));
+        tempSet = new HashSet<>();
+        tempSet.addAll(PATH_CONSTRUCTION_OPERATORS);
+        tempSet.addAll(CLIPPING_PATH_OPERATORS);
+        tempSet.addAll(LINE_STYLE_OPERATORS);
+        tempSet.addAll(Arrays.asList("Tc", "Tw", "Tz", "Tf", "Tr", "Ts"));
+        tempSet.addAll(Arrays.asList("BMC", "BDC"));
+        IGNORED_OPERATORS = Collections.unmodifiableSet(tempSet);
     }
 
     private PdfDocument document;
@@ -536,7 +550,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if ("sh".equals(operator)) {
             PdfShading shading = getResources().getShading((PdfName) operands.get(0));
             getCanvas().paintShading(shading);
-        } else if (!ignoredOperators.contains(operator)) {
+        } else if (!IGNORED_OPERATORS.contains(operator)) {
             writeOperands(getCanvas(), operands);
         }
     }
