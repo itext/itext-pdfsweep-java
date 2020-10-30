@@ -77,6 +77,7 @@ import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.pdfcleanup.events.PdfSweepEvent;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -176,7 +177,7 @@ public class PdfCleanUpTool {
         ReflectionUtils.scheduledLicenseCheck();
 
         if (pdfDocument.getReader() == null || pdfDocument.getWriter() == null) {
-            throw new PdfException(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+            throw new PdfException(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
         }
         this.pdfDocument = pdfDocument;
         this.pdfCleanUpLocations = new HashMap<>();
@@ -448,7 +449,7 @@ public class PdfCleanUpTool {
         try {
             parsedDA = parseDAParam(defaultAppearance);
         }catch (NullPointerException npe){
-            throw new PdfException(PdfException.DefaultAppearanceNotFound);
+            throw new PdfException(CleanupExceptionMessageConstant.DEFAULT_APPEARANCE_NOT_FOUND);
         }
         PdfFont font;
         float fontSize = 12;

@@ -89,6 +89,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpHelperUtil;
 import com.itextpdf.pdfcleanup.util.CleanUpImageUtil;
 import org.slf4j.Logger;
@@ -769,7 +770,7 @@ public class PdfCleanUpFilter {
             try {
                 t = t.createInverse();
             } catch (NoninvertibleTransformException e) {
-                throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
+                throw new PdfException(CleanupExceptionMessageConstant.NONINVERTIBLE_MATRIX_CANNOT_BE_PROCESSED, e);
             }
         }
 

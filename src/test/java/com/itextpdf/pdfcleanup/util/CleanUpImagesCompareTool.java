@@ -69,6 +69,7 @@ import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.kernel.utils.objectpathitems.ObjectPath;
 import com.itextpdf.kernel.utils.objectpathitems.DictPathItem;
 import com.itextpdf.kernel.utils.objectpathitems.LocalPathItem;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 import com.itextpdf.test.ITextTest;
 
 import java.io.File;
@@ -366,7 +367,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                 try {
                     t = t.createInverse();
                 } catch (NoninvertibleTransformException e) {
-                    throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
+                    throw new PdfException(CleanupExceptionMessageConstant.NONINVERTIBLE_MATRIX_CANNOT_BE_PROCESSED, e);
                 }
             }
 

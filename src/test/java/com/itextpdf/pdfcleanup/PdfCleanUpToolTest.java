@@ -45,6 +45,7 @@ package com.itextpdf.pdfcleanup;
 import com.itextpdf.io.LogMessageConstant;
 import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.exceptions.KernelExceptionMessageConstant;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -54,6 +55,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
@@ -612,7 +614,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     @Test
     public void cleanUpTest46() throws IOException {
         junitExpectedException.expect(PdfException.class);
-        junitExpectedException.expectMessage(PdfException.DefaultAppearanceNotFound);
+        junitExpectedException.expectMessage(CleanupExceptionMessageConstant.DEFAULT_APPEARANCE_NOT_FOUND);
 
         String input = inputPath + "emptyPdf.pdf";
         String output = outputPath + "emptyPdf.pdf";
@@ -652,7 +654,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     @Test
     public void documentInNonStampingModeTest() throws IOException {
         junitExpectedException.expect(PdfException.class);
-        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        junitExpectedException.expectMessage(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(inputPath + "fontCleanup.pdf"));
 
         new PdfCleanUpTool(pdfDocument);
@@ -661,7 +663,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     @Test
     public void documentWithoutReaderTest() {
         junitExpectedException.expect(PdfException.class);
-        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        junitExpectedException.expectMessage(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
         PdfDocument pdfDocument = new PdfDocument (new PdfWriter(new ByteArrayOutputStream()));
 
         new PdfCleanUpTool(pdfDocument);
