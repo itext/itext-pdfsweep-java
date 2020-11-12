@@ -23,7 +23,6 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.kernel.Version;
-import java.lang.reflect.Array;
 
 /**
  * Utility class for handling operation related to reflections.
@@ -32,7 +31,6 @@ final class ReflectionUtils {
 
     private static final String LICENSEKEY = "com.itextpdf.licensekey.LicenseKey";
     private static final String LICENSEKEY_PRODUCT = "com.itextpdf.licensekey.LicenseKeyProduct";
-    private static final String LICENSEKEY_FEATURE = "com.itextpdf.licensekey.LicenseKeyProductFeature";
     private static final String CHECK_LICENSEKEY_METHOD = "scheduledCheck";
 
     private ReflectionUtils() {
@@ -44,14 +42,12 @@ final class ReflectionUtils {
     static void scheduledLicenseCheck() {
         try {
             Class licenseKeyProductClass = getClass(LICENSEKEY_PRODUCT);
-            Object licenseKeyProductFeatureArray = Array.newInstance(getClass(LICENSEKEY_FEATURE), 0);
             Class[] params = new Class[] {
-                    String.class, Integer.TYPE,
-                    Integer.TYPE, licenseKeyProductFeatureArray.getClass()
+                    String.class, String.class, String.class
             };
             Object licenseKeyProductObject = licenseKeyProductClass.getConstructor(params).newInstance(
-                    PdfCleanupProductInfo.PRODUCT_NAME, PdfCleanupProductInfo.MAJOR_VERSION,
-                    PdfCleanupProductInfo.MINOR_VERSION, licenseKeyProductFeatureArray
+                    PdfCleanupProductInfo.PRODUCT_NAME, String.valueOf(PdfCleanupProductInfo.MAJOR_VERSION),
+                    String.valueOf(PdfCleanupProductInfo.MINOR_VERSION)
             );
             getClass(LICENSEKEY).getMethod(CHECK_LICENSEKEY_METHOD, licenseKeyProductClass)
                     .invoke(null, licenseKeyProductObject);
