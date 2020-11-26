@@ -793,6 +793,26 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, outputPath, "diff_pathAndIncorrectCMTest");
     }
 
+    @Test
+    public void cleanUpDocWithoutReaderTest() {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
+
+        PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()));
+        PdfCleanUpTool clean = new PdfCleanUpTool(pdfDoc, true);
+    }
+
+    @Test
+    public void cleanUpDocWithoutWriterTest() throws IOException {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
+
+        String input = inputPath + "emptyPdf.pdf";
+
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(input));
+        PdfCleanUpTool clean = new PdfCleanUpTool(pdfDoc, true);
+    }
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
