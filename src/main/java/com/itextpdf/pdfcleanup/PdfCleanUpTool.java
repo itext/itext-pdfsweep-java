@@ -466,7 +466,7 @@ public class PdfCleanUpTool {
             canvas.openTag(new CanvasArtifact());
         }
 
-        Canvas modelCanvas = new Canvas(canvas, pdfDocument, annotRect, false);
+        Canvas modelCanvas = new Canvas(canvas, annotRect, false);
 
         Paragraph p = new Paragraph(overlayText).setFont(font).setFontSize(fontSize).setMargin(0);
         TextAlignment textAlignment = TextAlignment.LEFT;
