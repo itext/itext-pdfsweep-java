@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -49,6 +49,7 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import com.itextpdf.test.ExtendedITextTest;
@@ -74,27 +75,27 @@ public class MaskedImagesTest extends ExtendedITextTest {
 
     @Test
     public void imageTransparencyImageMask() throws IOException, InterruptedException {
-        runTest("imageIsMask");
+        runTest("imageIsMask", "0");
     }
 
     @Test
     public void imageTransparencyMask() throws IOException, InterruptedException {
-        runTest("imageMask");
+        runTest("imageMask", "1");
     }
 
     @Test
     public void imageTransparencySMask() throws IOException, InterruptedException {
-        runTest("imageSMask");
+        runTest("imageSMask", "1");
     }
 
     @Test
     public void imageTransparencySMaskAIS() throws IOException, InterruptedException {
-        runTest("imageSMaskAIS");
+        runTest("imageSMaskAIS", "1");
     }
 
     @Test
     public void imageTransparencyColorKeyMaskArray() throws IOException, InterruptedException {
-        runTest("imageColorKeyMaskArray");
+        runTest("imageColorKeyMaskArray", "1");
     }
 
     @Test
@@ -123,7 +124,7 @@ public class MaskedImagesTest extends ExtendedITextTest {
         Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
     }
 
-    private static void runTest(String fileName) throws IOException, InterruptedException {
+    private static void runTest(String fileName, String fuzzValue) throws IOException, InterruptedException {
         String input = inputPath + fileName + ".pdf";
         String output = outputPath + fileName + "_cleaned.pdf";
         String cmp = inputPath + "cmp_" + fileName + ".pdf";
@@ -137,6 +138,16 @@ public class MaskedImagesTest extends ExtendedITextTest {
         cleaner.cleanUp();
 
         pdfDocument.close();
-        Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output,
+                cmp, outputPath, fuzzValue);
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 }

@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -57,6 +57,7 @@ import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import org.junit.Assert;
@@ -69,8 +70,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.itextpdf.test.ITextTest.createOrClearDestinationFolder;
 
 @Category(IntegrationTest.class)
 public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
@@ -105,7 +104,26 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         pdf.close();
 
         // compare
-        compareResults(cmp, output, outputPath, "diff_redactTonySoprano_");
+        compareResults(cmp, output, outputPath, "4");
+    }
+
+    @Test
+    public void cleanUpAreaCalculationPrecisionTest() throws IOException, InterruptedException {
+        String input = inputPath + "cleanUpAreaCalculationPrecision.pdf";
+        String output = outputPath + "cleanUpAreaCalculationPrecision.pdf";
+        String cmp = inputPath + "cmp_cleanUpAreaCalculationPrecision.pdf";
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new CustomLocationExtractionStrategy("(iphone)|(iPhone)"));
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
+
+        // sweep
+        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
+        autoSweep.cleanUp(pdf);
+        pdf.close();
+        // compare
+        CompareTool compareTool = new CompareTool();
+        String errorMessage = compareTool.compareByContent(output, cmp, outputPath);
+        Assert.assertNull(errorMessage);
     }
 
     @Test
@@ -126,7 +144,20 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         pdf.close();
 
         // compare
-        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManualMatchColor_");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output,
+                cmp, outputPath, "4");
+
+        // TODO DEVSIX-4047 Switch to compareByContent() when the ticket will be resolved
+        String compareByContentResult = cmpTool.compareVisually(output, cmp, outputPath,
+                "diff_redactIPhoneUserManualMatchColor_", cmpTool.getIgnoredImagesAreas());
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -147,7 +178,20 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         pdf.close();
 
         // compare
-        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManual_");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output,
+                cmp, outputPath, "4");
+
+        // TODO DEVSIX-4047 Switch to compareByContent() when the ticket will be resolved
+        String compareByContentResult = cmpTool.compareVisually(output, cmp, outputPath,
+                "diff_redactIPhoneUserManual_", cmpTool.getIgnoredImagesAreas());
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -167,14 +211,20 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
 
         pdf.close();
 
-        compareResults(cmp, output, outputPath, "diff_redactIPhoneUserManualColored_");
+        compareResults(cmp, output, outputPath, "4");
     }
 
-    private void compareResults(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
-        CompareTool cmpTool = new CompareTool();
-        String errorMessage = cmpTool.compareVisually(output, cmp, targetDir, diffPrefix + "_");
+    private void compareResults(String cmp, String output, String targetDir, String fuzzValue)
+            throws IOException, InterruptedException {
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output,
+                cmp, targetDir, fuzzValue);
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, targetDir);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
 
-        if (errorMessage != null) {
+        if (!errorMessage.equals("")) {
             Assert.fail(errorMessage);
         }
     }

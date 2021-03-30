@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -54,11 +54,13 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -154,7 +156,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_BigImage-jpg.pdf";
 
         cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_05");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -422,7 +433,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_textAndImages.pdf";
 
         cleanUp(input, output, Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150f, 235f, 230f, 445f))));
-        compareByContent(cmp, output, outputPath, "diff_34");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1.2");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -492,7 +512,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
                 new PdfCleanUpLocation(1, new Rectangle(100, 350, 100, 200), ColorConstants.ORANGE));
 
         cleanUp(input, output, cleanUpLocations);
-        compareByContent(cmp, output, outputPath, "diff_39");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1.2");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     @Test
@@ -607,6 +636,35 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         new PdfCleanUpTool(pdfDoc, true).cleanUp();
         pdfDoc.close();
         Assert.assertNull(new CompareTool().compareVisually(outputPath + filename, inputPath + "cmp_" + filename, outputPath, "diff_"));
+    }
+
+    @Test
+    public void cleanUpAnnotationSetterTest() throws IOException {
+        PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath + "fontCleanup.pdf"),
+                new PdfWriter(new ByteArrayOutputStream()));
+        PdfCleanUpTool cleanUpTool = new PdfCleanUpTool(pdfDoc);
+
+        Assert.assertTrue(cleanUpTool.isProcessAnnotations());
+        cleanUpTool.setProcessAnnotations(false);
+        Assert.assertFalse(cleanUpTool.isProcessAnnotations());
+    }
+
+    @Test
+    public void documentInNonStampingModeTest() throws IOException {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(inputPath + "fontCleanup.pdf"));
+
+        new PdfCleanUpTool(pdfDocument);
+    }
+
+    @Test
+    public void documentWithoutReaderTest() {
+        junitExpectedException.expect(PdfException.class);
+        junitExpectedException.expectMessage(PdfException.PdfDocumentMustBeOpenedInStampingMode);
+        PdfDocument pdfDocument = new PdfDocument (new PdfWriter(new ByteArrayOutputStream()));
+
+        new PdfCleanUpTool(pdfDocument);
     }
 
     @Test

@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -42,7 +42,6 @@
  */
 package com.itextpdf.pdfcleanup.autosweep;
 
-import com.itextpdf.io.util.SystemUtil;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -60,10 +59,7 @@ import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 /**
  * Class that automatically extracts all regions of interest from a given PdfDocument and redacts them.
@@ -71,6 +67,7 @@ import java.util.Set;
 public class PdfAutoSweep {
 
     private ICleanupStrategy strategy;
+    private int annotationNumber = 1;
 
     /**
      * Construct a new instance of PdfAutoSweep with a given ICleanupStrategy
@@ -82,8 +79,96 @@ public class PdfAutoSweep {
         this.strategy = strategy;
     }
 
-    private void resetStrategy() {
-        strategy = strategy.reset();
+    /**
+     * Highlight areas of interest in a given {@link PdfDocument}
+     *
+     * @param pdfDocument the {@link PdfDocument} to be highlighted
+     */
+    public void highlight(PdfDocument pdfDocument) {
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
+            highlight(pdfDocument.getPage(i));
+    }
+
+    /**
+     * Highlight areas of interest in a given {@link PdfPage}
+     *
+     * @param pdfPage the {@link PdfPage} to be highlighted
+     */
+    public void highlight(PdfPage pdfPage) {
+        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
+        for (PdfCleanUpLocation loc : cleanUpLocations) {
+            PdfCanvas canvas = new PdfCanvas(pdfPage);
+            canvas.setColor(loc.getCleanUpColor(), true);
+            canvas.rectangle(loc.getRegion());
+            canvas.fill();
+        }
+    }
+
+    /**
+     * Perform cleanup of areas of interest on a given {@link PdfDocument}
+     *
+     * @param pdfDocument the {@link PdfDocument} to be redacted
+     * @throws IOException an {@link IOException}
+     */
+    public void cleanUp(PdfDocument pdfDocument) throws IOException {
+        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfDocument);
+        PdfCleanUpTool cleaner = (cleanUpLocations == null)
+                ? new PdfCleanUpTool(pdfDocument, true)
+                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
+        cleaner.cleanUp();
+    }
+
+    /**
+     * Perform cleanup of areas of interest on a given {@link PdfPage}
+     *
+     * @param pdfPage the {@link PdfPage} to be redacted
+     * @throws IOException an {@link IOException}
+     */
+    public void cleanUp(PdfPage pdfPage) throws IOException {
+        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
+        PdfCleanUpTool cleaner = (cleanUpLocations == null)
+                ? new PdfCleanUpTool(pdfPage.getDocument(), true)
+                : new PdfCleanUpTool(pdfPage.getDocument(), cleanUpLocations);
+        cleaner.cleanUp();
+    }
+
+    /**
+     * Perform tentative cleanup of areas of interest on a given {@link PdfDocument}
+     * This method will add all redaction annotations to the given document, allowing
+     * the end-user to choose which redactions to keep or delete.
+     *
+     * @param pdfDocument the document to clean up
+     */
+    public void tentativeCleanUp(PdfDocument pdfDocument) {
+        annotationNumber = 1;
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
+            tentativeCleanUp(pdfDocument.getPage(i));
+    }
+
+    /**
+     * Perform tentative cleanup of areas of interest on a given {@link PdfPage}
+     * This method will add all redaction annotations to the given page, allowing
+     * the end-user to choose which redactions to keep or delete.
+     *
+     * @param pdfPage the page to clean up
+     */
+    public void tentativeCleanUp(PdfPage pdfPage) {
+        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
+        for (PdfCleanUpLocation loc : cleanUpLocations) {
+            PdfString title = new PdfString("Annotation:" + annotationNumber);
+            annotationNumber++;
+            float[] color = loc.getCleanUpColor().getColorValue();
+
+            // convert to annotation
+            PdfAnnotation redact = new PdfRedactAnnotation(loc.getRegion())
+                    .setDefaultAppearance(new PdfString("Helvetica 12 Tf 0 g"))
+                    .setTitle(title)
+                    .put(PdfName.Subj, PdfName.Redact)
+                    .put(PdfName.IC, new PdfArray(new float[]{0f, 0f, 0f}))
+                    .put(PdfName.OC, new PdfArray(color));
+
+            pdfPage.addAnnotation(redact);
+        }
     }
 
     /**
@@ -151,103 +236,7 @@ public class PdfAutoSweep {
         return toClean;
     }
 
-    /**
-     * Highlight areas of interest in a given {@link PdfDocument}
-     *
-     * @param pdfDocument the {@link PdfDocument} to be highlighted
-     */
-    public void highlight(PdfDocument pdfDocument) {
-        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
-            highlight(pdfDocument.getPage(i));
-    }
-
-    /**
-     * Highlight areas of interest in a given {@link PdfPage}
-     *
-     * @param pdfPage the {@link PdfPage} to be highlighted
-     */
-    public void highlight(PdfPage pdfPage) {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
-        for (PdfCleanUpLocation loc : cleanUpLocations) {
-            PdfCanvas canvas = new PdfCanvas(pdfPage);
-            canvas.setColor(loc.getCleanUpColor(), true);
-            canvas.rectangle(loc.getRegion());
-            canvas.fill();
-        }
-    }
-
-    /**
-     * Perform cleanup of areas of interest on a given {@link PdfDocument}
-     *
-     * @param pdfDocument the {@link PdfDocument} to be redacted
-     * @throws IOException an {@link IOException}
-     */
-    public void cleanUp(PdfDocument pdfDocument) throws IOException {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfDocument);
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
-    }
-
-    /**
-     * Perform cleanup of areas of interest on a given {@link PdfPage}
-     *
-     * @param pdfPage the {@link PdfPage} to be redacted
-     * @throws IOException an {@link IOException}
-     */
-    public void cleanUp(PdfPage pdfPage) throws IOException {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfPage.getDocument(), true)
-                : new PdfCleanUpTool(pdfPage.getDocument(), cleanUpLocations);
-        cleaner.cleanUp();
-    }
-
-    /**
-     * Perform tentative cleanup of areas of interest on a given {@link PdfDocument}
-     * This method will add all redaction annotations to the given document, allowing
-     * the end-user to choose which redactions to keep or delete.
-     *
-     * @param pdfDocument the document to clean up
-     */
-    public void tentativeCleanUp(PdfDocument pdfDocument) {
-        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
-            tentativeCleanUp(pdfDocument.getPage(i));
-    }
-
-    /**
-     * Perform tentative cleanup of areas of interest on a given {@link PdfPage}
-     * This method will add all redaction annotations to the given page, allowing
-     * the end-user to choose which redactions to keep or delete.
-     *
-     * @param pdfPage the page to clean up
-     */
-    public void tentativeCleanUp(PdfPage pdfPage) {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
-
-        // random title generation
-        Random rnd = new Random(SystemUtil.getTimeBasedIntSeed());
-        Set<String> usedTitles = new HashSet<>();
-
-        for (PdfCleanUpLocation loc : cleanUpLocations) {
-
-            float[] color = loc.getCleanUpColor().getColorValue();
-
-            // generate random annotation title
-            String title = "Annotation:" + rnd.nextInt();
-            while (usedTitles.contains(title))
-                title = "Annotation:" + rnd.nextInt();
-
-            // convert to annotation
-            PdfAnnotation redact = new PdfRedactAnnotation(loc.getRegion())
-                    .setDefaultAppearance(new PdfString("Helvetica 12 Tf 0 g"))
-                    .setTitle(new PdfString(title))
-                    .put(PdfName.Subj, PdfName.Redact)
-                    .put(PdfName.IC, new PdfArray(new float[]{0f, 0f, 0f}))
-                    .put(PdfName.OC, new PdfArray(color));
-
-            pdfPage.addAnnotation(redact);
-        }
+    private void resetStrategy() {
+        strategy = strategy.reset();
     }
 }

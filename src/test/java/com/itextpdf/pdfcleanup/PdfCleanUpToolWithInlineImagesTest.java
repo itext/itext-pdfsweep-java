@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -49,6 +49,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
@@ -108,7 +109,16 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_inlineImageCleanup.pdf";
 
         cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_31");
+        CleanUpImagesCompareTool cmpTool = new CleanUpImagesCompareTool();
+        String errorMessage = cmpTool.extractAndCompareImages(output, cmp, outputPath, "1");
+        String compareByContentResult = cmpTool.compareByContent(output, cmp, outputPath);
+        if (compareByContentResult != null) {
+            errorMessage += compareByContentResult;
+        }
+
+        if (!errorMessage.equals("")) {
+            Assert.fail(errorMessage);
+        }
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {

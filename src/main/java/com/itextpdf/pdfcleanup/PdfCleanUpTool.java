@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,6 @@ import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.PdfException;
-import com.itextpdf.kernel.Version;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
@@ -80,9 +79,6 @@ import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.pdfcleanup.events.PdfSweepEvent;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -177,41 +173,7 @@ public class PdfCleanUpTool {
      *                               inside the given document.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument, boolean cleanRedactAnnotations) {
-        String licenseKeyClassName = "com.itextpdf.licensekey.LicenseKey";
-        String licenseKeyProductClassName = "com.itextpdf.licensekey.LicenseKeyProduct";
-        String licenseKeyFeatureClassName = "com.itextpdf.licensekey.LicenseKeyProductFeature";
-        String checkLicenseKeyMethodName = "scheduledCheck";
-
-        try {
-            Class licenseKeyClass = Class.forName(licenseKeyClassName);
-            Class licenseKeyProductClass = Class.forName(licenseKeyProductClassName);
-            Class licenseKeyProductFeatureClass = Class.forName(licenseKeyFeatureClassName);
-
-            Object licenseKeyProductFeatureArray = Array.newInstance(licenseKeyProductFeatureClass, 0);
-
-            Class[] params = new Class[] {
-                    String.class,
-                    Integer.TYPE,
-                    Integer.TYPE,
-                    licenseKeyProductFeatureArray.getClass()
-            };
-
-            Constructor licenseKeyProductConstructor = licenseKeyProductClass.getConstructor(params);
-
-            Object licenseKeyProductObject = licenseKeyProductConstructor.newInstance(
-                    PdfCleanupProductInfo.PRODUCT_NAME,
-                    PdfCleanupProductInfo.MAJOR_VERSION,
-                    PdfCleanupProductInfo.MINOR_VERSION,
-                    licenseKeyProductFeatureArray
-            );
-
-            Method method = licenseKeyClass.getMethod(checkLicenseKeyMethodName, licenseKeyProductClass);
-            method.invoke(null, licenseKeyProductObject);
-        } catch (Exception e) {
-            if ( ! Version.isAGPLVersion() ) {
-                throw new RuntimeException(e.getCause());
-            }
-        }
+        ReflectionUtils.scheduledLicenseCheck();
 
         if (pdfDocument.getReader() == null || pdfDocument.getWriter() == null) {
             throw new PdfException(PdfException.PdfDocumentMustBeOpenedInStampingMode);
@@ -337,10 +299,19 @@ public class PdfCleanUpTool {
         if (pdfDocument.isTagged()) {
             canvas.openTag(new CanvasArtifact());
         }
+
+        // To avoid the float calculation precision differences in Java and .Net,
+        // the values of rectangles to be drawn are rounded
+        float x = (float)(Math.floor(location.getRegion().getX() * 2.0) / 2.0);
+        float y = (float)(Math.floor(location.getRegion().getY() * 2.0) / 2.0);
+        float width = (float)(Math.floor(location.getRegion().getWidth() * 2.0) / 2.0);
+        float height = (float)(Math.floor(location.getRegion().getHeight() * 2.0) / 2.0);
+        Rectangle rect = new Rectangle(x, y, width, height);
+
         canvas
                 .saveState()
                 .setFillColor(location.getCleanUpColor())
-                .rectangle(location.getRegion())
+                .rectangle(rect)
                 .fill()
                 .restoreState();
 
@@ -508,19 +479,20 @@ public class PdfCleanUpTool {
             default:
         }
         p.setTextAlignment(textAlignment);
-        List<PdfObject> strokeColorArgs = parsedDA.get("StrokeColor");
+        List strokeColorArgs = parsedDA.get("StrokeColor");
         if (strokeColorArgs != null) {
             p.setStrokeColor(getColor(strokeColorArgs));
         }
-        List<PdfObject> fillColorArgs = parsedDA.get("FillColor");
+        List fillColorArgs = parsedDA.get("FillColor");
         if (fillColorArgs != null) {
             p.setFontColor(getColor(fillColorArgs));
         }
 
         modelCanvas.add(p);
         if (repeat != null && repeat.getValue()) {
-            Boolean isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
-            while (isFull == null || !isFull) {
+            boolean hasFull = modelCanvas.getRenderer().hasProperty(Property.FULL);
+            boolean isFull = hasFull ? (boolean) modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL) : false;
+            while (!isFull) {
                 p.add(overlayText);
                 LayoutArea previousArea = modelCanvas.getRenderer().getCurrentArea().clone();
                 modelCanvas.relayout();
@@ -528,7 +500,8 @@ public class PdfCleanUpTool {
                     // Avoid infinite loop. This might be caused by the fact that the font does not support the text we want to show
                     break;
                 }
-                isFull = modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL);
+                hasFull = modelCanvas.getRenderer().hasProperty(Property.FULL);
+                isFull = hasFull ? (boolean) modelCanvas.getRenderer().getPropertyAsBoolean(Property.FULL) : false;
             }
         }
         modelCanvas.getRenderer().flush();

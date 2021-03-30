@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2020 iText Group NV
+    Copyright (c) 1998-2021 iText Group NV
     Authors: iText Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -29,16 +29,19 @@ import com.itextpdf.kernel.pdf.PdfNull;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfStream;
+import com.itextpdf.kernel.pdf.canvas.CanvasTag;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
-import com.itextpdf.kernel.pdf.xobject.PdfXObject;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.UnitTest;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import static org.junit.Assert.*;
 
 @Category(UnitTest.class)
 public class PdfCleanUpProcessorUnitTest extends ExtendedITextTest {
@@ -140,6 +143,39 @@ public class PdfCleanUpProcessorUnitTest extends ExtendedITextTest {
     public void areColorSpacesDifferentForJavaNullAndPdfArrayValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation);
         Assert.assertTrue(createAndCompareImages(null, pdfArray));
+    }
+
+    @Test
+    public void openNotWrittenTagsUsualTest() {
+        final Deque<CanvasTag> tags = new ArrayDeque<>(Arrays.asList(new CanvasTag(new PdfName("tag name1")),
+                new CanvasTag(new PdfName("tag name2")), new CanvasTag(new PdfName("tag name3"))));
+        testOpenNotWrittenTags(tags);
+    }
+
+    @Test
+    public void openNotWrittenTagsEmptyTest() {
+        testOpenNotWrittenTags(new ArrayDeque<CanvasTag>());
+    }
+
+    private void testOpenNotWrittenTags(final Deque<CanvasTag> tags) {
+        PdfCleanUpProcessor processor = new PdfCleanUpProcessor(null, null) {
+            @Override
+            PdfCanvas getCanvas() {
+                return new PdfCanvas(new PdfStream(), null, null) {
+                    final Deque<CanvasTag> tagsToCompare = tags;
+
+                    @Override
+                    public PdfCanvas openTag(CanvasTag tag) {
+                        Assert.assertEquals(tagsToCompare.pop(), tag);
+                        return null;
+                    }
+                };
+            }
+        };
+        for (CanvasTag tag : tags) {
+            processor.addNotWrittenTag(tag);
+        }
+        processor.openNotWrittenTags();
     }
 
     private static PdfArray createPdfArray(PdfObject... objects) {
