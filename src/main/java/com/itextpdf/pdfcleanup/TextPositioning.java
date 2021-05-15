@@ -67,16 +67,13 @@ class TextPositioning {
     private float[] tdShift;
     private Matrix tmShift;
 
-    private Float currLeading;
+    private float currLeading = 0F;
 
     /**
      * Get the current leading
      */
     float getCurrLeading() {
-        if (currLeading != null) {
-            return (float) currLeading;
-        }
-        return 0f;
+        return currLeading;
     }
 
     void appendPositioningOperator(String operator, List<PdfObject> operands) {
@@ -168,7 +165,7 @@ class TextPositioning {
         if (firstPositioningOperands != null) {
             if ("T*".equals(prevOperator)) {
                 if (canvas.getGraphicsState().getLeading() != currLeading) {
-                    canvas.setLeading((float) currLeading);
+                    canvas.setLeading(currLeading);
                 }
             }
             PdfCleanUpProcessor.writeOperands(canvas, firstPositioningOperands);
@@ -185,7 +182,7 @@ class TextPositioning {
         boolean newLineShowText = "'".equals(operator) || "\"".equals(operator);
         if (newLineShowText) {
             if (canvasGs.getLeading() != currLeading) {
-                canvas.setLeading((float) currLeading);
+                canvas.setLeading(currLeading);
             }
             // after new line operator, removed text shift doesn't matter
             removedTextShift = null;
