@@ -162,8 +162,7 @@ public class PdfCleanUpTool {
 
     /**
      * Creates a {@link PdfCleanUpTool} object. If {@code cleanRedactAnnotations} is true,
-     * regions to be erased are extracted from the redact annotations contained inside the given document.
-     * Those redact annotations will be removed from the resultant document. If {@code cleanRedactAnnotations} is false,
+     * regions to be erased are extracted from the redact annotations contained inside the given document. Those redact annotations will be removed from the resultant document. If {@code cleanRedactAnnotations} is false,
      * then no regions for erasing are specified. In that case use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)}
      * method to set regions to be erased from the document.
      *
