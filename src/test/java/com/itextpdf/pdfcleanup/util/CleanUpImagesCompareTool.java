@@ -210,75 +210,75 @@ public class CleanUpImagesCompareTool extends CompareTool {
 
     private Map<Integer, PageImageObjectsPaths > extractImagesFromPdf(String pdf, String outputPath)
             throws IOException, InterruptedException {
-        PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdf));
-        Map<Integer, PageImageObjectsPaths > imageObjectDatas = new HashMap<>();
+        try (PdfReader readerPdf = new PdfReader(pdf);
+                PdfDocument pdfDoc = new PdfDocument(readerPdf)) {
+            Map<Integer, PageImageObjectsPaths > imageObjectDatas = new HashMap<>();
 
-        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
-            PdfPage page = pdfDoc.getPage(i);
-            PageImageObjectsPaths  imageObjectData =
-                    new PageImageObjectsPaths (page.getPdfObject().getIndirectReference());
-            Stack<ObjectPath.LocalPathItem> baseLocalPath = new Stack<ObjectPath.LocalPathItem>();
+            for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                PdfPage page = pdfDoc.getPage(i);
+                PageImageObjectsPaths  imageObjectData =
+                        new PageImageObjectsPaths (page.getPdfObject().getIndirectReference());
+                Stack<ObjectPath.LocalPathItem> baseLocalPath = new Stack<ObjectPath.LocalPathItem>();
 
-            PdfResources pdfResources = page.getResources();
-            if (pdfResources.getPdfObject().isIndirect()) {
-                imageObjectData.addIndirectReference(pdfResources.getPdfObject().getIndirectReference());
-            } else {
-                baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.Resources));
-            }
+                PdfResources pdfResources = page.getResources();
+                if (pdfResources.getPdfObject().isIndirect()) {
+                    imageObjectData.addIndirectReference(pdfResources.getPdfObject().getIndirectReference());
+                } else {
+                    baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.Resources));
+                }
 
-            PdfDictionary xObjects = pdfResources.getResource(PdfName.XObject);
-            if (xObjects == null) {
-                continue;
-            }
-
-            if (xObjects.isIndirect()) {
-                imageObjectData.addIndirectReference(xObjects.getIndirectReference());
-                baseLocalPath.clear();
-            } else {
-                baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.XObject));
-            }
-
-            boolean isPageToGsExtract = false;
-            for (PdfName objectName : xObjects.keySet()) {
-                if (!xObjects.get(objectName).isStream()
-                        || !PdfName.Image.equals(xObjects.getAsStream(objectName).getAsName(PdfName.Subtype))) {
+                PdfDictionary xObjects = pdfResources.getResource(PdfName.XObject);
+                if (xObjects == null) {
                     continue;
                 }
 
-                PdfImageXObject pdfObject = new PdfImageXObject(xObjects.getAsStream(objectName));
-                baseLocalPath.push(new ObjectPath().new DictPathItem(objectName));
-
-                if (!useGs) {
-                    String extension = pdfObject.identifyImageFileExtension();
-                    String fileName = outputPath + objectName + "_" + i + "." + extension;
-                    createImageFromPdfXObject(fileName, pdfObject);
+                if (xObjects.isIndirect()) {
+                    imageObjectData.addIndirectReference(xObjects.getIndirectReference());
+                    baseLocalPath.clear();
                 } else {
-                    isPageToGsExtract = true;
+                    baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.XObject));
                 }
 
-                Stack<ObjectPath.LocalPathItem> reversedStack = new Stack<>();
-                reversedStack.addAll(baseLocalPath);
-                Stack<ObjectPath.LocalPathItem> resultStack = new Stack<>();
-                resultStack.addAll(reversedStack);
-                imageObjectData.addLocalPath(resultStack);
-                baseLocalPath.pop();
+                boolean isPageToGsExtract = false;
+                for (PdfName objectName : xObjects.keySet()) {
+                    if (!xObjects.get(objectName).isStream()
+                            || !PdfName.Image.equals(xObjects.getAsStream(objectName).getAsName(PdfName.Subtype))) {
+                        continue;
+                    }
+
+                    PdfImageXObject pdfObject = new PdfImageXObject(xObjects.getAsStream(objectName));
+                    baseLocalPath.push(new ObjectPath().new DictPathItem(objectName));
+
+                    if (!useGs) {
+                        String extension = pdfObject.identifyImageFileExtension();
+                        String fileName = outputPath + objectName + "_" + i + "." + extension;
+                        createImageFromPdfXObject(fileName, pdfObject);
+                    } else {
+                        isPageToGsExtract = true;
+                    }
+
+                    Stack<ObjectPath.LocalPathItem> reversedStack = new Stack<>();
+                    reversedStack.addAll(baseLocalPath);
+                    Stack<ObjectPath.LocalPathItem> resultStack = new Stack<>();
+                    resultStack.addAll(reversedStack);
+                    imageObjectData.addLocalPath(resultStack);
+                    baseLocalPath.pop();
+                }
+
+                if (useGs && isPageToGsExtract) {
+                    String fileName = "Page_" + i + "-%03d.png";
+                    ghostscriptHelper.runGhostScriptImageGeneration(pdf, outputPath, fileName, String.valueOf(i));
+                }
+
+                ImageRenderListener listener = new ImageRenderListener();
+                PdfCanvasProcessor parser = new PdfCanvasProcessor(listener);
+                parser.processPageContent(page);
+                ignoredImagesAreas.put(i, listener.getImageRectangles());
+
+                imageObjectDatas.put(i, imageObjectData);
             }
-
-            if (useGs && isPageToGsExtract) {
-                String fileName = "Page_" + i + "-%03d.png";
-                ghostscriptHelper.runGhostScriptImageGeneration(pdf, outputPath, fileName, String.valueOf(i));
-            }
-
-            ImageRenderListener listener = new ImageRenderListener();
-            PdfCanvasProcessor parser = new PdfCanvasProcessor(listener);
-            parser.processPageContent(page);
-            ignoredImagesAreas.put(i, listener.getImageRectangles());
-
-            imageObjectDatas.put(i, imageObjectData);
+            return imageObjectDatas;
         }
-
-        pdfDoc.close();
-        return imageObjectDatas;
     }
 
     private void createImageFromPdfXObject(String imageFileName, PdfImageXObject imageObject)
