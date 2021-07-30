@@ -250,7 +250,7 @@ public class PdfCleanUpFilter {
         for (Rectangle rectangle : regions) {
             try {
                 Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
-                ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
+                ClipperBridge.addPolygonToClipper(clipper, transfRectVertices, PolyType.CLIP);
             } catch (PdfException e) {
                 if (!(e.getCause() instanceof NoninvertibleTransformException)) {
                     throw e;
