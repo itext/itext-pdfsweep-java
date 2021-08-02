@@ -690,7 +690,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 float[] ctm = pollNotAppliedCtm();
                 writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
-                getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
+                getCanvas().addXObjectWithTransformationMatrix(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
         }
     }
@@ -795,7 +795,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             writeNotAppliedGsParams(false, false);
             openNotWrittenTags();
 
-            getCanvas().addImage(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
+            getCanvas().addImageWithTransformationMatrix(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
         }
 
         // TODO
@@ -882,7 +882,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 writeNotAppliedGsParams(false, false); // we still need to open all q operators
                 canvas.moveTo(0, 0).clip();
             }
-            canvas.newPath();
+            canvas.endPath();
         }
     }
 

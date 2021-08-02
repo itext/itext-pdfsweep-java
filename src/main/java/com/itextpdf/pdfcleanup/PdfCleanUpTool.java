@@ -432,10 +432,10 @@ public class PdfCleanUpTool {
         for (Rectangle rect : cleanedRegions) {
             canvas.rectangle(rect.getLeft(), rect.getBottom(), rect.getWidth(), rect.getHeight());
         }
-        canvas.clip().newPath();
+        canvas.clip().endPath();
 
         PdfFormXObject formXObject = new PdfFormXObject(redactRolloverAppearance);
-        canvas.addXObject(formXObject, 1, 0, 0, 1, annotRect.getLeft(), annotRect.getBottom());
+        canvas.addXObjectWithTransformationMatrix(formXObject, 1, 0, 0, 1, annotRect.getLeft(), annotRect.getBottom());
         canvas.restoreState();
 
         if (pdfDocument.isTagged()) {
