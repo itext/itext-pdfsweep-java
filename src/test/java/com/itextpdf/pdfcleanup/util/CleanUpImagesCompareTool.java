@@ -270,7 +270,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                 }
 
                 if (useGs && isPageToGsExtract) {
-                    String fileName = "Page_" + i + "-%03d.png";
+                    String fileName = "Page_" + i;
                     ghostscriptHelper.runGhostScriptImageGeneration(pdf, outputPath, fileName, String.valueOf(i));
                 }
 
