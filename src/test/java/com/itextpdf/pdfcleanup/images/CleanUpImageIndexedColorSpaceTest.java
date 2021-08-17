@@ -28,7 +28,7 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
-import com.itextpdf.pdfcleanup.PdfCleanUpTool;
+import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 
@@ -56,9 +56,9 @@ public class CleanUpImageIndexedColorSpaceTest extends ExtendedITextTest {
         String cmp = inputPath + "cmp_indexedImageNoWhite.pdf";
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output))) {
-            new PdfCleanUpTool(pdfDocument,
+            PdfCleaner.cleanUp(pdfDocument,
                     Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(150, 250, 100, 100)))
-            ).cleanUp();
+            );
         }
 
         /*

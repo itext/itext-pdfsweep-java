@@ -42,6 +42,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.actions.EventManager;
 import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
@@ -50,8 +51,6 @@ import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.DeviceCmyk;
 import com.itextpdf.kernel.colors.DeviceGray;
 import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.counter.EventCounterHandler;
-import com.itextpdf.kernel.counter.event.IMetaInfo;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -75,7 +74,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.layout.LayoutArea;
 import com.itextpdf.layout.properties.Property;
 import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.pdfcleanup.events.PdfSweepEvent;
+import com.itextpdf.pdfcleanup.actions.event.PdfSweepProductEvent;
 import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 
 import java.io.IOException;
@@ -115,28 +114,6 @@ public class PdfCleanUpTool {
 
     private boolean processAnnotations;
 
-    private IMetaInfo cleanupMetaInfo;
-
-    /**
-     * Check if page annotations will be processed
-     * Default: True
-     * @return True if annotations will be processed by the PdfCleanUpTool
-     */
-    public boolean isProcessAnnotations() {
-        return processAnnotations;
-    }
-
-    /**
-     * Set if page annotations will be processed
-     * Default processing behaviour: remove annotation if there is overlap with a redaction region
-     * @param processAnnotations if page annotations will be processed
-     */
-    public void setProcessAnnotations(boolean processAnnotations) {
-        this.processAnnotations = processAnnotations;
-    }
-
-
-
     /**
      * Key - page number, value - list of locations related to the page.
      */
@@ -144,7 +121,7 @@ public class PdfCleanUpTool {
 
     /**
      * Keys - redact annotations to be removed from the document after clean up,
-     * Values - list of regions defined by redact annotation
+     * values - list of regions defined by redact annotation.
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
 
@@ -155,11 +132,10 @@ public class PdfCleanUpTool {
      * Use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)} method
      * to set regions to be erased from the document.
      *
-     * @param pdfDocument A {@link PdfDocument} object representing the document
-     *                    to which redaction applies.
+     * @param pdfDocument A {@link PdfDocument} object representing the document to which redaction applies.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument) {
-        this(pdfDocument, false);
+        this(pdfDocument, false, new CleanUpProperties());
     }
 
     /**
@@ -169,13 +145,13 @@ public class PdfCleanUpTool {
      * then no regions for erasing are specified. In that case use {@link PdfCleanUpTool#addCleanupLocation(PdfCleanUpLocation)}
      * method to set regions to be erased from the document.
      *
-     * @param pdfDocument            A {@link PdfDocument} object representing the document
-     *                               to which redaction applies.
+     * @param pdfDocument A {@link PdfDocument} object representing the document to which redaction applies.
      * @param cleanRedactAnnotations if true - regions to be erased are extracted from the redact annotations contained
-     *                               inside the given document.
+     * inside the given document.
      */
-    public PdfCleanUpTool(PdfDocument pdfDocument, boolean cleanRedactAnnotations) {
-        ReflectionUtils.scheduledLicenseCheck();
+    public PdfCleanUpTool(PdfDocument pdfDocument, boolean cleanRedactAnnotations, CleanUpProperties properties) {
+        EventManager.getInstance().onEvent(PdfSweepProductEvent.createCleanupPdfEvent(
+                pdfDocument.getDocumentIdWrapper(), properties.getMetaInfo()));
 
         if (pdfDocument.getReader() == null || pdfDocument.getWriter() == null) {
             throw new PdfException(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
@@ -187,7 +163,7 @@ public class PdfCleanUpTool {
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
         }
-        processAnnotations = true;
+        processAnnotations = properties.isProcessAnnotations();
     }
 
     /**
@@ -195,11 +171,11 @@ public class PdfCleanUpTool {
      * of {@link PdfCleanUpLocation}s representing regions to be erased from the document.
      *
      * @param cleanUpLocations list of locations to be cleaned up {@link PdfCleanUpLocation}
-     * @param pdfDocument      A {@link PdfDocument} object representing the document
-     *                         to which redaction applies.
+     * @param pdfDocument a {@link PdfDocument} object representing the document to which redaction applies.
      */
-    public PdfCleanUpTool(PdfDocument pdfDocument, List<PdfCleanUpLocation> cleanUpLocations) {
-        this(pdfDocument);
+    public PdfCleanUpTool(PdfDocument pdfDocument, List<PdfCleanUpLocation> cleanUpLocations,
+            CleanUpProperties properties) {
+        this(pdfDocument, false, properties);
         for (PdfCleanUpLocation location : cleanUpLocations) {
             addCleanupLocation(location);
         }
@@ -217,20 +193,7 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Sets the cleanup meta info that will be passed to the {@link com.itextpdf.kernel.counter.EventCounter}
-     * with {@link PdfSweepEvent} and can be used to determine event origin.
-     *
-     * @param metaInfo the meta info to set.
-     * @return this instance
-     */
-    public PdfCleanUpTool setEventCountingMetaInfo(IMetaInfo metaInfo) {
-        this.cleanupMetaInfo = metaInfo;
-        return this;
-    }
-
-    /**
-     * Cleans the document by erasing all the areas which are either provided or
-     * extracted from redaction annotations.
+     * Cleans the document by erasing all the areas which are provided or extracted from redaction annotations.
      *
      * @throws IOException IOException
      */
@@ -243,13 +206,13 @@ public class PdfCleanUpTool {
             removeRedactAnnots();
         }
         pdfCleanUpLocations.clear();
-        EventCounterHandler.getInstance().onEvent(PdfSweepEvent.CLEANUP, cleanupMetaInfo, getClass());
     }
 
     /**
-     * Cleans a page from the document by erasing all the areas which are provided or
+     * Cleans a page from the document by erasing all the areas which
+     * are provided or extracted from redaction annotations.
      *
-     * @param pageNumber       the page to be cleaned up
+     * @param pageNumber the page to be cleaned up
      * @param cleanUpLocations the locations to be cleaned up
      */
     private void cleanUpPage(int pageNumber, List<PdfCleanUpLocation> cleanUpLocations) {
@@ -278,9 +241,9 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Draws colored rectangles on the PdfCanvas corresponding to the PdfCleanUpLocation objects
+     * Draws colored rectangles on the PdfCanvas corresponding to the PdfCleanUpLocation objects.
      *
-     * @param canvas           the PdfCanvas on which to draw
+     * @param canvas the PdfCanvas on which to draw
      * @param cleanUpLocations the PdfCleanUpLocations
      */
     private void colorCleanedLocations(PdfCanvas canvas, List<PdfCleanUpLocation> cleanUpLocations) {
@@ -292,9 +255,9 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Draws a colored rectangle on the PdfCanvas correponding to a PdfCleanUpLocation
+     * Draws a colored rectangle on the PdfCanvas correponding to a PdfCleanUpLocation.
      *
-     * @param canvas   the PdfCanvas on which to draw
+     * @param canvas the PdfCanvas on which to draw
      * @param location the PdfCleanUpLocation
      */
     private void addColoredRectangle(PdfCanvas canvas, PdfCleanUpLocation location) {
@@ -372,7 +335,7 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Convert a PdfArray of floats into a List of Rectangle objects
+     * Convert a PdfArray of floats into a List of Rectangle objects.
      *
      * @param quadPoints input PdfArray
      */
@@ -394,7 +357,7 @@ public class PdfCleanUpTool {
     }
 
     /**
-     * Remove the redaction annotations
+     * Remove the redaction annotations.
      * This method is called after the annotations are processed.
      *
      * @throws IOException
@@ -419,12 +382,14 @@ public class PdfCleanUpTool {
             if (redactRolloverAppearance != null) {
                 drawRolloverAppearance(canvas, redactRolloverAppearance, annotRect, redactAnnotations.get(annotation));
             } else if (overlayText != null && !overlayText.toUnicodeString().isEmpty()) {
-                drawOverlayText(canvas, overlayText.toUnicodeString(), annotRect, annotation.getRepeat(), annotation.getDefaultAppearance(), annotation.getJustification());
+                drawOverlayText(canvas, overlayText.toUnicodeString(), annotRect, annotation.getRepeat(),
+                        annotation.getDefaultAppearance(), annotation.getJustification());
             }
         }
     }
 
-    private void drawRolloverAppearance(PdfCanvas canvas, PdfStream redactRolloverAppearance, Rectangle annotRect, List<Rectangle> cleanedRegions) {
+    private void drawRolloverAppearance(PdfCanvas canvas, PdfStream redactRolloverAppearance, Rectangle annotRect,
+            List<Rectangle> cleanedRegions) {
         if (pdfDocument.isTagged()) {
             canvas.openTag(new CanvasArtifact());
         }
@@ -445,7 +410,8 @@ public class PdfCleanUpTool {
         }
     }
 
-    private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat, PdfString defaultAppearance, int justification) throws IOException {
+    private void drawOverlayText(PdfCanvas canvas, String overlayText, Rectangle annotRect, PdfBoolean repeat,
+            PdfString defaultAppearance, int justification) throws IOException {
         Map<String, List> parsedDA;
         try {
             parsedDA = parseDAParam(defaultAppearance);

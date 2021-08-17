@@ -1,7 +1,7 @@
 /*
     This file is part of the iText (R) project.
     Copyright (c) 1998-2021 iText Group NV
-    Authors: Bruno Lowagie, Paulo Soares, et al.
+    Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License version 3
@@ -40,28 +40,60 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup.events;
+package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.kernel.counter.NamespaceConstant;
-import com.itextpdf.kernel.counter.event.IGenericEvent;
+import com.itextpdf.commons.actions.contexts.IMetaInfo;
 
-public class PdfSweepEvent implements IGenericEvent {
+/**
+ * Contains properties for {@link PdfCleanUpTool} operations.
+ */
+public class CleanUpProperties {
 
-    public static final PdfSweepEvent CLEANUP = new PdfSweepEvent("cleanup");
+    private IMetaInfo metaInfo;
+    private boolean processAnnotations;
 
-    private final String subtype;
-
-    private PdfSweepEvent(String subtype) {
-        this.subtype = subtype;
+    /**
+     * Creates default CleanUpProperties instance.
+     */
+    public CleanUpProperties() {
+        processAnnotations = true;
     }
 
-    @Override
-    public String getEventType() {
-        return "sweep-" + subtype;
+    /**
+     * Returns metaInfo property.
+     *
+     * @return metaInfo property
+     */
+    IMetaInfo getMetaInfo() {
+        return metaInfo;
     }
 
-    @Override
-    public String getOriginId() {
-        return NamespaceConstant.PDF_SWEEP;
+    /**
+     * Sets additional meta info.
+     *
+     * @param metaInfo the meta info to set
+     */
+    public void setMetaInfo(IMetaInfo metaInfo) {
+        this.metaInfo = metaInfo;
+    }
+
+    /**
+     * Check if page annotations will be processed.
+     * Default: {@code true}.
+     *
+     * @return {@code true} if annotations will be processed by the {@link PdfCleanUpTool}
+     */
+    public boolean isProcessAnnotations() {
+        return processAnnotations;
+    }
+
+    /**
+     * Set if page annotations will be processed.
+     * Default processing behaviour: remove annotation if there is overlap with a redaction region.
+     *
+     * @param processAnnotations is page annotations will be processed
+     */
+    public void setProcessAnnotations(boolean processAnnotations) {
+        this.processAnnotations = processAnnotations;
     }
 }

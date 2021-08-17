@@ -112,8 +112,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
-        PdfCleanUpTool cleaner = new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
+        PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
 
         pdfDocument.close();
     }

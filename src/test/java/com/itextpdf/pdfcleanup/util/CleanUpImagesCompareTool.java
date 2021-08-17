@@ -42,7 +42,7 @@
 */
 package com.itextpdf.pdfcleanup.util;
 
-import com.itextpdf.io.util.FileUtil;
+import com.itextpdf.commons.utils.FileUtil;
 import com.itextpdf.io.util.GhostscriptHelper;
 import com.itextpdf.io.util.ImageMagickHelper;
 import com.itextpdf.kernel.PdfException;

@@ -42,98 +42,97 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.pdf.CompressionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
+import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweepTools;
+import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
-import java.io.IOException;
+
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
+
 @Category(IntegrationTest.class)
-public class CleanUpTaggedPdfTest extends ExtendedITextTest {
-    private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/";
-    private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/";
+public class PdfAutoSweepToolsTest extends ExtendedITextTest {
+
+    private static final String INPUT_PATH = "./src/test/resources/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
+    private static final String OUTPUT_PATH = "./target/test/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
+
     @BeforeClass
     public static void before() {
-        createOrClearDestinationFolder(outputPath);
+        createOrClearDestinationFolder(OUTPUT_PATH);
     }
 
     @Test
-    public void cleanTextFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanText_full.pdf";
-        String output = outputPath + "cleanText_full.pdf";
-        String cmp = inputPath + "cmp_cleanText_full.pdf";
+    public void tentativeCleanUpTest() throws IOException, InterruptedException {
+        String input = INPUT_PATH + "Lipsum.pdf";
+        String output = OUTPUT_PATH + "tentativeCleanUp.pdf";
+        String cmp = INPUT_PATH + "cmp_tentativeCleanUp.pdf";
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_text_full");
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output).setCompressionLevel(0));
+
+        // sweep
+        PdfAutoSweepTools autoSweep = new PdfAutoSweepTools(strategy);
+        autoSweep.tentativeCleanUp(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, OUTPUT_PATH, "diff_tentativeCleanUp_");
     }
 
     @Test
-    public void cleanTextPartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanText_partial.pdf";
-        String output = outputPath + "cleanText_partial.pdf";
-        String cmp = inputPath + "cmp_cleanText_partial.pdf";
+    public void highlightTest() throws IOException, InterruptedException {
+        String input = INPUT_PATH + "Lipsum.pdf";
+        String output = OUTPUT_PATH + "highlightTest.pdf";
+        String cmp = INPUT_PATH + "cmp_highlightTest.pdf";
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_text_partial");
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor").setRedactionColor(ColorConstants.GREEN));
+
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output)
+                .setCompressionLevel(CompressionConstants.NO_COMPRESSION));
+
+        // sweep
+        PdfAutoSweepTools autoSweep = new PdfAutoSweepTools(strategy);
+        autoSweep.highlight(pdf);
+
+        pdf.close();
+
+        // compare
+        compareByContent(cmp, output, OUTPUT_PATH, "diff_highlightTest_");
     }
 
     @Test
-    public void cleanImageFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanImage_full.pdf";
-        String output = outputPath + "cleanImage_full.pdf";
-        String cmp = inputPath + "cmp_cleanImage_full.pdf";
+    public void getPdfCleanUpLocationsTest() throws IOException {
+        String input = INPUT_PATH + "Lipsum.pdf";
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_image_full");
-    }
+        CompositeCleanupStrategy strategy = new CompositeCleanupStrategy();
+        strategy.add(new RegexBasedCleanupStrategy("(D|d)olor"));
 
-    @Test
-    public void cleanImagePartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanImage_partial.pdf";
-        String output = outputPath + "cleanImage_partial.pdf";
-        String cmp = inputPath + "cmp_cleanImage_partial.pdf";
+        PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()));
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_image_partial");
-    }
+        // sweep
+        List cleanUpLocations = (List) new PdfAutoSweepTools(strategy).getPdfCleanUpLocations(pdf.getPage(1));
 
-    @Test
-    public void cleanPathFull() throws IOException, InterruptedException {
-        String input = inputPath + "cleanPath_full.pdf";
-        String output = outputPath + "cleanPath_full.pdf";
-        String cmp = inputPath + "cmp_cleanPath_full.pdf";
+        pdf.close();
 
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_path_full");
-    }
-
-    @Test
-    public void cleanPathPartial() throws IOException, InterruptedException {
-        String input = inputPath + "cleanPath_partial.pdf";
-        String output = outputPath + "cleanPath_partial.pdf";
-        String cmp = inputPath + "cmp_cleanPath_partial.pdf";
-
-        cleanUp(input, output, null);
-        compareByContent(cmp, output, outputPath, "diff_path_partial");
-    }
-
-    private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
-        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
-
-        if (cleanUpLocations == null) {
-            PdfCleaner.cleanUpRedactAnnotations(pdfDocument);
-        } else {
-            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
-        }
-
-        pdfDocument.close();
+        // compare
+        Assert.assertEquals(2, cleanUpLocations.size());
     }
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {

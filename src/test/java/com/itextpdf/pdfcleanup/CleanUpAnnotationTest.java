@@ -245,10 +245,11 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
+        if (cleanUpLocations == null) {
+            PdfCleaner.cleanUpRedactAnnotations(pdfDocument);
+        } else {
+            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
+        }
 
         pdfDocument.close();
     }

@@ -40,35 +40,32 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup.autosweep;
+package com.itextpdf.pdfcleanup.actions.data;
 
-import com.itextpdf.kernel.colors.Color;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
-import com.itextpdf.pdfcleanup.PdfCleaner;
+import com.itextpdf.commons.actions.data.ProductData;
 
 /**
- * This class represents a generic cleanup strategy to be used with {@link PdfCleaner} or {@link PdfAutoSweepTools}
- * ICleanupStrategy must implement Cloneable to ensure a strategy can be reset after having handled a page.
+ * Stores an instance of {@link ProductData} related to iText pdfSweep module.
  */
-public interface ICleanupStrategy extends ILocationExtractionStrategy {
-    /**
-     * Get the color in which redaction is to take place
-     *
-     * @param location where to get the redaction color from
-     *
-     * @return a {@link Color}
-     */
-    Color getRedactionColor(IPdfTextLocation location);
+public class PdfSweepProductData {
+    public static final String PDF_SWEEP_PRODUCT_NAME = "pdfSweep";
+    public static final String PDF_SWEEP_PUBLIC_PRODUCT_NAME = PDF_SWEEP_PRODUCT_NAME;
+
+    private static final String PDF_SWEEP_VERSION = "3.0.0-SNAPSHOT";
+    private static final int PDF_SWEEP_COPYRIGHT_SINCE = 2000;
+    private static final int PDF_SWEEP_COPYRIGHT_TO = 2021;
+
+    private static final ProductData PDF_SWEEP_PRODUCT_DATA = new ProductData(PDF_SWEEP_PUBLIC_PRODUCT_NAME,
+            PDF_SWEEP_PRODUCT_NAME, PDF_SWEEP_VERSION, PDF_SWEEP_COPYRIGHT_SINCE, PDF_SWEEP_COPYRIGHT_TO);
+
+    private PdfSweepProductData() {}
 
     /**
-     * ICleanupStrategy objects have to be reset at times
-     * {@code PdfAutoSweep} will use the same strategy for all pages,
-     * and expects to receive only the rectangles from the last page as output.
-     * Hence the reset method.
+     * Getter for an instance of {@link ProductData} related to iText pdfSweep module.
      *
-     * @return a clone of this Object
+     * @return iText pdfSweep product description
      */
-    ICleanupStrategy reset();
-
+    public static ProductData getInstance() {
+        return PDF_SWEEP_PRODUCT_DATA;
+    }
 }
