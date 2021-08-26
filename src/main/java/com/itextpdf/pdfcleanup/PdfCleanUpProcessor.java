@@ -211,18 +211,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      *
      * @param page    the page to process
      * @param regions a list of redaction regions
-     * @deprecated Will be removed in iText 7.2, use {@link #processPageAnnotations(PdfPage, List, boolean)} instead.
-     */
-    public void processPageAnnotations(PdfPage page, List<Rectangle> regions) {
-        processPageAnnotations(page, regions, false);
-    }
-
-    /**
-     * Process the annotations of a page.
-     * Default process behaviour is to remove the annotation if there is (partial) overlap with a redaction region
-     *
-     * @param page    the page to process
-     * @param regions a list of redaction regions
      * @param redactRedactAnnotations true if annotation with subtype /Redact should also be removed
      */
     public void processPageAnnotations(PdfPage page, List<Rectangle> regions, boolean redactRedactAnnotations) {

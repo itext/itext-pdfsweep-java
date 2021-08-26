@@ -92,13 +92,14 @@ import java.util.Map;
 public class PdfCleanUpTool {
 
     /**
-     * When a document with line arts is being cleaned up, there are lot of
+     * When a document with line arts is being cleaned up, there are a lot of
      * calculations with floating point numbers. All of them are translated
      * into fixed point numbers by multiplying by this coefficient. Vary it
      * to adjust the preciseness of the calculations.
      * @deprecated
      */
     @Deprecated
+    //TODO DEVSIX-5770 make this constant a single non-static configuration
     public static double floatMultiplier = Math.pow(10, 14);
 
     /**
@@ -107,6 +108,7 @@ public class PdfCleanUpTool {
      * @deprecated
      */
     @Deprecated
+    //TODO DEVSIX-5770 make this constant a single non-static configuration
     public static double arcTolerance = 0.0025;
 
     private PdfDocument pdfDocument;
