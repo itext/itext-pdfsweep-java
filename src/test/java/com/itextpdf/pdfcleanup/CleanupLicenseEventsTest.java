@@ -34,7 +34,7 @@ import com.itextpdf.commons.actions.producer.ProducerBuilder;
 import com.itextpdf.commons.actions.sequence.SequenceId;
 import com.itextpdf.io.source.ByteArrayOutputStream;
 import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.counter.event.ITextCoreEvent;
+import com.itextpdf.kernel.counter.event.ITextCoreProductEvent;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -104,7 +104,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(2, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
         Assert.assertEquals(PdfSweepProductEvent.CLEANUP_PDF, events.get(1).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
@@ -133,7 +133,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(2, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
         Assert.assertEquals(PdfSweepProductEvent.CLEANUP_PDF, events.get(1).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
@@ -159,7 +159,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(2, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
         Assert.assertEquals(PdfSweepProductEvent.CLEANUP_PDF, events.get(1).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
@@ -255,7 +255,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(2, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
         Assert.assertEquals(PdfSweepProductEvent.CLEANUP_PDF, events.get(1).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
@@ -283,7 +283,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(1, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
             String expectedProdLine = createExpectedProducerLine(
@@ -309,7 +309,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(2, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
         Assert.assertEquals(PdfSweepProductEvent.CLEANUP_PDF, events.get(1).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
@@ -385,7 +385,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         List<ConfirmEvent> events = handler.getEvents();
 
         Assert.assertEquals(1, events.size());
-        Assert.assertEquals(ITextCoreEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
+        Assert.assertEquals(ITextCoreProductEvent.PROCESS_PDF, events.get(0).getEvent().getEventType());
 
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(baos.toByteArray())))) {
             String expectedProdLine = createExpectedProducerLine(
@@ -403,7 +403,7 @@ public class CleanupLicenseEventsTest extends ExtendedITextTest {
         DefaultITextProductEventProcessor processor = new DefaultITextProductEventProcessor(
                 ProductNameConstant.ITEXT_CORE);
         return new ConfirmedEventWrapper(
-                ITextCoreEvent.createProcessPdfEvent(new SequenceId(), null, EventConfirmationType.ON_CLOSE),
+                ITextCoreProductEvent.createProcessPdfEvent(new SequenceId(), null, EventConfirmationType.ON_CLOSE),
                 processor.getUsageType(),
                 processor.getProducer());
     }
