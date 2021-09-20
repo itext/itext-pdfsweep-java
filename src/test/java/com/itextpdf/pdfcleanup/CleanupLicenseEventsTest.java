@@ -33,8 +33,8 @@ import com.itextpdf.commons.actions.processors.DefaultITextProductEventProcessor
 import com.itextpdf.commons.actions.producer.ProducerBuilder;
 import com.itextpdf.commons.actions.sequence.SequenceId;
 import com.itextpdf.io.source.ByteArrayOutputStream;
+import com.itextpdf.kernel.actions.events.ITextCoreProductEvent;
 import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.counter.event.ITextCoreProductEvent;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
