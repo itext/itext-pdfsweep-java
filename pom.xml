@@ -102,12 +102,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <sourceFileExcludes>
-            <!-- ProductInfo -->
-            <sourceFileExclude>**/PdfCleanupProductInfo.java</sourceFileExclude>
-          </sourceFileExcludes>
-        </configuration>
       </plugin>
     </plugins>
   </build>
