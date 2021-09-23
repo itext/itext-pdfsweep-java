@@ -147,6 +147,7 @@ public class PdfCleanUpTool {
      *
      * @param pdfDocument A {@link PdfDocument} object representing the document to which redaction applies.
      * @param cleanRedactAnnotations if true - regions to be erased are extracted from the redact annotations contained
+     * @param properties additional properties for clean-up process
      * inside the given document.
      */
     public PdfCleanUpTool(PdfDocument pdfDocument, boolean cleanRedactAnnotations, CleanUpProperties properties) {
@@ -172,6 +173,7 @@ public class PdfCleanUpTool {
      *
      * @param cleanUpLocations list of locations to be cleaned up {@link PdfCleanUpLocation}
      * @param pdfDocument a {@link PdfDocument} object representing the document to which redaction applies.
+     * @param properties additional properties for clean-up process
      */
     public PdfCleanUpTool(PdfDocument pdfDocument, List<PdfCleanUpLocation> cleanUpLocations,
             CleanUpProperties properties) {
