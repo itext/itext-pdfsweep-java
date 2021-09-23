@@ -42,7 +42,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.io.logs.IoLogMessageConstant;
 import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.PageSize;
@@ -57,6 +57,7 @@ import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
@@ -778,7 +779,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
+    @LogMessages(messages = @LogMessage(messageTemplate = IoLogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
     public void noPropertiesInResourcesTest() throws IOException, InterruptedException {
         String fileName = "noPropertiesInResourcesTest";
         String input = INPUT_PATH + fileName + ".pdf";
@@ -791,7 +792,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @LogMessages(messages = @LogMessage(messageTemplate = LogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
+    @LogMessages(messages = @LogMessage(messageTemplate = IoLogMessageConstant.PDF_REFERS_TO_NOT_EXISTING_PROPERTY_DICTIONARY))
     public void incorrectBDCToBMCTest() throws IOException, InterruptedException {
         String fileName = "incorrectBDCToBMCTest";
         String input = INPUT_PATH + fileName + ".pdf";

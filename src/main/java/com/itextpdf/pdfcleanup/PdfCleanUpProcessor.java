@@ -101,6 +101,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

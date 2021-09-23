@@ -80,6 +80,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpHelperUtil;
 import com.itextpdf.pdfcleanup.util.CleanUpImageUtil;
 

@@ -42,7 +42,7 @@
  */
 package com.itextpdf.pdfcleanup.text;
 
-import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.io.logs.IoLogMessageConstant;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -74,8 +74,8 @@ public class CleanUpTextTest extends ExtendedITextTest{
 
     @Test
     @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
+            @LogMessage(messageTemplate = IoLogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
+            @LogMessage(messageTemplate = IoLogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
     public void cleanZeroWidthTextInvalidFont() throws IOException, InterruptedException {
         String input = inputPath + "cleanZeroWidthTextInvalidFont.pdf";
         String output = outputPath + "cleanZeroWidthTextInvalidFont.pdf";
