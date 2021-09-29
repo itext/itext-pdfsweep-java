@@ -45,7 +45,7 @@ package com.itextpdf.pdfcleanup;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.source.ByteUtils;
-import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
@@ -101,6 +101,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,18 +204,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     public void processPageContent(PdfPage page) {
         currentPage = page;
         super.processPageContent(page);
-    }
-
-    /**
-     * Process the annotations of a page.
-     * Default process behaviour is to remove the annotation if there is (partial) overlap with a redaction region
-     *
-     * @param page    the page to process
-     * @param regions a list of redaction regions
-     * @deprecated Will be removed in iText 7.2, use {@link #processPageAnnotations(PdfPage, List, boolean)} instead.
-     */
-    public void processPageAnnotations(PdfPage page, List<Rectangle> regions) {
-        processPageAnnotations(page, regions, false);
     }
 
     /**
@@ -690,7 +679,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 float[] ctm = pollNotAppliedCtm();
                 writeNotAppliedGsParams(false, false);
                 openNotWrittenTags();
-                getCanvas().addXObject(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
+                getCanvas().addXObjectWithTransformationMatrix(imageToWrite, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]);
             }
         }
     }
@@ -795,7 +784,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             writeNotAppliedGsParams(false, false);
             openNotWrittenTags();
 
-            getCanvas().addImage(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
+            getCanvas().addImageWithTransformationMatrix(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
         }
 
         // TODO
@@ -882,7 +871,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 writeNotAppliedGsParams(false, false); // we still need to open all q operators
                 canvas.moveTo(0, 0).clip();
             }
-            canvas.newPath();
+            canvas.endPath();
         }
     }
 

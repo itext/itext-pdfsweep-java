@@ -42,10 +42,10 @@
 */
 package com.itextpdf.pdfcleanup.util;
 
-import com.itextpdf.io.util.FileUtil;
+import com.itextpdf.commons.utils.FileUtil;
 import com.itextpdf.io.util.GhostscriptHelper;
 import com.itextpdf.io.util.ImageMagickHelper;
-import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.NoninvertibleTransformException;
@@ -66,6 +66,10 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.kernel.utils.objectpathitems.ObjectPath;
+import com.itextpdf.kernel.utils.objectpathitems.DictPathItem;
+import com.itextpdf.kernel.utils.objectpathitems.LocalPathItem;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 import com.itextpdf.test.ITextTest;
 
 import java.io.File;
@@ -90,7 +94,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
 
     private final ImageMagickHelper imageMagickHelper = new ImageMagickHelper();
     private final GhostscriptHelper ghostscriptHelper = new GhostscriptHelper();
-    
+
     public CleanUpImagesCompareTool() {
     }
 
@@ -117,7 +121,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
 
     @Override
     public String compareByContent(String outPdf, String cmpPdf, String outPath, String differenceImagePrefix,
-                                   Map<Integer, List<Rectangle>> ignoredAreas, byte[] outPass, byte[] cmpPass)
+            Map<Integer, List<Rectangle>> ignoredAreas, byte[] outPass, byte[] cmpPass)
             throws IOException, InterruptedException {
         if (ignoredImagesAreas.size() != 0) {
             if (ignoredAreas != null) {
@@ -186,8 +190,8 @@ public class CleanUpImagesCompareTool extends CompareTool {
     }
 
     @Override
-    protected boolean compareObjects(PdfObject outObj, PdfObject cmpObj, CompareTool.ObjectPath currentPath,
-                                     CompareTool.CompareResult compareResult) {
+    protected boolean compareObjects(PdfObject outObj, PdfObject cmpObj, ObjectPath currentPath,
+            CompareTool.CompareResult compareResult) {
         if (ignoredObjectPaths.contains(currentPath)) {
 
             // Current objects should not be compared, if its ObjectPath is contained in ignored list
@@ -218,13 +222,13 @@ public class CleanUpImagesCompareTool extends CompareTool {
                 PdfPage page = pdfDoc.getPage(i);
                 PageImageObjectsPaths  imageObjectData =
                         new PageImageObjectsPaths (page.getPdfObject().getIndirectReference());
-                Stack<ObjectPath.LocalPathItem> baseLocalPath = new Stack<ObjectPath.LocalPathItem>();
+                Stack<LocalPathItem> baseLocalPath = new Stack<LocalPathItem>();
 
                 PdfResources pdfResources = page.getResources();
                 if (pdfResources.getPdfObject().isIndirect()) {
                     imageObjectData.addIndirectReference(pdfResources.getPdfObject().getIndirectReference());
                 } else {
-                    baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.Resources));
+                    baseLocalPath.push(new DictPathItem(PdfName.Resources));
                 }
 
                 PdfDictionary xObjects = pdfResources.getResource(PdfName.XObject);
@@ -236,7 +240,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                     imageObjectData.addIndirectReference(xObjects.getIndirectReference());
                     baseLocalPath.clear();
                 } else {
-                    baseLocalPath.push(new ObjectPath().new DictPathItem(PdfName.XObject));
+                    baseLocalPath.push(new DictPathItem(PdfName.XObject));
                 }
 
                 boolean isPageToGsExtract = false;
@@ -247,7 +251,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                     }
 
                     PdfImageXObject pdfObject = new PdfImageXObject(xObjects.getAsStream(objectName));
-                    baseLocalPath.push(new ObjectPath().new DictPathItem(objectName));
+                    baseLocalPath.push(new DictPathItem(objectName));
 
                     if (!useGs) {
                         String extension = pdfObject.identifyImageFileExtension();
@@ -257,16 +261,16 @@ public class CleanUpImagesCompareTool extends CompareTool {
                         isPageToGsExtract = true;
                     }
 
-                    Stack<ObjectPath.LocalPathItem> reversedStack = new Stack<>();
+                    Stack<LocalPathItem> reversedStack = new Stack<>();
                     reversedStack.addAll(baseLocalPath);
-                    Stack<ObjectPath.LocalPathItem> resultStack = new Stack<>();
+                    Stack<LocalPathItem> resultStack = new Stack<>();
                     resultStack.addAll(reversedStack);
                     imageObjectData.addLocalPath(resultStack);
                     baseLocalPath.pop();
                 }
 
                 if (useGs && isPageToGsExtract) {
-                    String fileName = "Page_" + i + "-%03d.png";
+                    String fileName = "Page_" + i;
                     ghostscriptHelper.runGhostScriptImageGeneration(pdf, outputPath, fileName, String.valueOf(i));
                 }
 
@@ -290,7 +294,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
     }
 
     private void initializeIgnoredObjectPath(PageImageObjectsPaths  cmpPageObjects,
-                                             PageImageObjectsPaths  outPageObjects) {
+            PageImageObjectsPaths  outPageObjects) {
         try {
             List<PdfIndirectReference> cmpIndirects = cmpPageObjects.getIndirectReferences();
             List<PdfIndirectReference> outIndirects = outPageObjects.getIndirectReferences();
@@ -303,7 +307,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                 baseOutIndirect = outIndirects.get(i);
             }
 
-            for (Stack<ObjectPath.LocalPathItem> path : cmpPageObjects.getDirectPaths()) {
+            for (Stack<LocalPathItem> path : cmpPageObjects.getDirectPaths()) {
                 ignoredObjectPaths.add(new ObjectPath(baseCmpIndirect, baseOutIndirect,
                         path, baseObjectPath.getIndirectPath()));
             }
@@ -363,7 +367,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
                 try {
                     t = t.createInverse();
                 } catch (NoninvertibleTransformException e) {
-                    throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
+                    throw new PdfException(CleanupExceptionMessageConstant.NONINVERTIBLE_MATRIX_CANNOT_BE_PROCESSED, e);
                 }
             }
 
@@ -375,13 +379,13 @@ public class CleanUpImagesCompareTool extends CompareTool {
     private static class PageImageObjectsPaths  {
         private List<PdfIndirectReference> pageIndirectReferencesPathToImageResources = new ArrayList<PdfIndirectReference>();
 
-        private List<Stack<ObjectPath.LocalPathItem>> directPaths = new ArrayList<Stack<ObjectPath.LocalPathItem>>();
+        private List<Stack<LocalPathItem>> directPaths = new ArrayList<Stack<LocalPathItem>>();
 
         public PageImageObjectsPaths (PdfIndirectReference baseIndirectReference) {
             this.pageIndirectReferencesPathToImageResources.add(baseIndirectReference);
         }
 
-        public void addLocalPath(Stack<ObjectPath.LocalPathItem> path) {
+        public void addLocalPath(Stack<LocalPathItem> path) {
             this.directPaths.add(path);
         }
 
@@ -389,7 +393,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
             this.pageIndirectReferencesPathToImageResources.add(reference);
         }
 
-        public List<Stack<ObjectPath.LocalPathItem>> getDirectPaths() {
+        public List<Stack<LocalPathItem>> getDirectPaths() {
             return this.directPaths;
         }
 

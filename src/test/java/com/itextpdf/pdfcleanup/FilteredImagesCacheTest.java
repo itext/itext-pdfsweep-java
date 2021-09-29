@@ -55,6 +55,7 @@ import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -237,7 +238,7 @@ public class FilteredImagesCacheTest extends ExtendedITextTest {
     }
 
     private void cleanUp(PdfDocument pdfDocument, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
-        new PdfCleanUpTool(pdfDocument, cleanUpLocations).cleanUp();
+        PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
         pdfDocument.close();
     }
 

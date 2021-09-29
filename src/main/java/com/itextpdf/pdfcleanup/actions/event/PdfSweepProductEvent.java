@@ -40,35 +40,51 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup.autosweep;
+package com.itextpdf.pdfcleanup.actions.event;
 
-import com.itextpdf.kernel.colors.Color;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.ILocationExtractionStrategy;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
-import com.itextpdf.pdfcleanup.PdfCleaner;
+import com.itextpdf.commons.actions.AbstractProductProcessITextEvent;
+import com.itextpdf.commons.actions.confirmations.EventConfirmationType;
+import com.itextpdf.commons.actions.contexts.IMetaInfo;
+import com.itextpdf.commons.actions.sequence.SequenceId;
+import com.itextpdf.pdfcleanup.actions.data.PdfSweepProductData;
 
 /**
- * This class represents a generic cleanup strategy to be used with {@link PdfCleaner} or {@link PdfAutoSweepTools}
- * ICleanupStrategy must implement Cloneable to ensure a strategy can be reset after having handled a page.
+ * Class represents events registered in iText cleanup module.
  */
-public interface ICleanupStrategy extends ILocationExtractionStrategy {
+public class PdfSweepProductEvent extends AbstractProductProcessITextEvent {
     /**
-     * Get the color in which redaction is to take place
-     *
-     * @param location where to get the redaction color from
-     *
-     * @return a {@link Color}
+     * Cleanup event type description.
      */
-    Color getRedactionColor(IPdfTextLocation location);
+    public static final String CLEANUP_PDF = "cleanup-pdf";
+
+    private final String eventType;
 
     /**
-     * ICleanupStrategy objects have to be reset at times
-     * {@code PdfAutoSweep} will use the same strategy for all pages,
-     * and expects to receive only the rectangles from the last page as output.
-     * Hence the reset method.
+     * Creates an event associated with a general identifier and additional meta data.
      *
-     * @return a clone of this Object
+     * @param sequenceId is an identifier associated with the event
+     * @param metaInfo is an additional meta info
+     * @param eventType is a string description of the event
      */
-    ICleanupStrategy reset();
+    private PdfSweepProductEvent(SequenceId sequenceId, IMetaInfo metaInfo, String eventType) {
+        super(sequenceId, PdfSweepProductData.getInstance(), metaInfo, EventConfirmationType.ON_CLOSE);
+        this.eventType = eventType;
+    }
 
+    /**
+     * Creates a cleanup-pdf event which associated with a general identifier and additional meta data.
+     *
+     * @param sequenceId is an identifier associated with the event
+     * @param metaInfo is an additional meta info
+     *
+     * @return the cleanup-pdf event
+     */
+    public static PdfSweepProductEvent createCleanupPdfEvent(SequenceId sequenceId, IMetaInfo metaInfo) {
+        return new PdfSweepProductEvent(sequenceId, metaInfo, CLEANUP_PDF);
+    }
+
+    @Override
+    public String getEventType() {
+        return eventType;
+    }
 }

@@ -42,10 +42,10 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.utils.MessageFormatUtil;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.io.util.MessageFormatUtil;
-import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.geom.AffineTransform;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.Line;
@@ -79,6 +79,10 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
+import com.itextpdf.pdfcleanup.util.CleanUpHelperUtil;
+import com.itextpdf.pdfcleanup.util.CleanUpImageUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,17 +92,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import com.itextpdf.pdfcleanup.util.CleanUpHelperUtil;
-import com.itextpdf.pdfcleanup.util.CleanUpImageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated This class will be changed to package-private in 7.2.
- */
-@Deprecated
-public class PdfCleanUpFilter {
+class PdfCleanUpFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
 
@@ -114,9 +111,8 @@ public class PdfCleanUpFilter {
 
     private static final float EPS = 1e-4f;
 
-    private static final Set<PdfName> NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
-            PdfName.JBIG2Decode, PdfName.DCTDecode, PdfName.JPXDecode))
-    );
+    private static final Set<PdfName> NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP = Collections.unmodifiableSet(
+            new LinkedHashSet<>(Arrays.asList(PdfName.JBIG2Decode, PdfName.DCTDecode, PdfName.JPXDecode)));
 
     private List<Rectangle> regions;
 
@@ -124,235 +120,12 @@ public class PdfCleanUpFilter {
         this.regions = regions;
     }
 
-    /**
-     * Filter a TextRenderInfo object.
-     *
-     * @param text the TextRenderInfo to be filtered
-     * @return a {@link FilterResult} object with filtered text.
-     * @deprecated This method will be changed to package-private in 7.2.
-     */
-    @Deprecated
-    public FilterResult<PdfArray> filterText(TextRenderInfo text) {
-        PdfTextArray textArray = new PdfTextArray();
-
-        if (isTextNotToBeCleaned(text)) {
-            return new FilterResult<>(false, new PdfArray(text.getPdfString()));
-        }
-
-        for (TextRenderInfo ri : text.getCharacterRenderInfos()) {
-            if (isTextNotToBeCleaned(ri)) {
-                textArray.add(ri.getPdfString());
-            } else {
-                textArray.add(new PdfNumber(
-                        -ri.getUnscaledWidth() * 1000f / (text.getFontSize() * text.getHorizontalScaling() / 100)
-                ));
-            }
-        }
-
-        return new FilterResult<PdfArray>(true, textArray);
-    }
-
-    FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
-        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(imageCtm), document);
-    }
-
-    /**
-     * Filter an ImageRenderInfo object.
-     *
-     * @param image the ImageRenderInfo object to be filtered
-     * @return an {@link FilterResult} object with filtered image data.filterStrokePath
-     * @deprecated This method will be changed to package-private in 7.2.
-     */
-    @Deprecated
-    public FilterResult<ImageData> filterImage(ImageRenderInfo image) {
-        return filterImage(image.getImage(), getImageAreasToBeCleaned(image.getImageCtm()));
-    }
-
-    FilterResult<ImageData> filterImage(FilteredImagesCache.FilteredImageKey imageKey) {
-        return filterImage(imageKey.getImageXObject(), imageKey.getCleanedAreas());
-    }
-
-    private FilterResult<ImageData> filterImage(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
-        if (imageAreasToBeCleaned == null) {
-            return new FilterResult<>(true, null);
-        } else if (imageAreasToBeCleaned.isEmpty()) {
-            return new FilterResult<>(false, null);
-        }
-
-        byte[] filteredImageBytes;
-        if (imageSupportsDirectCleanup(image)) {
-            byte[] imageStreamBytes = processImageDirectly(image, imageAreasToBeCleaned);
-            // Creating imageXObject clone in order to avoid modification of the original XObject in the document.
-            // We require to set filtered image bytes to the image XObject only for the sake of simplifying code:
-            // in this method we return ImageData, so in order to convert PDF image to the common image format we
-            // reuse PdfImageXObject#getImageBytes method.
-            // I think this is acceptable here, because monochrome and grayscale images are not very common,
-            // so the overhead would be not that big. But anyway, this should be refactored in future if this
-            // direct image bytes cleaning approach would be found useful and will be preserved in future.
-            PdfImageXObject tempImageClone = new PdfImageXObject((PdfStream) image.getPdfObject().clone());
-            tempImageClone.getPdfObject().setData(imageStreamBytes);
-            filteredImageBytes = tempImageClone.getImageBytes();
-        } else {
-            byte[] originalImageBytes = image.getImageBytes();
-            filteredImageBytes = CleanUpImageUtil.cleanUpImage(originalImageBytes, imageAreasToBeCleaned);
-        }
-        return new FilterResult<>(true, ImageDataFactory.create(filteredImageBytes));
-    }
-
-    /**
-     * Filter a PathRenderInfo object
-     *
-     * @param path the PathRenderInfo object to be filtered
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
-     * @deprecated This method will be changed to package-private in 7.2.
-     */
-    @Deprecated
-    public com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
-        PdfArray dashPattern = path.getLineDashPattern();
-        LineDashPattern lineDashPattern = new LineDashPattern(dashPattern.getAsArray(0), dashPattern.getAsNumber(1).floatValue());
-
-        return filterStrokePath(path.getPath(), path.getCtm(), path.getLineWidth(), path.getLineCapStyle(),
-                path.getLineJoinStyle(), path.getMiterLimit(), lineDashPattern);
-    }
-
-    /**
-     * Filter a PathRenderInfo object
-     *
-     * @param path        the PathRenderInfo object to be filtered
-     * @param fillingRule an integer parameter, specifying whether the subpath is contour.
-     *                    If the subpath is contour, pass any value.
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
-     * @deprecated This method will be changed to package-private in 7.2.
-     */
-    @Deprecated
-    public com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
-        return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
-    }
-
-    /**
-     * Note: this method will close all unclosed subpaths of the passed path.
-     *
-     * @param path        the PathRenderInfo object to be filtered.
-     * @param ctm         a {@link com.itextpdf.kernel.geom.Path} transformation matrix.
-     * @param fillingRule If the subpath is contour, pass any value.
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
-     * @deprecated This method will be changed to private in 7.2
-     */
-    @Deprecated
-    protected com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path,
-                                                           Matrix ctm, int fillingRule) {
-        path.closeAllSubpaths();
-
-        IClipper clipper = new DefaultClipper();
-        ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
-
-        for (Rectangle rectangle : regions) {
-            try {
-                Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
-                ClipperBridge.addRectToClipper(clipper, transfRectVertices, PolyType.CLIP);
-            } catch (PdfException e) {
-                if (!(e.getCause() instanceof NoninvertibleTransformException)) {
-                    throw e;
-                } else {
-                    logger.error(MessageFormatUtil.format(CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
-                }
-            }
-
-        }
-
-        PolyFillType fillType = PolyFillType.NON_ZERO;
-
-        if (fillingRule == PdfCanvasConstants.FillingRule.EVEN_ODD) {
-            fillType = PolyFillType.EVEN_ODD;
-        }
-
-        PolyTree resultTree = new PolyTree();
-        clipper.execute(ClipType.DIFFERENCE, resultTree, fillType, PolyFillType.NON_ZERO);
-
-        return ClipperBridge.convertToPath(resultTree);
-    }
-
-    /**
-     * Returns whether the given TextRenderInfo object needs to be cleaned up
-     *
-     * @param renderInfo the input TextRenderInfo object
-     */
-    private boolean isTextNotToBeCleaned(TextRenderInfo renderInfo) {
-        Point[] textRect = getTextRectangle(renderInfo);
-
-        for (Rectangle region : regions) {
-            Point[] redactRect = getRectangleVertices(region);
-
-            // Text rectangle might be rotated, hence we are using precise polygon intersection checker and not
-            // just intersecting two rectangles that are parallel to the x and y coordinate vectors
-            if (checkIfRectanglesIntersect(textRect, redactRect)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Calculates intersection of the image and the render filter region in the coordinate system relative to the image.
-     *
-     * @return {@code null} if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
-     * {@link Rectangle} objects otherwise.
-     */
-    private List<Rectangle> getImageAreasToBeCleaned(Matrix imageCtm) {
-        Rectangle imageRect = calcImageRect(imageCtm);
-        if (imageRect == null) {
-            return null;
-        }
-
-        List<Rectangle> areasToBeCleaned = new ArrayList<>();
-
-        for (Rectangle region : regions) {
-            Rectangle intersectionRect = getRectanglesIntersection(imageRect, region);
-
-            if (intersectionRect != null) {
-                if (imageRect.equalsWithEpsilon(intersectionRect)) { // true if the image is completely covered
-                    return null;
-                }
-
-                areasToBeCleaned.add(transformRectIntoImageCoordinates(intersectionRect, imageCtm));
-            }
-        }
-
-        return areasToBeCleaned;
-    }
-
-    private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
-                                                           float lineWidth, int lineCapStyle, int lineJoinStyle,
-                                                           float miterLimit, LineDashPattern lineDashPattern) {
-        com.itextpdf.kernel.geom.Path path = sourcePath;
-        JoinType joinType = ClipperBridge.getJoinType(lineJoinStyle);
-        EndType endType = ClipperBridge.getEndType(lineCapStyle);
-
-        if (lineDashPattern != null) {
-            if (!lineDashPattern.isSolid()) {
-                path = LineDashPattern.applyDashPattern(path, lineDashPattern);
-            }
-        }
-
-        ClipperOffset offset = new ClipperOffset(miterLimit, PdfCleanUpTool.arcTolerance * PdfCleanUpTool.floatMultiplier);
-        List<Subpath> degenerateSubpaths = ClipperBridge.addPath(offset, path, joinType, endType);
-
-        PolyTree resultTree = new PolyTree();
-        offset.execute(resultTree, lineWidth * PdfCleanUpTool.floatMultiplier / 2);
-        com.itextpdf.kernel.geom.Path offsetedPath = ClipperBridge.convertToPath(resultTree);
-
-        if (degenerateSubpaths.size() > 0) {
-            if (endType == EndType.OPEN_ROUND) {
-                List<Subpath> circles = convertToCircles(degenerateSubpaths, lineWidth / 2);
-                offsetedPath.addSubpaths(circles);
-            } else if (endType == EndType.OPEN_SQUARE && lineDashPattern != null) {
-                List<Subpath> squares = convertToSquares(degenerateSubpaths, lineWidth, sourcePath);
-                offsetedPath.addSubpaths(squares);
-            }
-        }
-
-        return filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING);
+    static boolean imageSupportsDirectCleanup(PdfImageXObject image) {
+        PdfObject filter = image.getPdfObject().get(PdfName.Filter);
+        boolean supportedFilterForDirectCleanup = isSupportedFilterForDirectImageCleanup(filter);
+        boolean deviceGrayOrNoCS = PdfName.DeviceGray.equals(image.getPdfObject().getAsName(PdfName.ColorSpace))
+                || !image.getPdfObject().containsKey(PdfName.ColorSpace);
+        return deviceGrayOrNoCS && supportedFilterForDirectCleanup;
     }
 
     /**
@@ -442,6 +215,225 @@ public class PdfCleanUpFilter {
     }
 
     /**
+     * Filter a TextRenderInfo object.
+     *
+     * @param text the TextRenderInfo to be filtered
+     * @return a {@link FilterResult} object with filtered text.
+     */
+    FilterResult<PdfArray> filterText(TextRenderInfo text) {
+        PdfTextArray textArray = new PdfTextArray();
+
+        if (isTextNotToBeCleaned(text)) {
+            return new FilterResult<>(false, new PdfArray(text.getPdfString()));
+        }
+
+        for (TextRenderInfo ri : text.getCharacterRenderInfos()) {
+            if (isTextNotToBeCleaned(ri)) {
+                textArray.add(ri.getPdfString());
+            } else {
+                textArray.add(new PdfNumber(
+                        -ri.getUnscaledWidth() * 1000f / (text.getFontSize() * text.getHorizontalScaling() / 100)
+                ));
+            }
+        }
+
+        return new FilterResult<PdfArray>(true, textArray);
+    }
+
+    /**
+     * Filter an ImageRenderInfo object.
+     *
+     * @param image the ImageRenderInfo object to be filtered
+     * @return an {@link FilterResult} object with filtered image data.filterStrokePath
+     */
+    FilterResult<ImageData> filterImage(ImageRenderInfo image) {
+        return filterImage(image.getImage(), getImageAreasToBeCleaned(image.getImageCtm()));
+    }
+
+    FilterResult<ImageData> filterImage(FilteredImagesCache.FilteredImageKey imageKey) {
+        return filterImage(imageKey.getImageXObject(), imageKey.getCleanedAreas());
+    }
+
+    /**
+     * Filter a PathRenderInfo object.
+     *
+     * @param path the PathRenderInfo object to be filtered
+     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     */
+    com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
+        PdfArray dashPattern = path.getLineDashPattern();
+        LineDashPattern lineDashPattern = new LineDashPattern(dashPattern.getAsArray(0), dashPattern.getAsNumber(1).floatValue());
+
+        return filterStrokePath(path.getPath(), path.getCtm(), path.getLineWidth(), path.getLineCapStyle(),
+                path.getLineJoinStyle(), path.getMiterLimit(), lineDashPattern);
+    }
+
+    /**
+     * Filter a PathRenderInfo object.
+     *
+     * @param path        the PathRenderInfo object to be filtered
+     * @param fillingRule an integer parameter, specifying whether the subpath is contour.
+     *                    If the subpath is contour, pass any value.
+     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     */
+    com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
+        return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
+    }
+
+    FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
+        return FilteredImagesCache.createFilteredImageKey(image, getImageAreasToBeCleaned(imageCtm), document);
+    }
+
+    /**
+     * Note: this method will close all unclosed subpaths of the passed path.
+     *
+     * @param path        the PathRenderInfo object to be filtered.
+     * @param ctm         a {@link com.itextpdf.kernel.geom.Path} transformation matrix.
+     * @param fillingRule If the subpath is contour, pass any value.
+     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     */
+    private com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path,
+            Matrix ctm, int fillingRule) {
+        path.closeAllSubpaths();
+
+        IClipper clipper = new DefaultClipper();
+        ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
+
+        for (Rectangle rectangle : regions) {
+            try {
+                Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
+                ClipperBridge.addPolygonToClipper(clipper, transfRectVertices, PolyType.CLIP);
+            } catch (PdfException e) {
+                if (!(e.getCause() instanceof NoninvertibleTransformException)) {
+                    throw e;
+                } else {
+                    logger.error(MessageFormatUtil.format(CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
+                }
+            }
+
+        }
+
+        PolyFillType fillType = PolyFillType.NON_ZERO;
+
+        if (fillingRule == PdfCanvasConstants.FillingRule.EVEN_ODD) {
+            fillType = PolyFillType.EVEN_ODD;
+        }
+
+        PolyTree resultTree = new PolyTree();
+        clipper.execute(ClipType.DIFFERENCE, resultTree, fillType, PolyFillType.NON_ZERO);
+
+        return ClipperBridge.convertToPath(resultTree);
+    }
+
+    /**
+     * Calculates intersection of the image and the render filter region in the coordinate system relative to the image.
+     *
+     * @return {@code null} if the image is fully covered and therefore is completely cleaned, {@link java.util.List} of
+     * {@link Rectangle} objects otherwise.
+     */
+    private List<Rectangle> getImageAreasToBeCleaned(Matrix imageCtm) {
+        Rectangle imageRect = calcImageRect(imageCtm);
+        if (imageRect == null) {
+            return null;
+        }
+
+        List<Rectangle> areasToBeCleaned = new ArrayList<>();
+
+        for (Rectangle region : regions) {
+            Rectangle intersectionRect = getRectanglesIntersection(imageRect, region);
+
+            if (intersectionRect != null) {
+                if (imageRect.equalsWithEpsilon(intersectionRect)) { // true if the image is completely covered
+                    return null;
+                }
+
+                areasToBeCleaned.add(transformRectIntoImageCoordinates(intersectionRect, imageCtm));
+            }
+        }
+
+        return areasToBeCleaned;
+    }
+
+    private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
+            float lineWidth, int lineCapStyle, int lineJoinStyle,
+            float miterLimit, LineDashPattern lineDashPattern) {
+        com.itextpdf.kernel.geom.Path path = sourcePath;
+        JoinType joinType = ClipperBridge.getJoinType(lineJoinStyle);
+        EndType endType = ClipperBridge.getEndType(lineCapStyle);
+
+        if (lineDashPattern != null && !lineDashPattern.isSolid()) {
+            path = LineDashPattern.applyDashPattern(path, lineDashPattern);
+        }
+
+        ClipperOffset offset = new ClipperOffset(miterLimit, PdfCleanUpTool.arcTolerance * PdfCleanUpTool.floatMultiplier);
+        List<Subpath> degenerateSubpaths = ClipperBridge.addPath(offset, path, joinType, endType);
+
+        PolyTree resultTree = new PolyTree();
+        offset.execute(resultTree, lineWidth * PdfCleanUpTool.floatMultiplier / 2);
+        com.itextpdf.kernel.geom.Path offsetedPath = ClipperBridge.convertToPath(resultTree);
+
+        if (degenerateSubpaths.size() > 0) {
+            if (endType == EndType.OPEN_ROUND) {
+                List<Subpath> circles = convertToCircles(degenerateSubpaths, lineWidth / 2);
+                offsetedPath.addSubpaths(circles);
+            } else if (endType == EndType.OPEN_SQUARE && lineDashPattern != null) {
+                List<Subpath> squares = convertToSquares(degenerateSubpaths, lineWidth, sourcePath);
+                offsetedPath.addSubpaths(squares);
+            }
+        }
+
+        return filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING);
+    }
+
+    /**
+     * Returns whether the given TextRenderInfo object needs to be cleaned up.
+     *
+     * @param renderInfo the input TextRenderInfo object
+     */
+    private boolean isTextNotToBeCleaned(TextRenderInfo renderInfo) {
+        Point[] textRect = getTextRectangle(renderInfo);
+
+        for (Rectangle region : regions) {
+            Point[] redactRect = getRectangleVertices(region);
+
+            // Text rectangle might be rotated, hence we are using precise polygon intersection checker and not
+            // just intersecting two rectangles that are parallel to the x and y coordinate vectors
+            if (checkIfRectanglesIntersect(textRect, redactRect)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static FilterResult<ImageData> filterImage(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
+        if (imageAreasToBeCleaned == null) {
+            return new FilterResult<>(true, null);
+        } else if (imageAreasToBeCleaned.isEmpty()) {
+            return new FilterResult<>(false, null);
+        }
+
+        byte[] filteredImageBytes;
+        if (imageSupportsDirectCleanup(image)) {
+            byte[] imageStreamBytes = processImageDirectly(image, imageAreasToBeCleaned);
+            // Creating imageXObject clone in order to avoid modification of the original XObject in the document.
+            // We require to set filtered image bytes to the image XObject only for the sake of simplifying code:
+            // in this method we return ImageData, so in order to convert PDF image to the common image format we
+            // reuse PdfImageXObject#getImageBytes method.
+            // I think this is acceptable here, because monochrome and grayscale images are not very common,
+            // so the overhead would be not that big. But anyway, this should be refactored in future if this
+            // direct image bytes cleaning approach would be found useful and will be preserved in future.
+            PdfImageXObject tempImageClone = new PdfImageXObject((PdfStream) image.getPdfObject().clone());
+            tempImageClone.getPdfObject().setData(imageStreamBytes);
+            filteredImageBytes = tempImageClone.getImageBytes();
+        } else {
+            byte[] originalImageBytes = image.getImageBytes();
+            filteredImageBytes = CleanUpImageUtil.cleanUpImage(originalImageBytes, imageAreasToBeCleaned);
+        }
+        return new FilterResult<>(true, ImageDataFactory.create(filteredImageBytes));
+    }
+
+    /**
      * Checks if the input intersection rectangle is degenerate.
      * In case of intersection subject is degenerate (isIntersectSubjectDegenerate
      * is true) and it is included into intersecting rectangle, this method returns false,
@@ -488,14 +480,6 @@ public class PdfCleanUpFilter {
         return false;
     }
 
-    static boolean imageSupportsDirectCleanup(PdfImageXObject image) {
-        PdfObject filter = image.getPdfObject().get(PdfName.Filter);
-        boolean supportedFilterForDirectCleanup = isSupportedFilterForDirectImageCleanup(filter);
-        boolean deviceGrayOrNoCS = PdfName.DeviceGray.equals(image.getPdfObject().getAsName(PdfName.ColorSpace))
-                || !image.getPdfObject().containsKey(PdfName.ColorSpace);
-        return deviceGrayOrNoCS && supportedFilterForDirectCleanup;
-    }
-
     private static boolean isSupportedFilterForDirectImageCleanup(PdfObject filter) {
         if (filter == null) {
             return true;
@@ -529,7 +513,7 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Transforms the given Rectangle into the image coordinate system which is [0,1]x[0,1] by default
+     * Transforms the given Rectangle into the image coordinate system which is [0,1]x[0,1] by default.
      */
     private static Rectangle transformRectIntoImageCoordinates(Rectangle rect, Matrix imageCtm) {
         Point[] points = transformPoints(imageCtm, true, new Point(rect.getLeft(), rect.getBottom()),
@@ -547,7 +531,7 @@ public class PdfCleanUpFilter {
      * @param imageAreasToBeCleaned list of rectangle areas for clean up with coordinates in (0,1)x(0,1) space
      * @return raw bytes of the PDF image samples stream which is already cleaned.
      */
-    private byte[] processImageDirectly(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
+    private static byte[] processImageDirectly(PdfImageXObject image, List<Rectangle> imageAreasToBeCleaned) {
         int X = 0;
         int Y = 1;
         int W = 2;
@@ -675,7 +659,7 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Approximates a given Path with a List of Point objects
+     * Approximates a given Path with a List of Point objects.
      *
      * @param path input path
      */
@@ -720,7 +704,7 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Approximate a circle with 4 Bezier curves (one for each 90 degrees sector)
+     * Approximate a circle with 4 Bezier curves (one for each 90 degrees sector).
      *
      * @param center center of the circle
      * @param radius radius of the circle
@@ -769,7 +753,7 @@ public class PdfCleanUpFilter {
             try {
                 t = t.createInverse();
             } catch (NoninvertibleTransformException e) {
-                throw new PdfException(PdfException.NoninvertibleMatrixCannotBeProcessed, e);
+                throw new PdfException(CleanupExceptionMessageConstant.NONINVERTIBLE_MATRIX_CANNOT_BE_PROCESSED, e);
             }
         }
 
@@ -779,7 +763,7 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Get the bounding box of a TextRenderInfo object
+     * Get the bounding box of a TextRenderInfo object.
      *
      * @param renderInfo input TextRenderInfo object
      */
@@ -812,7 +796,7 @@ public class PdfCleanUpFilter {
     }
 
     /**
-     * Calculate the intersection of 2 Rectangles
+     * Calculate the intersection of 2 Rectangles.
      *
      * @param rect1 first Rectangle
      * @param rect2 second Rectangle
@@ -827,8 +811,38 @@ public class PdfCleanUpFilter {
                 : null;
     }
 
+    /**
+     * Generic class representing the result of filtering an object of type T.
+     */
+    static class FilterResult<T> {
+        private boolean isModified;
+        private T filterResult;
+
+        public FilterResult(boolean isModified, T filterResult) {
+            this.isModified = isModified;
+            this.filterResult = filterResult;
+        }
+
+        /**
+         * Get whether the object was modified or not.
+         *
+         * @return true if the object was modified, false otherwise
+         */
+        boolean isModified() {
+            return isModified;
+        }
+
+        /**
+         * Get the result after filtering
+         *
+         * @return the result of filtering an object of type T.
+         */
+        T getFilterResult() {
+            return filterResult;
+        }
+    }
+
     private static class ApproxPointList<T> extends ArrayList<Point> {
-        private static final long serialVersionUID = -4341683299104210671L;
 
         public ApproxPointList() {
             super();
@@ -845,43 +859,6 @@ public class PdfCleanUpFilter {
             }
 
             return true;
-        }
-    }
-
-    /**
-     * Generic class representing the result of filtering an object of type T
-     * @deprecated this class will be changed to package-private in 7.2.
-     */
-    @Deprecated
-    public static class FilterResult<T> {
-        private boolean isModified;
-        private T filterResult;
-
-        public FilterResult(boolean isModified, T filterResult) {
-            this.isModified = isModified;
-            this.filterResult = filterResult;
-        }
-
-        /**
-         * Get whether the object was modified or not
-         *
-         * @return true if the object was modified, false otherwise
-         * @deprecated this method will be changed to package-private in 7.2.
-         */
-        @Deprecated
-        public boolean isModified() {
-            return isModified;
-        }
-
-        /**
-         * Get the result after filtering
-         *
-         * @return the result of filtering an object of type T.
-         * @deprecated this method will be changed to package-private in 7.2.
-         */
-        @Deprecated
-        public T getFilterResult() {
-            return filterResult;
         }
     }
 

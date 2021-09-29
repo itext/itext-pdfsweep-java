@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
-import com.itextpdf.pdfcleanup.CleanUpLogMessageConstant;
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import org.apache.commons.imaging.ImageInfo;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;

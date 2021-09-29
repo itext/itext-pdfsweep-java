@@ -55,7 +55,6 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtracti
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
-import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweep;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
@@ -98,8 +97,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         PdfDocument pdf = new PdfDocument(new PdfReader(input), writer);
 
         // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
+        PdfCleaner.autoSweepCleanUp(pdf, strategy);
 
         pdf.close();
 
@@ -117,9 +115,10 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
         // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
+        PdfCleaner.autoSweepCleanUp(pdf, strategy);
+
         pdf.close();
+
         // compare
         CompareTool compareTool = new CompareTool();
         String errorMessage = compareTool.compareByContent(output, cmp, outputPath);
@@ -138,8 +137,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
         // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
+        PdfCleaner.autoSweepCleanUp(pdf, strategy);
 
         pdf.close();
 
@@ -172,8 +170,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
         // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
+        PdfCleaner.autoSweepCleanUp(pdf, strategy);
 
         pdf.close();
 
@@ -206,8 +203,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         PdfDocument pdf = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
         // sweep
-        PdfAutoSweep autoSweep = new PdfAutoSweep(strategy);
-        autoSweep.cleanUp(pdf);
+        PdfCleaner.autoSweepCleanUp(pdf, strategy);
 
         pdf.close();
 

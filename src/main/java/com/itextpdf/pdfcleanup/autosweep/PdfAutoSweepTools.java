@@ -54,9 +54,7 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfDocumentContentParser;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
-import com.itextpdf.pdfcleanup.PdfCleanUpTool;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -64,18 +62,17 @@ import java.util.List;
 /**
  * Class that automatically extracts all regions of interest from a given PdfDocument and redacts them.
  */
-public class PdfAutoSweep {
+public class PdfAutoSweepTools {
 
     private ICleanupStrategy strategy;
     private int annotationNumber = 1;
 
     /**
-     * Construct a new instance of PdfAutoSweep with a given ICleanupStrategy
+     * Construct a new instance of PdfAutoSweepTools with a given ICleanupStrategy
      *
      * @param strategy the redaction strategy to be used
      */
-    public PdfAutoSweep(ICleanupStrategy strategy) {
-
+    public PdfAutoSweepTools(ICleanupStrategy strategy) {
         this.strategy = strategy;
     }
 
@@ -85,8 +82,9 @@ public class PdfAutoSweep {
      * @param pdfDocument the {@link PdfDocument} to be highlighted
      */
     public void highlight(PdfDocument pdfDocument) {
-        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
             highlight(pdfDocument.getPage(i));
+        }
     }
 
     /**
@@ -105,34 +103,6 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Perform cleanup of areas of interest on a given {@link PdfDocument}
-     *
-     * @param pdfDocument the {@link PdfDocument} to be redacted
-     * @throws IOException an {@link IOException}
-     */
-    public void cleanUp(PdfDocument pdfDocument) throws IOException {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfDocument);
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
-    }
-
-    /**
-     * Perform cleanup of areas of interest on a given {@link PdfPage}
-     *
-     * @param pdfPage the {@link PdfPage} to be redacted
-     * @throws IOException an {@link IOException}
-     */
-    public void cleanUp(PdfPage pdfPage) throws IOException {
-        List<PdfCleanUpLocation> cleanUpLocations = getPdfCleanUpLocations(pdfPage);
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfPage.getDocument(), true)
-                : new PdfCleanUpTool(pdfPage.getDocument(), cleanUpLocations);
-        cleaner.cleanUp();
-    }
-
-    /**
      * Perform tentative cleanup of areas of interest on a given {@link PdfDocument}
      * This method will add all redaction annotations to the given document, allowing
      * the end-user to choose which redactions to keep or delete.
@@ -141,8 +111,9 @@ public class PdfAutoSweep {
      */
     public void tentativeCleanUp(PdfDocument pdfDocument) {
         annotationNumber = 1;
-        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++)
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
             tentativeCleanUp(pdfDocument.getPage(i));
+        }
     }
 
     /**
@@ -172,9 +143,10 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfPage}
+     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfPage}.
      *
      * @param page the {@link PdfPage} to be processed
+     *
      * @return a List of {@link PdfCleanUpLocation} objects
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfPage page) {
@@ -191,8 +163,9 @@ public class PdfAutoSweep {
         List<PdfCleanUpLocation> toClean = new ArrayList<>();
         parser.processContent(pageNr, strategy);
         for (IPdfTextLocation rect : strategy.getResultantLocations()) {
-            if (rect != null)
+            if (rect != null) {
                 toClean.add(new PdfCleanUpLocation(pageNr, rect.getRectangle(), strategy.getRedactionColor(rect)));
+            }
         }
 
         // reset strategy for next iteration
@@ -203,9 +176,10 @@ public class PdfAutoSweep {
     }
 
     /**
-     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfDocument}
+     * Get all {@link PdfCleanUpLocation} objects from a given {@link PdfDocument}.
      *
      * @param doc the {@link PdfDocument} to be processed
+     *
      * @return a List of {@link PdfCleanUpLocation} objects
      */
     public List<PdfCleanUpLocation> getPdfCleanUpLocations(PdfDocument doc) {
@@ -214,16 +188,18 @@ public class PdfAutoSweep {
         for (int pageNr = 1; pageNr <= doc.getNumberOfPages(); pageNr++) {
             parser.processContent(pageNr, strategy);
             for (IPdfTextLocation rect : strategy.getResultantLocations()) {
-                if (rect != null)
+                if (rect != null) {
                     toClean.add(new PdfCleanUpLocation(pageNr, rect.getRectangle(), strategy.getRedactionColor(rect)));
+                }
             }
             resetStrategy();
         }
         java.util.Collections.sort(toClean, new Comparator<PdfCleanUpLocation>() {
             @Override
             public int compare(PdfCleanUpLocation o1, PdfCleanUpLocation o2) {
-                if(o1.getPage() != o2.getPage())
+                if (o1.getPage() != o2.getPage()) {
                     return o1.getPage() < o2.getPage() ? -1 : 1;
+                }
                 Rectangle r1 = o1.getRegion();
                 Rectangle r2 = o2.getRegion();
                 if (r1.getY() == r2.getY()) {

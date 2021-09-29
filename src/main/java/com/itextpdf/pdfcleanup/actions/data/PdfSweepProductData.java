@@ -1,7 +1,7 @@
 /*
     This file is part of the iText (R) project.
     Copyright (c) 1998-2021 iText Group NV
-    Authors: Bruno Lowagie, Paulo Soares, et al.
+    Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License version 3
@@ -40,28 +40,32 @@
     For more information, please contact iText Software Corp. at this
     address: sales@itextpdf.com
  */
-package com.itextpdf.pdfcleanup.events;
+package com.itextpdf.pdfcleanup.actions.data;
 
-import com.itextpdf.kernel.counter.NamespaceConstant;
-import com.itextpdf.kernel.counter.event.IGenericEvent;
+import com.itextpdf.commons.actions.data.ProductData;
 
-public class PdfSweepEvent implements IGenericEvent {
+/**
+ * Stores an instance of {@link ProductData} related to iText pdfSweep module.
+ */
+public class PdfSweepProductData {
+    public static final String PDF_SWEEP_PRODUCT_NAME = "pdfSweep";
+    public static final String PDF_SWEEP_PUBLIC_PRODUCT_NAME = PDF_SWEEP_PRODUCT_NAME;
 
-    public static final PdfSweepEvent CLEANUP = new PdfSweepEvent("cleanup");
+    private static final String PDF_SWEEP_VERSION = "3.0.0";
+    private static final int PDF_SWEEP_COPYRIGHT_SINCE = 2000;
+    private static final int PDF_SWEEP_COPYRIGHT_TO = 2021;
 
-    private final String subtype;
+    private static final ProductData PDF_SWEEP_PRODUCT_DATA = new ProductData(PDF_SWEEP_PUBLIC_PRODUCT_NAME,
+            PDF_SWEEP_PRODUCT_NAME, PDF_SWEEP_VERSION, PDF_SWEEP_COPYRIGHT_SINCE, PDF_SWEEP_COPYRIGHT_TO);
 
-    private PdfSweepEvent(String subtype) {
-        this.subtype = subtype;
-    }
+    private PdfSweepProductData() {}
 
-    @Override
-    public String getEventType() {
-        return "sweep-" + subtype;
-    }
-
-    @Override
-    public String getOriginId() {
-        return NamespaceConstant.PDF_SWEEP;
+    /**
+     * Getter for an instance of {@link ProductData} related to iText pdfSweep module.
+     *
+     * @return iText pdfSweep product description
+     */
+    public static ProductData getInstance() {
+        return PDF_SWEEP_PRODUCT_DATA;
     }
 }

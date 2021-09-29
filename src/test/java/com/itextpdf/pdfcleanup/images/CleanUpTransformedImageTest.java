@@ -29,7 +29,7 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
-import com.itextpdf.pdfcleanup.PdfCleanUpTool;
+import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.type.IntegrationTest;
@@ -86,9 +86,7 @@ public class CleanUpTransformedImageTest extends ExtendedITextTest {
 
     private static void cleanFirstPageAndDrawCleanupRegion(Rectangle cleanupRegion, String input, String output) throws IOException {
         try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output))) {
-            new PdfCleanUpTool(pdfDocument,
-                    Collections.singletonList(new PdfCleanUpLocation(1, cleanupRegion))
-            ).cleanUp();
+            PdfCleaner.cleanUp(pdfDocument, Collections.singletonList(new PdfCleanUpLocation(1, cleanupRegion)));
 
             drawCleanupRegionOnPage(pdfDocument, cleanupRegion);
         }

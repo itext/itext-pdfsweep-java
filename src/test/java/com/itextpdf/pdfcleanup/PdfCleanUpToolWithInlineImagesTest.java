@@ -43,7 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 
-import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.io.logs.IoLogMessageConstant;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -76,7 +76,7 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
 
     @Test
     @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
+            @LogMessage(messageTemplate = IoLogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
     })
     public void cleanUpTest28() throws IOException, InterruptedException {
         String input = inputPath + "inlineImages.pdf";
@@ -101,7 +101,7 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
 
     @Test
     @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
+            @LogMessage(messageTemplate = IoLogMessageConstant.IMAGE_SIZE_CANNOT_BE_MORE_4KB)
     })
     public void cleanUpTest31() throws IOException, InterruptedException {
         String input = inputPath + "inlineImageCleanup.pdf";
@@ -124,10 +124,11 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
+        if (cleanUpLocations == null) {
+            PdfCleaner.cleanUpRedactAnnotations(pdfDocument);
+        } else {
+            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
+        }
 
         pdfDocument.close();
     }

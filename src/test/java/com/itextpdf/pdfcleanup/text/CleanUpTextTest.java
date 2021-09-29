@@ -42,14 +42,14 @@
  */
 package com.itextpdf.pdfcleanup.text;
 
-import com.itextpdf.io.LogMessageConstant;
+import com.itextpdf.io.logs.IoLogMessageConstant;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
-import com.itextpdf.pdfcleanup.PdfCleanUpTool;
+import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
@@ -74,8 +74,8 @@ public class CleanUpTextTest extends ExtendedITextTest{
 
     @Test
     @LogMessages(messages = {
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
-            @LogMessage(messageTemplate = LogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
+            @LogMessage(messageTemplate = IoLogMessageConstant.FONT_DICTIONARY_WITH_NO_FONT_DESCRIPTOR),
+            @LogMessage(messageTemplate = IoLogMessageConstant.FONT_DICTIONARY_WITH_NO_WIDTHS)})
     public void cleanZeroWidthTextInvalidFont() throws IOException, InterruptedException {
         String input = inputPath + "cleanZeroWidthTextInvalidFont.pdf";
         String output = outputPath + "cleanZeroWidthTextInvalidFont.pdf";
@@ -88,10 +88,11 @@ public class CleanUpTextTest extends ExtendedITextTest{
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
-        PdfCleanUpTool cleaner = (cleanUpLocations == null)
-                ? new PdfCleanUpTool(pdfDocument, true)
-                : new PdfCleanUpTool(pdfDocument, cleanUpLocations);
-        cleaner.cleanUp();
+        if (cleanUpLocations == null) {
+            PdfCleaner.cleanUpRedactAnnotations(pdfDocument);
+        } else {
+            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
+        }
 
         pdfDocument.close();
     }

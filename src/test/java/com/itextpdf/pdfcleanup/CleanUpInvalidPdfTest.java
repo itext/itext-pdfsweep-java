@@ -62,7 +62,7 @@ public class CleanUpInvalidPdfTest extends ExtendedITextTest {
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
         cleanUpLocations.add(new PdfCleanUpLocation(1, pdfDocument.getPage(1).getPageSize(), null));
 
-        new PdfCleanUpTool(pdfDocument, cleanUpLocations).cleanUp();
+        PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
 
         pdfDocument.close();
     }
