@@ -22,6 +22,9 @@
  */
 package com.itextpdf.pdfcleanup.logs;
 
+/**
+ * Class that bundles all the log message templates as constants.
+ */
 public class CleanUpLogMessageConstant {
 
     /** The Constant CANNOT_OBTAIN_IMAGE_INFO_AFTER_FILTERING. */

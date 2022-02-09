@@ -106,6 +106,9 @@ import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * PDF content stream processor, which filters content to be cleaned up.
+ */
 public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
     private static final Set<String> TEXT_SHOWING_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(
