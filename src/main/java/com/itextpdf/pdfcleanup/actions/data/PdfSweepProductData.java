@@ -51,7 +51,7 @@ public class PdfSweepProductData {
     public static final String PDF_SWEEP_PRODUCT_NAME = "pdfSweep";
     public static final String PDF_SWEEP_PUBLIC_PRODUCT_NAME = PDF_SWEEP_PRODUCT_NAME;
 
-    private static final String PDF_SWEEP_VERSION = "3.0.1-SNAPSHOT";
+    private static final String PDF_SWEEP_VERSION = "3.0.1";
     private static final int PDF_SWEEP_COPYRIGHT_SINCE = 2000;
     private static final int PDF_SWEEP_COPYRIGHT_TO = 2022;
 
