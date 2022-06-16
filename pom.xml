@@ -5,12 +5,12 @@
   <parent>
     <groupId>com.itextpdf</groupId>
     <artifactId>root</artifactId>
-    <version>7.2.3-SNAPSHOT</version>
+    <version>7.2.4-SNAPSHOT</version>
     <relativePath />
   </parent>
 
   <artifactId>cleanup</artifactId>
-  <version>3.0.1-SNAPSHOT</version>
+  <version>3.0.2-SNAPSHOT</version>
 
   <name>pdfSweep</name>
   <description>Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but they
