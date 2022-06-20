@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2021 iText Group NV
+    Copyright (c) 1998-2022 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -106,6 +106,9 @@ import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * PDF content stream processor, which filters content to be cleaned up.
+ */
 public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
     private static final Set<String> TEXT_SHOWING_OPERATORS = Collections.unmodifiableSet(new HashSet<String>(

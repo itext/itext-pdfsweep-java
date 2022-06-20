@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2021 iText Group NV
+    Copyright (c) 1998-2022 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -55,6 +55,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * An event listener which handles cleanup related events.
+ */
 public class PdfCleanUpEventListener implements IEventListener {
     private static final String textDataExpected = "Text data expected.";
     private static final String imageDataExpected = "Image data expected.";
@@ -62,6 +65,9 @@ public class PdfCleanUpEventListener implements IEventListener {
 
     private List<IEventData> content = new ArrayList<>();
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void eventOccurred(IEventData data, EventType type) {
         switch (type) {
@@ -134,6 +140,9 @@ public class PdfCleanUpEventListener implements IEventListener {
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<EventType> getSupportedEvents() {
         return null;

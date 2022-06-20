@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2021 iText Group NV
+    Copyright (c) 1998-2022 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -62,7 +62,7 @@ import java.util.Set;
 
 
 /**
- * This class is a composite pattern for {@code ICleanupStrategy}
+ * This class is a composite pattern for {@link ICleanupStrategy}.
  * It allows users to have multiple ICleanupStrategy implementations and bundle them as one.
  */
 public class CompositeCleanupStrategy implements ICleanupStrategy {
@@ -70,13 +70,25 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
     private Map<Integer, Set<IPdfTextLocation>> locations = new HashMap<>();
     private List<ICleanupStrategy> strategies = new ArrayList<>();
 
+    /**
+     * Creates a {@link CompositeCleanupStrategy composite pattern} for {@link ICleanupStrategy cleanup strategies}.
+     */
     public CompositeCleanupStrategy() {
     }
 
-    public void add(ICleanupStrategy ies) {
-        strategies.add(ies);
+    /**
+     * Adds a {@link ICleanupStrategy cleanup strategy} to this {@link CompositeCleanupStrategy composite pattern}.
+     *
+     * @param strategy a {@link ICleanupStrategy cleanup strategy} to be added to this
+     *     {@link CompositeCleanupStrategy composite pattern}.
+     */
+    public void add(ICleanupStrategy strategy) {
+        strategies.add(strategy);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Collection<IPdfTextLocation> getResultantLocations() {
         locations.clear();
@@ -104,10 +116,12 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
             }
         });
 
-        // return
         return rectangles;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Color getRedactionColor(IPdfTextLocation location) {
         for (int i = 0; i < strategies.size(); i++) {
@@ -118,6 +132,9 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
         return ColorConstants.BLACK;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void eventOccurred(IEventData data, EventType type) {
         for (ILocationExtractionStrategy s : strategies) {
@@ -125,6 +142,9 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<EventType> getSupportedEvents() {
         Set<EventType> evts = new HashSet<>();
@@ -136,13 +156,20 @@ public class CompositeCleanupStrategy implements ICleanupStrategy {
         return evts.isEmpty() ? null : evts;
     }
 
-    public ICleanupStrategy reset()
-    {
-        CompositeCleanupStrategy retval = new CompositeCleanupStrategy();
-        for(ICleanupStrategy s : strategies)
-        {
-            retval.add(s.reset());
+    /**
+     * Returns a {@link ICleanupStrategy cleanup strategy} which represents
+     * a reset {@link CompositeCleanupStrategy composite cleanup strategy}.
+     *
+     * <p>
+     * Note that all the inner {@link ICleanupStrategy strategies} will be reset as well.
+     *
+     * @return a reset {@link CompositeCleanupStrategy composite strategy}
+     */
+    public ICleanupStrategy reset() {
+        CompositeCleanupStrategy resetCompositeStrategy = new CompositeCleanupStrategy();
+        for(ICleanupStrategy s : strategies) {
+            resetCompositeStrategy.add(s.reset());
         }
-        return retval;
+        return resetCompositeStrategy;
     }
 }
