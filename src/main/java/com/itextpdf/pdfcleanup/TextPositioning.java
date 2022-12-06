@@ -42,6 +42,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.io.font.FontProgram;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfNumber;
@@ -139,7 +140,8 @@ class TextPositioning {
         }
 
         float shift = tjArray.getAsNumber(0).floatValue();
-        removedTextShift += shift * fontSize * (scaling / 100) / 1000;
+        removedTextShift += FontProgram.convertTextSpaceToGlyphSpace(
+                shift * fontSize * (scaling / FontProgram.HORIZONTAL_SCALING_FACTOR));
     }
 
     /**
@@ -189,7 +191,8 @@ class TextPositioning {
         }
         PdfTextArray tjShiftArray = null;
         if (removedTextShift != null) {
-            float tjShift = (float) removedTextShift * 1000 / (canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / 100);
+            final float tjShift = (float) (FontProgram.convertGlyphSpaceToTextSpace((float)removedTextShift) / (
+                    canvasGs.getFontSize() * canvasGs.getHorizontalScaling() / FontProgram.HORIZONTAL_SCALING_FACTOR));
             tjShiftArray = new PdfTextArray();
             tjShiftArray.add(new PdfNumber(tjShift));
         }

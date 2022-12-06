@@ -43,6 +43,7 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.commons.utils.MessageFormatUtil;
+import com.itextpdf.io.font.FontProgram;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.exceptions.PdfException;
@@ -231,8 +232,8 @@ class PdfCleanUpFilter {
             if (isTextNotToBeCleaned(ri)) {
                 textArray.add(ri.getPdfString());
             } else {
-                textArray.add(new PdfNumber(
-                        -ri.getUnscaledWidth() * 1000f / (text.getFontSize() * text.getHorizontalScaling() / 100)
+                textArray.add(new PdfNumber(FontProgram.convertGlyphSpaceToTextSpace(-ri.getUnscaledWidth()) /
+                        (text.getFontSize() * text.getHorizontalScaling() / FontProgram.HORIZONTAL_SCALING_FACTOR)
                 ));
             }
         }
