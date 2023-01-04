@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2022 iText Group NV
+    Copyright (c) 1998-2023 iText Group NV
     Authors: iText Software.
 
     This program is free software; you can redistribute it and/or modify
@@ -51,6 +51,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfRedactAnnotation;
 import com.itextpdf.kernel.utils.CompareTool;
@@ -1062,6 +1063,24 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         pdf.close();
 
         compareByContent(cmp, output, OUTPUT_PATH, "diff_lineArtsDrawingOnCanvasTest_");
+    }
+
+    @Test
+    public void checkUnSupportedImageTypeTest() throws IOException {
+        String input = INPUT_PATH + "UnsupportedImageType.pdf";
+        String output = OUTPUT_PATH + "UnsupportedImageType.pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output, new WriterProperties()));
+        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
+        int pageIndex = 1;
+        Rectangle area = pdfDocument.getPage(pageIndex).getPageSize();
+        workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area));
+
+        Exception e = Assert.assertThrows(Exception.class, () -> workingTool.cleanUp());
+        Assert.assertEquals(CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase(),
+                e.getMessage().toLowerCase());
+
+        pdfDocument.close();
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
