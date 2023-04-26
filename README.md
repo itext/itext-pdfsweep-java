@@ -1,4 +1,4 @@
-**[pdfSweep][pdfSweep]** is an [iText 7][itext] add on.
+**[pdfSweep][pdfSweep]** is an [iText][itext] add on.
 
 This add on will allow you to easily redact PDF files. Redaction is the process of removing sensitive or confidential information. pdfSweep will remove this data entirely so that it won't be extractable anymore.
 
