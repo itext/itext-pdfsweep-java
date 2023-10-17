@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration>
+    <ignored>
+        <java>
+            <fileset reason="Classes with util image handling methods, which implementation differs in Java and .NET">
+                <file path="com/itextpdf/pdfcleanup/util/CleanUpImageUtil.java"/>
+                <file path="com/itextpdf/pdfcleanup/util/CleanUpCsCompareUtil.java"/>
+                <file path="com/itextpdf/pdfcleanup/CleanUpCsCompareUtilTest.java"/>
+            </fileset>
+        </java>
+        <resource>
+            <file path="com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/cmp_cleanImage_partial.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_BigImage-jpg.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_BigImage-png.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_BigImage-tif.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_BigImage-tif-lzw.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_multiUseImage.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_rotatedImg.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_maskImage.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_textAndImages.pdf" />
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_corruptJpeg.pdf" />
+            <fileset reason="Images with indexed colorspaces are currently cleaned differently in Java and .NET. See test for more info.">
+                <file path="com/itextpdf/pdfcleanup/images/CleanUpImageIndexedColorSpaceTest/cmp_indexedImageNoWhite.pdf" />
+            </fileset>
+            <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/cmp_inlineImageCleanup.pdf" />
+            <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_imageColorKeyMaskArray.pdf" />
+            <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_imageMask.pdf" />
+            <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_imageSMask.pdf" />
+            <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_imageSMaskAIS.pdf" />
+            <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_textOnTransparentField.pdf" />
+            <file path="com/itextpdf/pdfcleanup/BigDocumentCleanUpTest/cmp_bigUntaggedDocument.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheFlushingTest01.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheFlushingTest02.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheTest01.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheTest02.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheTest03.pdf" />
+            <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheTest04.pdf" />
+            <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCs.pdf" />
+            <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCsJpegBaselineEncoded.pdf" />
+            <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf" />            
+        </resource>
+    </ignored>
+    <overwritten>
+        <module name="overwrittenTestModule">
+            <resources>
+                <file source="test/resource.txt" destination="resources/test.csv" />
+            </resources>
+        </module>
+        <module name="anotherOverwrittenTestModule">
+            <resources>
+                <file source="test/resource1.txt" destination="resources/test1.csv" />
+                <file source="test/resource2.txt" destination="resources/test2.csv" />
+            </resources>
+        </module>
+    </overwritten>
+</configuration>
