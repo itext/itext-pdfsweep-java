@@ -675,15 +675,15 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(filteredImageKey);
             if (imageFilterResult.isModified()) {
                 ImageData filteredImageData = imageFilterResult.getFilterResult();
-                if (Boolean.TRUE.equals(originalImage.getPdfObject().getAsBool(PdfName.ImageMask))) {
-                    if (!PdfCleanUpFilter.imageSupportsDirectCleanup(originalImage)) {
-                        Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
-                        logger.error(CleanUpLogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
-                    } else {
-                        filteredImageData.makeMask();
-                    }
-                }
                 if (filteredImageData != null) {
+                    if (Boolean.TRUE.equals(originalImage.getPdfObject().getAsBool(PdfName.ImageMask))) {
+                        if (!PdfCleanUpFilter.imageSupportsDirectCleanup(originalImage)) {
+                            Logger logger = LoggerFactory.getLogger(PdfCleanUpProcessor.class);
+                            logger.error(CleanUpLogMessageConstant.IMAGE_MASK_CLEAN_UP_NOT_SUPPORTED);
+                        } else {
+                            filteredImageData.makeMask();
+                        }
+                    }
                     imageToWrite = new PdfImageXObject(filteredImageData);
                     getFilteredImagesCache().put(filteredImageKey, imageToWrite);
 
