@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2023 Apryse Group NV
+    Copyright (c) 1998-2024 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -1061,6 +1061,25 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
                 e.getMessage().toLowerCase());
 
         pdfDocument.close();
+    }
+
+    @Test
+    public void cleanUpFullyFilteredImageTest() throws IOException, InterruptedException {
+        String input = INPUT_PATH + "fullyFilteredImageDocument.pdf";
+        String output = OUTPUT_PATH + "fullyFilteredImageDocument.pdf";
+        String cmp = INPUT_PATH + "cmp_fullyFilteredImageDocument.pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output, new WriterProperties()));
+        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
+        int pageIndex = 1;
+        Rectangle area = pdfDocument.getPage(pageIndex).getPageSize();
+        workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area));
+
+        workingTool.cleanUp();
+
+        pdfDocument.close();
+
+        compareByContent(cmp, output, OUTPUT_PATH, "diff_fullyFilteredImageDocument_");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
