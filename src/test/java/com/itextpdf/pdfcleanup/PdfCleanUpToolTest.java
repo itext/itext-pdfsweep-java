@@ -51,6 +51,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1080,6 +1081,32 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         pdfDocument.close();
 
         compareByContent(cmp, output, OUTPUT_PATH, "diff_fullyFilteredImageDocument_");
+    }
+
+    @Test
+    public void directPropertyObjectTest() throws IOException {
+        String input = INPUT_PATH + "DirectPropertyObject.pdf";
+        String output = OUTPUT_PATH + "DirectPropertyObjectOutput.pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input),
+                new PdfWriter(output, new WriterProperties()));
+
+        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
+        PageSize pgSize = pdfDocument.getDefaultPageSize();
+        Rectangle area = new Rectangle(0, 0, pgSize.getWidth(), 50);
+
+        workingTool.addCleanupLocation(new PdfCleanUpLocation(1, area));
+        workingTool.cleanUp();
+
+        pdfDocument.close();
+
+        PdfDocument resultDoc = new PdfDocument(new PdfReader(output));
+        byte[] bytes = resultDoc.getPage(1).getFirstContentStream().getBytes();
+        String contentString = new String(bytes, StandardCharsets.UTF_8);
+        resultDoc.close();
+
+        //TODO DEVSIX-7387 change when bug is fixed
+        Assert.assertTrue(contentString.contains("/PlacedPDF <</Metadata 14 0 R>> BDC"));
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
