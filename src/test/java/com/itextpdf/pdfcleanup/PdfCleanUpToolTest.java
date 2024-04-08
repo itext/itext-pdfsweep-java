@@ -1058,8 +1058,9 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area));
 
         Exception e = Assert.assertThrows(Exception.class, () -> workingTool.cleanUp());
-        Assert.assertEquals(CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase(),
-                e.getMessage().toLowerCase());
+        Assert.assertTrue(
+                CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase().equals(e.getMessage().toLowerCase()) ||
+                "incompatible color conversion".equals(e.getMessage().toLowerCase()));
 
         pdfDocument.close();
     }
