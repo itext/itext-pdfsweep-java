@@ -39,110 +39,110 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(UnitTest.class)
+@Tag("UnitTest")
 public class PdfCleanUpProcessorUnitTest extends ExtendedITextTest {
 
     @Test
     public void areColorSpacesDifferentForJavaNullValuesTest() {
-        Assert.assertFalse(createAndCompareImages(null, null));
+        Assertions.assertFalse(createAndCompareImages(null, null));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfNullAndJavaNullValuesTest() {
-        Assert.assertTrue(createAndCompareImages(new PdfNull(), null));
+        Assertions.assertTrue(createAndCompareImages(new PdfNull(), null));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfNullValuesTest() {
-        Assert.assertFalse(createAndCompareImages(new PdfNull(), new PdfNull()));
+        Assertions.assertFalse(createAndCompareImages(new PdfNull(), new PdfNull()));
     }
 
     @Test
     public void areColorSpacesDifferentForNameAndJavaNullValuesTest() {
-        Assert.assertTrue(createAndCompareImages(PdfName.DeviceRGB, null));
+        Assertions.assertTrue(createAndCompareImages(PdfName.DeviceRGB, null));
     }
 
     @Test
     public void areColorSpacesDifferentForNameAndPdfNullValuesTest() {
-        Assert.assertTrue(createAndCompareImages(PdfName.DeviceRGB, new PdfNull()));
+        Assertions.assertTrue(createAndCompareImages(PdfName.DeviceRGB, new PdfNull()));
     }
 
     @Test
     public void areColorSpacesDifferentForArrayAndJavaNullValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfStream());
-        Assert.assertTrue(createAndCompareImages(pdfArray, null));
+        Assertions.assertTrue(createAndCompareImages(pdfArray, null));
     }
 
     @Test
     public void areColorSpacesDifferentForArrayAndPdfNullValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfStream());
-        Assert.assertTrue(createAndCompareImages(pdfArray, new PdfNull()));
+        Assertions.assertTrue(createAndCompareImages(pdfArray, new PdfNull()));
     }
 
     @Test
     public void areColorSpacesDifferentForEqualPdfNameValuesTest() {
-        Assert.assertFalse(createAndCompareImages(new PdfName("DeviceGray"), PdfName.DeviceGray));
+        Assertions.assertFalse(createAndCompareImages(new PdfName("DeviceGray"), PdfName.DeviceGray));
     }
 
     @Test
     public void areColorSpacesDifferentForDifferentPdfNameValuesTest() {
-        Assert.assertTrue(createAndCompareImages(new PdfName("DeviceGray"), new PdfName("DeviceRGB")));
+        Assertions.assertTrue(createAndCompareImages(new PdfName("DeviceGray"), new PdfName("DeviceRGB")));
     }
 
     @Test
     public void areColorSpacesDifferentForTheSamePdfArraysValuesTest() {
         PdfArray pdfFirstArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfStream());
-        Assert.assertFalse(createAndCompareImages(pdfFirstArray, pdfFirstArray));
+        Assertions.assertFalse(createAndCompareImages(pdfFirstArray, pdfFirstArray));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfArraysWithStreamValuesTest() {
         PdfArray pdfFirstArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfStream());
         PdfArray pdfSecondArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfStream());
-        Assert.assertTrue(createAndCompareImages(pdfFirstArray, pdfSecondArray));
+        Assertions.assertTrue(createAndCompareImages(pdfFirstArray, pdfSecondArray));
     }
 
     @Test
     public void areColorSpacesDifferentForEqualPdfArraysValuesTest() {
         PdfArray pdfFirstArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfBoolean(true));
         PdfArray pdfSecondArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfBoolean(true));
-        Assert.assertFalse(createAndCompareImages(pdfFirstArray, pdfSecondArray));
+        Assertions.assertFalse(createAndCompareImages(pdfFirstArray, pdfSecondArray));
     }
 
     @Test
     public void areColorSpacesDifferentForEqualPdfArraysWithNullsValuesTest() {
         PdfArray pdfFirstArray = createPdfArray(PdfName.Separation, new PdfNull());
         PdfArray pdfSecondArray = createPdfArray(PdfName.Separation, new PdfNull());
-        Assert.assertFalse(createAndCompareImages(pdfFirstArray, pdfSecondArray));
+        Assertions.assertFalse(createAndCompareImages(pdfFirstArray, pdfSecondArray));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfArraysWithDifferentSizeValuesTest() {
         PdfArray pdfFirstArray = createPdfArray(PdfName.Separation, new PdfNumber(1), new PdfBoolean(true));
         PdfArray pdfSecondArray = createPdfArray(PdfName.Separation, new PdfNumber(1));
-        Assert.assertTrue(createAndCompareImages(pdfFirstArray, pdfSecondArray));
+        Assertions.assertTrue(createAndCompareImages(pdfFirstArray, pdfSecondArray));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfNameAndPdfArrayValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation);
-        Assert.assertTrue(createAndCompareImages(PdfName.Separation, pdfArray));
+        Assertions.assertTrue(createAndCompareImages(PdfName.Separation, pdfArray));
     }
 
     @Test
     public void areColorSpacesDifferentForPdfNullAndPdfArrayValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation);
-        Assert.assertTrue(createAndCompareImages(new PdfNull(), pdfArray));
+        Assertions.assertTrue(createAndCompareImages(new PdfNull(), pdfArray));
     }
 
     @Test
     public void areColorSpacesDifferentForJavaNullAndPdfArrayValuesTest() {
         PdfArray pdfArray = createPdfArray(PdfName.Separation);
-        Assert.assertTrue(createAndCompareImages(null, pdfArray));
+        Assertions.assertTrue(createAndCompareImages(null, pdfArray));
     }
 
     @Test
@@ -166,7 +166,7 @@ public class PdfCleanUpProcessorUnitTest extends ExtendedITextTest {
 
                     @Override
                     public PdfCanvas openTag(CanvasTag tag) {
-                        Assert.assertEquals(tagsToCompare.pop(), tag);
+                        Assertions.assertEquals(tagsToCompare.pop(), tag);
                         return null;
                     }
                 };

@@ -31,24 +31,24 @@ import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
-import com.itextpdf.test.annotations.type.IntegrationTest;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class BigDocumentCleanUpTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/BigDocumentCleanUpTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/BigDocumentCleanUpTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -118,7 +118,7 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

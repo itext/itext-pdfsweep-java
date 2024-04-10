@@ -38,11 +38,11 @@ import com.itextpdf.pdfcleanup.autosweep.ICleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,13 +50,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/BigDocumentAutoCleanUpTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/BigDocumentAutoCleanUpTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -102,7 +102,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         // compare
         CompareTool compareTool = new CompareTool();
         String errorMessage = compareTool.compareByContent(output, cmp, outputPath);
-        Assert.assertNull(errorMessage);
+        Assertions.assertNull(errorMessage);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -167,7 +167,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -201,7 +201,7 @@ public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

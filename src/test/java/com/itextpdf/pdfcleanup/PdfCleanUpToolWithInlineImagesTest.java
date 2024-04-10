@@ -33,23 +33,23 @@ import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
-import com.itextpdf.test.annotations.type.IntegrationTest;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -97,7 +97,7 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -118,7 +118,7 @@ public class PdfCleanUpToolWithInlineImagesTest extends ExtendedITextTest {
         String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
 
         if (errorMessage != null) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

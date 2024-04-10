@@ -33,23 +33,22 @@ import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class CleanUpAnnotationTest extends ExtendedITextTest {
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpAnnotationTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpAnnotationTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -244,7 +243,7 @@ public class CleanUpAnnotationTest extends ExtendedITextTest {
         String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
 
         if (errorMessage != null) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

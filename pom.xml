@@ -31,6 +31,7 @@
 
   <properties>
     <itext.version>${project.parent.version}</itext.version>
+    <unittests></unittests>
   </properties>
 
   <dependencies>
@@ -58,6 +59,12 @@
       <groupId>com.itextpdf</groupId>
       <artifactId>pdftest</artifactId>
       <version>${itext.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

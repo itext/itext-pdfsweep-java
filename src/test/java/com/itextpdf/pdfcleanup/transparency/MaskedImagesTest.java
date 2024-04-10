@@ -33,22 +33,21 @@ import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class MaskedImagesTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -100,7 +99,7 @@ public class MaskedImagesTest extends ExtendedITextTest {
 
         pdfDocument.close();
 
-        Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
+        Assertions.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
     }
 
     private static void runTest(String fileName, String fuzzValue) throws IOException, InterruptedException {
@@ -125,7 +124,7 @@ public class MaskedImagesTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

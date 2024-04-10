@@ -32,28 +32,25 @@ import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 
-@Category(IntegrationTest.class)
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+
+@Tag("IntegrationTest")
 public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/";
 
-    @Rule
-    public ExpectedException junitExpectedException = ExpectedException.none();
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -118,7 +115,7 @@ public class CleanupImageWithColorSpaceTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }
