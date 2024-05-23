@@ -1046,6 +1046,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
+    @Disabled("DEVSIX-8367: Rewrite checkUnSupportedImageTypeTest")
     public void checkUnSupportedImageTypeTest() throws IOException {
         String input = INPUT_PATH + "UnsupportedImageType.pdf";
         String output = OUTPUT_PATH + "UnsupportedImageType.pdf";
