@@ -34,6 +34,9 @@ public final class CleanupExceptionMessageConstant {
     // Do not remove, it's used in .NET
     // This same exception message is thrown in CleanUpImageUtil#cleanImage when the image format is unsupported
     public static final String UNSUPPORTED_IMAGE_TYPE = "Unsupported image type";
+    public static final String OVERLAP_RATIO_SHOULD_BE_IN_RANGE = "Overlap ratio should be in range (0, 1]";
 
-    private CleanupExceptionMessageConstant(){}
+    private CleanupExceptionMessageConstant(){
+        //empty constructor
+    }
 }

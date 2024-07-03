@@ -169,10 +169,15 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private TextPositioning textPositioning;
     private FilteredImagesCache filteredImagesCache;
 
+
     PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document) {
+        this(cleanUpRegions, document, new CleanUpProperties());
+    }
+
+    PdfCleanUpProcessor(List<Rectangle> cleanUpRegions, PdfDocument document, CleanUpProperties properties) {
         super(new PdfCleanUpEventListener());
         this.document = document;
-        this.filter = new PdfCleanUpFilter(cleanUpRegions);
+        this.filter = new PdfCleanUpFilter(cleanUpRegions, properties);
         this.canvasStack = new Stack<>();
         this.notAppliedGsParams = new ArrayDeque<>();
         this.notAppliedGsParams.push(new NotAppliedGsParams());
