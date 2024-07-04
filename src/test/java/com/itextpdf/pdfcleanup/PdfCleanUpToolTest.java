@@ -1046,26 +1046,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Disabled("DEVSIX-8367: Rewrite checkUnSupportedImageTypeTest")
-    public void checkUnSupportedImageTypeTest() throws IOException {
-        String input = INPUT_PATH + "UnsupportedImageType.pdf";
-        String output = OUTPUT_PATH + "UnsupportedImageType.pdf";
-
-        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output, new WriterProperties()));
-        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
-        int pageIndex = 1;
-        Rectangle area = pdfDocument.getPage(pageIndex).getPageSize();
-        workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area));
-
-        Exception e = Assertions.assertThrows(Exception.class, () -> workingTool.cleanUp());
-        Assertions.assertTrue(
-                CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase().equals(e.getMessage().toLowerCase()) ||
-                "incompatible color conversion".equals(e.getMessage().toLowerCase()));
-
-        pdfDocument.close();
-    }
-
-    @Test
     public void cleanUpFullyFilteredImageTest() throws IOException, InterruptedException {
         String input = INPUT_PATH + "fullyFilteredImageDocument.pdf";
         String output = OUTPUT_PATH + "fullyFilteredImageDocument.pdf";
