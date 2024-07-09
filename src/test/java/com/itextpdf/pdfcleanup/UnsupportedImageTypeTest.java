@@ -81,11 +81,14 @@ public class UnsupportedImageTypeTest extends ExtendedITextTest {
 
     private static boolean isFixedInJdk(String versionStr) {
         //fixed for jdk8 from 351 onwards, for jdk11 from 16 onwards and for jdk17 starting from 4
-        boolean isFixed;
+        boolean isFixed = false;
         int majorVer = getMajorVer(versionStr);
         String[] split = versionStr.split("[._-]");
         int minorVer = Integer.parseInt(split[split.length - 1]);
 
+        if (minorVer % 10 == 2) {
+            return false;
+        }
         switch (majorVer) {
             case 8:
                 isFixed = minorVer >= 351;
