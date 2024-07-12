@@ -24,12 +24,14 @@ package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.UnitTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
-@Category(UnitTest.class)
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+
+@Tag("UnitTest")
 public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
 
     @Test
@@ -46,7 +48,8 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(100, 100),
                 new Point(50, 100)
         };
-        Assert.assertTrue(PdfCleanUpFilter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -63,7 +66,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(100, 100),
                 new Point(50, 100)
         };
-        Assert.assertTrue(PdfCleanUpFilter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertTrue(new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties()).checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -80,7 +83,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(100, 100),
                 new Point(50, 100)
         };
-        Assert.assertTrue(PdfCleanUpFilter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertTrue(new PdfCleanUpFilter(new ArrayList<>() , new CleanUpProperties()).checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -97,6 +100,6 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(100, 100),
                 new Point(50, 100)
         };
-        Assert.assertTrue(PdfCleanUpFilter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertTrue(new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties()).checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 }

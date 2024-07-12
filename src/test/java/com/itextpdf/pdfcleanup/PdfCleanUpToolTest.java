@@ -43,7 +43,6 @@ import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 import com.itextpdf.test.annotations.LogMessage;
 import com.itextpdf.test.annotations.LogMessages;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -51,22 +50,23 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class PdfCleanUpToolTest extends ExtendedITextTest {
 
     private static final String INPUT_PATH = "./src/test/resources/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
     private static final String OUTPUT_PATH = "./target/test/com/itextpdf/pdfcleanup/PdfCleanUpToolTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(OUTPUT_PATH);
     }
@@ -149,7 +149,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -426,7 +426,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -505,7 +505,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         }
 
         if (!errorMessage.equals("")) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -607,8 +607,8 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
                 PdfDocument pdfDocument = new PdfDocument(reader, writer)) {
             pdfDocument.getFirstPage().addAnnotation(redactAnnotation);
 
-            Exception e = Assert.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDocument));
-            Assert.assertEquals(CleanupExceptionMessageConstant.DEFAULT_APPEARANCE_NOT_FOUND, e.getMessage());
+            Exception e = Assertions.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDocument));
+            Assertions.assertEquals(CleanupExceptionMessageConstant.DEFAULT_APPEARANCE_NOT_FOUND, e.getMessage());
         }
     }
 
@@ -736,8 +736,8 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(0, 0, 500, 500)));
 
-        Exception e = Assert.assertThrows(PdfException.class, () -> PdfCleaner.cleanUp(pdfDocument, cleanUpLocations));
-        Assert.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
+        Exception e = Assertions.assertThrows(PdfException.class, () -> PdfCleaner.cleanUp(pdfDocument, cleanUpLocations));
+        Assertions.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
     }
 
     @Test
@@ -746,8 +746,8 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         List<PdfCleanUpLocation> cleanUpLocations = Arrays.asList(new PdfCleanUpLocation(1, new Rectangle(0, 0, 500, 500)));
 
-        Exception e = Assert.assertThrows(PdfException.class, () -> PdfCleaner.cleanUp(pdfDocument, cleanUpLocations));
-        Assert.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
+        Exception e = Assertions.assertThrows(PdfException.class, () -> PdfCleaner.cleanUp(pdfDocument, cleanUpLocations));
+        Assertions.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
     }
 
     @Test
@@ -756,7 +756,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(INPUT_PATH + filename), new PdfWriter(OUTPUT_PATH + filename));
         PdfCleaner.cleanUpRedactAnnotations(pdfDoc);
         pdfDoc.close();
-        Assert.assertNull(new CompareTool().compareVisually(OUTPUT_PATH + filename, INPUT_PATH + "cmp_" + filename, OUTPUT_PATH, "diff_"));
+        Assertions.assertNull(new CompareTool().compareVisually(OUTPUT_PATH + filename, INPUT_PATH + "cmp_" + filename, OUTPUT_PATH, "diff_"));
     }
 
     @Test
@@ -885,7 +885,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         CompareTool cmpTool = new CompareTool();
         String errorMessage = cmpTool.compareVisually(out, cmp, OUTPUT_PATH, "diff_autoSweepCleanUpWithAdditionalLocationTest_");
         if (errorMessage != null) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 
@@ -930,16 +930,16 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     public void cleanUpDocWithoutReaderTest() {
         PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()));
 
-        Exception e = Assert.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDoc));
-        Assert.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
+        Exception e = Assertions.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDoc));
+        Assertions.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
     }
 
     @Test
     public void cleanUpDocWithoutWriterTest() throws IOException {
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(INPUT_PATH + "emptyPdf.pdf"));
 
-        Exception e = Assert.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDoc));
-        Assert.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
+        Exception e = Assertions.assertThrows(PdfException.class, () -> PdfCleaner.cleanUpRedactAnnotations(pdfDoc));
+        Assertions.assertEquals(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE, e.getMessage());
     }
 
     @Test
@@ -1027,7 +1027,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    @Ignore("DEVSIX-4047")
+    @Disabled("DEVSIX-4047")
     public void lineArtsDrawingOnCanvasTest() throws IOException, InterruptedException {
         String input = INPUT_PATH + "lineArtsDrawingOnCanvas.pdf";
         String output = OUTPUT_PATH + "lineArtsDrawingOnCanvas.pdf";
@@ -1043,24 +1043,6 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         pdf.close();
 
         compareByContent(cmp, output, OUTPUT_PATH, "diff_lineArtsDrawingOnCanvasTest_");
-    }
-
-    @Test
-    public void checkUnSupportedImageTypeTest() throws IOException {
-        String input = INPUT_PATH + "UnsupportedImageType.pdf";
-        String output = OUTPUT_PATH + "UnsupportedImageType.pdf";
-
-        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output, new WriterProperties()));
-        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
-        int pageIndex = 1;
-        Rectangle area = pdfDocument.getPage(pageIndex).getPageSize();
-        workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area));
-
-        Exception e = Assert.assertThrows(Exception.class, () -> workingTool.cleanUp());
-        Assert.assertEquals(CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase(),
-                e.getMessage().toLowerCase());
-
-        pdfDocument.close();
     }
 
     @Test
@@ -1082,6 +1064,32 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         compareByContent(cmp, output, OUTPUT_PATH, "diff_fullyFilteredImageDocument_");
     }
 
+    @Test
+    public void directPropertyObjectTest() throws IOException {
+        String input = INPUT_PATH + "DirectPropertyObject.pdf";
+        String output = OUTPUT_PATH + "DirectPropertyObjectOutput.pdf";
+
+        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input),
+                new PdfWriter(output, new WriterProperties()));
+
+        PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
+        PageSize pgSize = pdfDocument.getDefaultPageSize();
+        Rectangle area = new Rectangle(0, 0, pgSize.getWidth(), 50);
+
+        workingTool.addCleanupLocation(new PdfCleanUpLocation(1, area));
+        workingTool.cleanUp();
+
+        pdfDocument.close();
+
+        PdfDocument resultDoc = new PdfDocument(new PdfReader(output));
+        byte[] bytes = resultDoc.getPage(1).getFirstContentStream().getBytes();
+        String contentString = new String(bytes, StandardCharsets.UTF_8);
+        resultDoc.close();
+
+        //TODO DEVSIX-7387 change when bug is fixed
+        Assertions.assertTrue(contentString.contains("/PlacedPDF <</Metadata 14 0 R>> BDC"));
+    }
+
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output));
 
@@ -1099,7 +1107,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
 
         if (errorMessage != null) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

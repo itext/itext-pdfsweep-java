@@ -32,24 +32,23 @@ import com.itextpdf.pdfcleanup.autosweep.CompositeCleanupStrategy;
 import com.itextpdf.pdfcleanup.autosweep.PdfAutoSweepTools;
 import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class PdfAutoSweepToolsTest extends ExtendedITextTest {
 
     private static final String INPUT_PATH = "./src/test/resources/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
     private static final String OUTPUT_PATH = "./target/test/com/itextpdf/pdfcleanup/PdfAutoSweepTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(OUTPUT_PATH);
     }
@@ -112,7 +111,7 @@ public class PdfAutoSweepToolsTest extends ExtendedITextTest {
         pdf.close();
 
         // compare
-        Assert.assertEquals(2, cleanUpLocations.size());
+        Assertions.assertEquals(2, cleanUpLocations.size());
     }
 
     private void compareByContent(String cmp, String output, String targetDir, String diffPrefix) throws IOException, InterruptedException {
@@ -120,7 +119,7 @@ public class PdfAutoSweepToolsTest extends ExtendedITextTest {
         String errorMessage = cmpTool.compareByContent(output, cmp, targetDir, diffPrefix + "_");
 
         if (errorMessage != null) {
-            Assert.fail(errorMessage);
+            Assertions.fail(errorMessage);
         }
     }
 }

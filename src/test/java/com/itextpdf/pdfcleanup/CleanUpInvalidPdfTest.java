@@ -26,44 +26,42 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class CleanUpInvalidPdfTest extends ExtendedITextTest {
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/CleanUpInvalidPdfTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/CleanUpInvalidPdfTest/";
 
-    @Rule
-    public ExpectedException junitExpectedException = ExpectedException.none();
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
 
     @Test
-    @Ignore("DEVSIX-3608: this test currently throws StackOverflowError, which cannot be caught in .NET")
-    public void cleanCircularReferencesInResourcesTest() throws IOException {
-        junitExpectedException.expect(StackOverflowError.class);
-        String input = inputPath + "circularReferencesInResources.pdf";
+    @Disabled("DEVSIX-3608: this test currently throws StackOverflowError, which cannot be caught in .NET")
+    public void cleanCircularReferencesInResourcesTest() {
 
-        PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()));
-        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
-        cleanUpLocations.add(new PdfCleanUpLocation(1, pdfDocument.getPage(1).getPageSize(), null));
+        Assertions.assertThrows(StackOverflowError.class, () -> {
+            String input = inputPath + "circularReferencesInResources.pdf";
 
-        PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
+            PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()));
+            List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+            cleanUpLocations.add(new PdfCleanUpLocation(1, pdfDocument.getPage(1).getPageSize(), null));
 
-        pdfDocument.close();
+            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
+
+            pdfDocument.close();
+        });
     }
 }

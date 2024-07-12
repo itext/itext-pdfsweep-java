@@ -23,6 +23,7 @@
 package com.itextpdf.pdfcleanup;
 
 import com.itextpdf.commons.actions.contexts.IMetaInfo;
+import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
 
 /**
  * Contains properties for {@link PdfCleanUpTool} operations.
@@ -31,6 +32,7 @@ public class CleanUpProperties {
 
     private IMetaInfo metaInfo;
     private boolean processAnnotations;
+    private Double overlapRatio;
 
     /**
      * Creates default CleanUpProperties instance.
@@ -75,5 +77,37 @@ public class CleanUpProperties {
      */
     public void setProcessAnnotations(boolean processAnnotations) {
         this.processAnnotations = processAnnotations;
+    }
+
+    /**
+     * Gets the overlap ratio.
+     * This is a value between 0 and 1 that indicates how much the content region should overlap with the redaction
+     * area to be removed.
+     *
+     * @return the overlap ratio or {@code null} if it has not been set.
+     */
+    public Double getOverlapRatio() {
+        return overlapRatio;
+    }
+
+    /**
+     * Sets the overlap ratio.
+     * This is a value between 0 and 1 that indicates how much the content region should overlap with the
+     * redaction area to be removed.
+     * <p>
+     * Example: if the overlap ratio is set to 0.3, the content region will be removed if it overlaps with
+     * the redaction area by at least 30%.
+     *
+     * @param overlapRatio The overlap ratio to set.
+     */
+    public void setOverlapRatio(Double overlapRatio) {
+        if (overlapRatio == null) {
+            this.overlapRatio = null;
+            return;
+        }
+        if (overlapRatio <= 0 || overlapRatio > 1) {
+            throw new IllegalArgumentException(CleanupExceptionMessageConstant.OVERLAP_RATIO_SHOULD_BE_IN_RANGE);
+        }
+        this.overlapRatio = overlapRatio;
     }
 }

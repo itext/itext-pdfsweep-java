@@ -32,27 +32,22 @@ import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.io.IOException;
 import java.util.Collections;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class CleanUpTransformedImageTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/images/CleanUpTransformedImageTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/images/CleanUpTransformedImageTest/";
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -66,9 +61,10 @@ public class CleanUpTransformedImageTest extends ExtendedITextTest {
 
         Rectangle cleanupRegion = new Rectangle(150, 250, 100, 100);
 
-        expectedException.expect(ArrayIndexOutOfBoundsException.class);
-        cleanFirstPageAndDrawCleanupRegion(cleanupRegion, input, output);
-        Assert.assertNull(findDifferencesBetweenOutputAndCmp(output, cmp));
+        Assertions.assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            cleanFirstPageAndDrawCleanupRegion(cleanupRegion, input, output);
+            Assertions.assertNull(findDifferencesBetweenOutputAndCmp(output, cmp));
+        });
     }
 
     @Test
@@ -81,7 +77,7 @@ public class CleanUpTransformedImageTest extends ExtendedITextTest {
         Rectangle cleanupRegion = new Rectangle(150, 250, 100, 100);
 
         cleanFirstPageAndDrawCleanupRegion(cleanupRegion, input, output);
-        Assert.assertNull(findDifferencesBetweenOutputAndCmp(output, cmp));
+        Assertions.assertNull(findDifferencesBetweenOutputAndCmp(output, cmp));
     }
 
     private static void cleanFirstPageAndDrawCleanupRegion(Rectangle cleanupRegion, String input, String output) throws IOException {

@@ -7,6 +7,10 @@
                 <file path="com/itextpdf/pdfcleanup/util/CleanUpCsCompareUtil.java"/>
                 <file path="com/itextpdf/pdfcleanup/CleanUpCsCompareUtilTest.java"/>
             </fileset>
+            <fileset reason="This class contains a test which checks results of a bug regarding image type.
+            This has been fixed for specific JDKs but not all. Needs different implementation for .NET.">
+                <file path="com/itextpdf/pdfcleanup/UnsupportedImageTypeTest.java"/>
+            </fileset>
         </java>
         <resource>
             <file path="com/itextpdf/pdfcleanup/CleanUpTaggedPdfTest/cmp_cleanImage_partial.pdf" />
@@ -37,7 +41,7 @@
             <file path="com/itextpdf/pdfcleanup/FilteredImagesCacheTest/cmp_filteredImagesCacheTest04.pdf" />
             <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCs.pdf" />
             <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCsJpegBaselineEncoded.pdf" />
-            <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf" />            
+            <file path="com/itextpdf/pdfcleanup/images/CleanupImageWithColorSpaceTest/cmp_imgSeparationCsJpegBaselineEncodedWithApp14Segment.pdf" />
         </resource>
     </ignored>
     <overwritten>

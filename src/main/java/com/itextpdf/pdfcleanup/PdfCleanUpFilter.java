@@ -95,10 +95,13 @@ class PdfCleanUpFilter {
     private static final Set<PdfName> NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP = Collections.unmodifiableSet(
             new LinkedHashSet<>(Arrays.asList(PdfName.JBIG2Decode, PdfName.DCTDecode, PdfName.JPXDecode)));
 
-    private List<Rectangle> regions;
+    private final List<Rectangle> regions;
 
-    public PdfCleanUpFilter(List<Rectangle> regions) {
+    private final CleanUpProperties properties;
+
+    public PdfCleanUpFilter(List<Rectangle> regions, CleanUpProperties properties) {
         this.regions = regions;
+        this.properties = properties;
     }
 
     static boolean imageSupportsDirectCleanup(PdfImageXObject image) {
@@ -118,7 +121,7 @@ class PdfCleanUpFilter {
      *              are never considered as intersecting.
      * @return true if the rectangles intersect, false otherwise
      */
-    static boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
+    boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
         IClipper clipper = new DefaultClipper();
         // If the redaction area is degenerate, the result will be false
         if (!ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP)) {
@@ -170,29 +173,44 @@ class PdfCleanUpFilter {
             // working with paths is considered to be a bit faster in terms of performance.
             Paths paths = new Paths();
             clipper.execute(ClipType.INTERSECTION, paths, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return !checkIfIntersectionRectangleDegenerate(paths.getBounds(), false)
-                    && !paths.isEmpty();
-        } else {
-            int rect1Size = rect1.length;
-            intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
-            if (!intersectionSubjectAdded) {
-                // According to the comment above,
-                // this could have happened only if all four passed points are actually the same point.
-                // Adding here a point really close to the original point, to make sure it's not covered by the
-                // intersecting rectangle.
-                double smallDiff = 0.01;
-                List<Point> rect1List = new ArrayList<Point>(Arrays.asList(rect1));
-                rect1List.add(new Point(rect1[0].getX() + smallDiff, rect1[0].getY()));
-                rect1 = rect1List.toArray(new Point[rect1Size]);
-                intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
-                assert intersectionSubjectAdded;
-            }
-            PolyTree polyTree = new PolyTree();
-            clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            Paths paths = Paths.makePolyTreeToPaths(polyTree);
-            return !checkIfIntersectionRectangleDegenerate(paths.getBounds(), true)
-                    && !paths.isEmpty();
+            return checkIfIntersectionOccurs(paths, rect1, false);
         }
+        intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+        if (!intersectionSubjectAdded) {
+            // According to the comment above,
+            // this could have happened only if all four passed points are actually the same point.
+            // Adding here a point really close to the original point, to make sure it's not covered by the
+            // intersecting rectangle.
+            final double SMALL_DIFF = 0.01;
+            final Point[] expandedRect1 = new Point[rect1.length + 1];
+            System.arraycopy(rect1, 0, expandedRect1, 0, rect1.length);
+            expandedRect1[rect1.length] = new Point(rect1[0].getX() + SMALL_DIFF, rect1[0].getY());
+            rect1 = expandedRect1;
+
+            intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+            assert intersectionSubjectAdded;
+        }
+        PolyTree polyTree = new PolyTree();
+        clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
+        return checkIfIntersectionOccurs(Paths.makePolyTreeToPaths(polyTree), rect1, true);
+    }
+
+    private boolean checkIfIntersectionOccurs(Paths paths, Point[] rect1, boolean isDegenerate) {
+        if (paths.isEmpty()) {
+            return false;
+        }
+        final LongRect intersectionRectangle = paths.getBounds();
+        // If the user defines a overlappingRatio we use this to calculate whether it intersects enough
+        // To pass as an intersection
+        if (properties.getOverlapRatio() == null) {
+            return !checkIfIntersectionRectangleDegenerate(intersectionRectangle, isDegenerate);
+        }
+        final double overlappedArea = CleanUpHelperUtil.calculatePolygonArea(rect1);
+        final double intersectionArea = ClipperBridge.longRectCalculateHeight(intersectionRectangle) *
+                ClipperBridge.longRectCalculateWidth(intersectionRectangle);
+        final double percentageOfOverlapping = intersectionArea / overlappedArea;
+        final float SMALL_VALUE_FOR_ROUNDING_ERRORS = 1e-5f;
+        return percentageOfOverlapping + SMALL_VALUE_FOR_ROUNDING_ERRORS > properties.getOverlapRatio();
     }
 
     /**
@@ -274,7 +292,7 @@ class PdfCleanUpFilter {
      * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
      */
     private com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path,
-            Matrix ctm, int fillingRule) {
+                                                         Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
 
         IClipper clipper = new DefaultClipper();
@@ -336,8 +354,8 @@ class PdfCleanUpFilter {
     }
 
     private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
-            float lineWidth, int lineCapStyle, int lineJoinStyle,
-            float miterLimit, LineDashPattern lineDashPattern) {
+                                                           float lineWidth, int lineCapStyle, int lineJoinStyle,
+                                                           float miterLimit, LineDashPattern lineDashPattern) {
         com.itextpdf.kernel.geom.Path path = sourcePath;
         JoinType joinType = ClipperBridge.getJoinType(lineJoinStyle);
         EndType endType = ClipperBridge.getEndType(lineCapStyle);
@@ -420,15 +438,14 @@ class PdfCleanUpFilter {
      * is true) and it is included into intersecting rectangle, this method returns false,
      * despite of the intersection rectangle is degenerate.
      *
-     * @param rect intersection rectangle
+     * @param rect                         intersection rectangle
      * @param isIntersectSubjectDegenerate value, specifying if the intersection subject
      *                                     is degenerate.
      * @return true - if the intersection rectangle is degenerate.
      */
-    private static boolean checkIfIntersectionRectangleDegenerate(LongRect rect,
-                                                                  boolean isIntersectSubjectDegenerate) {
-        float width = (float)(Math.abs(rect.left - rect.right) / ClipperBridge.floatMultiplier);
-        float height = (float)(Math.abs(rect.top - rect.bottom) / ClipperBridge.floatMultiplier);
+    private static boolean checkIfIntersectionRectangleDegenerate(LongRect rect, boolean isIntersectSubjectDegenerate) {
+        final float width = ClipperBridge.longRectCalculateWidth(rect);
+        final float height = ClipperBridge.longRectCalculateHeight(rect);
         return isIntersectSubjectDegenerate ? (width < EPS && height < EPS) : (width < EPS || height < EPS);
     }
 
@@ -466,7 +483,7 @@ class PdfCleanUpFilter {
             return true;
         }
         if (filter.isName()) {
-            return !NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP.contains((PdfName)filter);
+            return !NOT_SUPPORTED_FILTERS_FOR_DIRECT_CLEANUP.contains((PdfName) filter);
         } else if (filter.isArray()) {
             PdfArray filterArray = (PdfArray) filter;
             for (int i = 0; i < filterArray.size(); ++i) {
@@ -508,7 +525,7 @@ class PdfCleanUpFilter {
      * Filters image content using direct manipulation over PDF image samples stream. Implemented according to ISO 32000-2,
      * "8.9.3 Sample representation".
      *
-     * @param image image XObject which will be filtered
+     * @param image                 image XObject which will be filtered
      * @param imageAreasToBeCleaned list of rectangle areas for clean up with coordinates in (0,1)x(0,1) space
      * @return raw bytes of the PDF image samples stream which is already cleaned.
      */
@@ -529,7 +546,7 @@ class PdfCleanUpFilter {
             throw new IllegalArgumentException("/BitsPerComponent only allowed values are: 1, 2, 4, 8 and 16.");
         }
 
-        double bytesInComponent = (double)bpc / 8;
+        double bytesInComponent = (double) bpc / 8;
         int firstComponentInByte = 0;
         if (bpc < 16) {
             for (int i = 0; i < bpc; ++i) {
@@ -544,7 +561,7 @@ class PdfCleanUpFilter {
             rowPadding = (int) (8 - (width * bpc) % 8);
         }
         for (Rectangle rect : imageAreasToBeCleaned) {
-            int[] cleanImgRect = CleanUpHelperUtil.getImageRectToClean(rect, (int)width, (int)height);
+            int[] cleanImgRect = CleanUpHelperUtil.getImageRectToClean(rect, (int) width, (int) height);
             for (int j = cleanImgRect[Y]; j < cleanImgRect[Y] + cleanImgRect[H]; ++j) {
                 for (int i = cleanImgRect[X]; i < cleanImgRect[X] + cleanImgRect[W]; ++i) {
                     // based on assumption that numOfComponents always equals 1, because this method is only for monochrome and grayscale images
@@ -751,7 +768,6 @@ class PdfCleanUpFilter {
     private static Point[] getTextRectangle(TextRenderInfo renderInfo) {
         LineSegment ascent = renderInfo.getAscentLine();
         LineSegment descent = renderInfo.getDescentLine();
-
         return new Point[]{
                 new Point(ascent.getStartPoint().get(0), ascent.getStartPoint().get(1)),
                 new Point(ascent.getEndPoint().get(0), ascent.getEndPoint().get(1)),

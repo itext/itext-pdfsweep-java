@@ -92,7 +92,7 @@ public class PdfCleanUpTool {
 
     private PdfDocument pdfDocument;
 
-    private boolean processAnnotations;
+    private CleanUpProperties properties;
 
     /**
      * Key - page number, value - list of locations related to the page.
@@ -137,6 +137,7 @@ public class PdfCleanUpTool {
         if (pdfDocument.getReader() == null || pdfDocument.getWriter() == null) {
             throw new PdfException(CleanupExceptionMessageConstant.PDF_DOCUMENT_MUST_BE_OPENED_IN_STAMPING_MODE);
         }
+        this.properties = properties;
         this.pdfDocument = pdfDocument;
         this.pdfCleanUpLocations = new HashMap<>();
         this.filteredImagesCache = new FilteredImagesCache();
@@ -144,7 +145,6 @@ public class PdfCleanUpTool {
         if (cleanRedactAnnotations) {
             addCleanUpLocationsBasedOnRedactAnnotations();
         }
-        processAnnotations = properties.isProcessAnnotations();
     }
 
     /**
@@ -215,10 +215,10 @@ public class PdfCleanUpTool {
         }
 
         PdfPage page = pdfDocument.getPage(pageNumber);
-        PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument);
+        PdfCleanUpProcessor cleanUpProcessor = new PdfCleanUpProcessor(regions, pdfDocument, this.properties);
         cleanUpProcessor.setFilteredImagesCache(filteredImagesCache);
         cleanUpProcessor.processPageContent(page);
-        if (processAnnotations) {
+        if (properties.isProcessAnnotations()) {
             cleanUpProcessor.processPageAnnotations(page, regions, redactAnnotations != null);
         }
 

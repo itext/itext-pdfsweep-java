@@ -30,21 +30,20 @@ import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
 
 import java.util.Arrays;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class CleanUpImageIndexedColorSpaceTest extends ExtendedITextTest {
 
     private static final String inputPath = "./src/test/resources/com/itextpdf/pdfcleanup/images/CleanUpImageIndexedColorSpaceTest/";
     private static final String outputPath = "./target/test/com/itextpdf/pdfcleanup/images/CleanUpImageIndexedColorSpaceTest/";
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         createOrClearDestinationFolder(outputPath);
     }
@@ -71,6 +70,6 @@ public class CleanUpImageIndexedColorSpaceTest extends ExtendedITextTest {
           In .NET color of cleaned area is the first color of indexed color palette.
           In Java color of cleaned area is white.
          */
-        Assert.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
+        Assertions.assertNull(new CompareTool().compareByContent(output, cmp, outputPath));
     }
 }

@@ -26,21 +26,19 @@ import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.UnitTest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-@Category(UnitTest.class)
+@Tag("UnitTest")
 public class TextPositioningTest extends ExtendedITextTest {
 
     public static final float EPS = 0.0001F;
@@ -55,9 +53,9 @@ public class TextPositioningTest extends ExtendedITextTest {
             textPositioning
                     .writePositionedText("T*", new ArrayList<>(), new PdfArray(), canvasForTest);
         } catch (NullPointerException nullPointerException) {
-            Assert.fail("We don't expect, that NPE will be thrown in this test!");
+            Assertions.fail("We don't expect, that NPE will be thrown in this test!");
         }
-        Assert.assertEquals(0.0, canvasForTest.getGraphicsState().getLeading(), EPS);
+        Assertions.assertEquals(0.0, canvasForTest.getGraphicsState().getLeading(), EPS);
     }
 
     @Test
@@ -69,9 +67,9 @@ public class TextPositioningTest extends ExtendedITextTest {
             textPositioning.appendPositioningOperator("'", new ArrayList<>());
             textPositioning.writePositionedText("'", new ArrayList<>(), new PdfArray(), canvasForTest);
         } catch (NullPointerException nullPointerException) {
-            Assert.fail("We don't expect, that NPE will be thrown in this test!");
+            Assertions.fail("We don't expect, that NPE will be thrown in this test!");
         }
-        Assert.assertEquals(0.0, canvasForTest.getGraphicsState().getLeading(), EPS);
+        Assertions.assertEquals(0.0, canvasForTest.getGraphicsState().getLeading(), EPS);
     }
 
     private static PdfCanvas createTestCanvas(float canvasLeading) throws IOException {

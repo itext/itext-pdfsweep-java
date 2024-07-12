@@ -28,30 +28,23 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import com.itextpdf.pdfcleanup.util.CleanUpImageUtil;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.IntegrationTest;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Category(IntegrationTest.class)
+@Tag("IntegrationTest")
 public class CleanUpImageUtilTest extends ExtendedITextTest {
     private static final String SOURCE_PATH = "./src/test/resources/com/itextpdf/pdfcleanup/CleanupImageHandlingUtilTest/";
 
-    @Rule
-    public ExpectedException junitExpectedException = ExpectedException.none();
 
     @Test
     public void cleanUpImageNullImageBytesTest() {
         List<Rectangle> areasToBeCleaned = new ArrayList<>();
         areasToBeCleaned.add(new Rectangle(100, 100));
-        junitExpectedException.expect(RuntimeException.class);
-
-        CleanUpImageUtil.cleanUpImage(null, areasToBeCleaned);
+        Assertions.assertThrows(RuntimeException.class, () -> CleanUpImageUtil.cleanUpImage(null, areasToBeCleaned));
     }
 
     @Test
@@ -63,6 +56,6 @@ public class CleanUpImageUtilTest extends ExtendedITextTest {
         byte[] resultImageBytes = CleanUpImageUtil.cleanUpImage(new PdfImageXObject(data).getImageBytes(),
                 new ArrayList<Rectangle>());
 
-        Assert.assertArrayEquals(sourceImageBytes, resultImageBytes);
+        Assertions.assertArrayEquals(sourceImageBytes, resultImageBytes);
     }
 }

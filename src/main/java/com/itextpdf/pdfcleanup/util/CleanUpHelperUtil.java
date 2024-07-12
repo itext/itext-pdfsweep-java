@@ -22,6 +22,7 @@
  */
 package com.itextpdf.pdfcleanup.util;
 
+import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 
 /**
@@ -55,5 +56,20 @@ public final class CleanUpHelperUtil {
         int w = (int) Math.floor(right + EPS) - x;
         int h = scaledTopY - scaledBottomY;
         return new int[]{x, y, w, h};
+    }
+
+
+    public static double calculatePolygonArea(Point[] vertices) {
+        double sum = 0;
+        for (int i = 0; i < vertices.length; i++) {
+            if (i == 0) {
+                sum += vertices[i].x * (vertices[i + 1].y - vertices[vertices.length - 1].y);
+            } else if (i == vertices.length - 1) {
+                sum += vertices[i].x * (vertices[0].y - vertices[i - 1].y);
+            } else {
+                sum += vertices[i].x * (vertices[i + 1].y - vertices[i - 1].y);
+            }
+        }
+        return 0.5 * Math.abs(sum);
     }
 }
