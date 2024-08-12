@@ -450,11 +450,11 @@ class PdfCleanUpFilter {
     }
 
     private static boolean isPointOnALineSegment(Point currPoint, Point linePoint1, Point linePoint2, boolean isBetweenLinePoints) {
-        double dxc = currPoint.x - linePoint1.x;
-        double dyc = currPoint.y - linePoint1.y;
+        double dxc = currPoint.getX() - linePoint1.getX();
+        double dyc = currPoint.getY() - linePoint1.getY();
 
-        double dxl = linePoint2.x - linePoint1.x;
-        double dyl = linePoint2.y - linePoint1.y;
+        double dxl = linePoint2.getX() - linePoint1.getX();
+        double dyl = linePoint2.getY() - linePoint1.getY();
 
         double cross = dxc * dyl - dyc * dxl;
 
@@ -463,12 +463,12 @@ class PdfCleanUpFilter {
             if (isBetweenLinePoints) {
                 if (Math.abs(dxl) >= Math.abs(dyl)) {
                     return dxl > 0 ?
-                            linePoint1.x - EPS <= currPoint.x && currPoint.x <= linePoint2.x + EPS :
-                            linePoint2.x - EPS <= currPoint.x && currPoint.x <= linePoint1.x + EPS;
+                            linePoint1.getX() - EPS <= currPoint.getX() && currPoint.getX() <= linePoint2.getX() + EPS :
+                            linePoint2.getX() - EPS <= currPoint.getX() && currPoint.getX() <= linePoint1.getX() + EPS;
                 } else {
                     return dyl > 0 ?
-                            linePoint1.y - EPS <= currPoint.y && currPoint.y <= linePoint2.y + EPS :
-                            linePoint2.y - EPS <= currPoint.y && currPoint.y <= linePoint1.y + EPS;
+                            linePoint1.getY() - EPS <= currPoint.getY() && currPoint.getY() <= linePoint2.getY() + EPS :
+                            linePoint2.getY() - EPS <= currPoint.getY() && currPoint.getY() <= linePoint1.getY() + EPS;
                 }
             } else {
                 return true;
@@ -504,8 +504,8 @@ class PdfCleanUpFilter {
         }
 
         Point[] points = transformPoints(imageCtm, false,
-                new Point(0, 0), new Point(0, 1),
-                new Point(1, 0), new Point(1, 1));
+                new Point(0d, 0d), new Point(0d, 1d),
+                new Point(1d, 0d), new Point(1d, 1d));
 
         return Rectangle.calculateBBox(Arrays.asList(points));
     }
