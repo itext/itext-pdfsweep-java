@@ -25,14 +25,93 @@ package com.itextpdf.pdfcleanup;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.test.ExtendedITextTest;
 
+import java.util.ArrayList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-
 @Tag("UnitTest")
 public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
+
+    @Test
+    public void pointIntersectLineCaseTest1() {
+        Point[] intersectSubject = new Point[] {
+                new Point(50, 60),
+                new Point(70, 60),
+                new Point(50, 60)
+        };
+        Point[] intersecting = new Point[] {
+                new Point(50, 50),
+                new Point(50, 70),
+                new Point(50, 50)
+        };
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+    }
+
+    @Test
+    public void pointIntersectLineCaseTest2() {
+        Point[] intersectSubject = new Point[] {
+                new Point(50, 60),
+                new Point(70, 60),
+                new Point(50, 60)
+        };
+        Point[] intersecting = new Point[] {
+                new Point(50, 50),
+                new Point(50, 30),
+                new Point(50, 50)
+        };
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+    }
+
+    @Test
+    public void pointIntersectLineCaseTest3() {
+        Point[] intersectSubject = new Point[] {
+                new Point(50, 65),
+                new Point(70, 65),
+                new Point(50, 65)
+        };
+        Point[] intersecting = new Point[] {
+                new Point(40, 50),
+                new Point(60, 70),
+                new Point(40, 50)
+        };
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+    }
+
+    @Test
+    public void pointIntersectLineCaseTest4() {
+        Point[] intersectSubject = new Point[] {
+                new Point(50, 60),
+                new Point(70, 60),
+                new Point(50, 60)
+        };
+        Point[] intersecting = new Point[] {
+                new Point(30, 50),
+                new Point(70, 70),
+                new Point(30, 50)
+        };
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+    }
+
+    @Test
+    public void pointIntersectLineCaseTest5() {
+        Point[] intersectSubject = new Point[] {
+                new Point(50, 60),
+                new Point(70, 60),
+                new Point(50, 60)
+        };
+        Point[] intersecting = new Point[] {
+                new Point(70, 50),
+                new Point(30, 70),
+                new Point(70, 50)
+        };
+        PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
+        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+    }
 
     @Test
     public void checkIfRectanglesIntersect_completelyCoveredBasic() {
