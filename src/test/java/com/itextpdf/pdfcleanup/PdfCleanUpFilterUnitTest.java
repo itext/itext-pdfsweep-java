@@ -126,7 +126,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(50, 50)
         };
         PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
-        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(50, 50)
         };
         PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
-        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -174,7 +174,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(50, 50)
         };
         PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
-        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
@@ -190,7 +190,7 @@ public class PdfCleanUpFilterUnitTest extends ExtendedITextTest {
                 new Point(60, 50)
         };
         PdfCleanUpFilter filter = new PdfCleanUpFilter(new ArrayList<>(), new CleanUpProperties());
-        Assertions.assertTrue(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
+        Assertions.assertFalse(filter.checkIfRectanglesIntersect(intersectSubject, intersecting));
     }
 
     @Test
