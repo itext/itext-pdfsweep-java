@@ -33,7 +33,6 @@ import com.itextpdf.kernel.pdf.canvas.CanvasTag;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import com.itextpdf.test.ExtendedITextTest;
-import com.itextpdf.test.annotations.type.UnitTest;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
