@@ -6,14 +6,15 @@
     <groupId>com.itextpdf</groupId>
     <artifactId>root</artifactId>
     <version>9.0.1-SNAPSHOT</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <artifactId>cleanup</artifactId>
   <version>5.0.1-SNAPSHOT</version>
 
   <name>pdfSweep</name>
-  <description>Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but they
+  <description>Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but
+    they
     include some confidential, sensitive information which should not be shared, pdfSweep is your solution. Redact a PDF
     containing sensitive, confidential information, such as personal medical information, account numbers, national
     identification numbers, personal details or social security numbers in a reliable and secure way. Data redaction
@@ -97,7 +98,6 @@
       <url>https://repo.itextsupport.com/releases</url>
     </repository>
   </repositories>
-
   <build>
     <plugins>
       <plugin>
@@ -105,4 +105,52 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>with-sharpen</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>sharpen</groupId>
+            <artifactId>sharpen-maven-plugin</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <executions>
+              <execution>
+                <phase>install</phase>
+                <goals>
+                  <goal>sharpen</goal>
+                </goals>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>sharpen</groupId>
+                <artifactId>standard-framework-mapping</artifactId>
+                <version>1.0-SNAPSHOT</version>
+              </dependency>
+              <dependency>
+                <groupId>sharpen</groupId>
+                <artifactId>cleanup-sharpen-mapping</artifactId>
+                <version>1.0-SNAPSHOT</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <projectName>cleanup</projectName>
+              <cSharpTargetFolder>./../../sharp/cleanup</cSharpTargetFolder>
+              <cSharpSourceCodeDestination>itext/itext.cleanup</cSharpSourceCodeDestination>
+              <cSharpTestCodeDestination>itext.tests/itext.cleanup.tests</cSharpTestCodeDestination>
+              <buildDotnet>${sharpen.builddotnet}</buildDotnet>
+              <showDiff>${sharpen.showdiff}</showDiff>
+              <sourceCodeFiles>
+                <file>**/src/main/java/**/*.java</file>
+              </sourceCodeFiles>
+              <testCodeFiles>
+                <file>**/src/test/java/**/*.java</file>
+              </testCodeFiles>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
