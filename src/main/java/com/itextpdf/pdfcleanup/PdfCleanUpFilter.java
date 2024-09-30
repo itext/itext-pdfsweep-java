@@ -33,6 +33,7 @@ import com.itextpdf.kernel.geom.Line;
 import com.itextpdf.kernel.geom.LineSegment;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.NoninvertibleTransformException;
+import com.itextpdf.kernel.geom.Path;
 import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
@@ -77,11 +78,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class PdfCleanUpFilter {
-
     private static final Logger logger = LoggerFactory.getLogger(PdfCleanUpFilter.class);
 
-    /* There is no exact representation of the circle using Bezier curves.
-     * But, for a Bezier curve with n segments the optimal distance to the control points,
+    /* There is no exact representation of the circle using Bézier curves.
+     * But, for a Bézier curve with n segments the optimal distance to the control points,
      * in the sense that the middle of the curve lies on the circle itself, is (4/3) * tan(pi / (2*n))
      * So for 4 points it is (4/3) * tan(pi/8) = 4 * (sqrt(2)-1)/3 = 0.5522847498
      * In this approximation, the Bézier curve always falls outside the circle,
@@ -123,13 +123,15 @@ class PdfCleanUpFilter {
      */
     boolean checkIfRectanglesIntersect(Point[] rect1, Point[] rect2) {
         IClipper clipper = new DefaultClipper();
+        ClipperBridge clipperBridge = properties.getOffsetProperties().calculateOffsetMultiplierDynamically() ?
+                new ClipperBridge(rect1, rect2) : new ClipperBridge();
         // If the redaction area is degenerate, the result will be false
-        if (!ClipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP)) {
+        if (!clipperBridge.addPolygonToClipper(clipper, rect2, PolyType.CLIP)) {
             // If the content area is not degenerate (and the redaction area is), let's return false:
             // even if they overlaps somehow, we do not consider it as an intersection.
             // If the content area is degenerate, let's process this case specifically
-            if (!ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT)) {
-                // Clipper fails to process degenerate redaction areas. However that's vital for pdfAutoSweep,
+            if (!clipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT)) {
+                // Clipper fails to process degenerate redaction areas. However, that's vital for pdfAutoSweep,
                 // because in some cases (for example, noninvertible cm) the text's area might be degenerate,
                 // but we still need to sweep the content.
                 // The idea is as follows:
@@ -137,7 +139,7 @@ class PdfCleanUpFilter {
                 // b) if the degenerate redaction area represents a line, let's check that there the redaction line
                 // equals to one of the edges of the content's area. That is implemented in respect to area generation,
                 // because the redaction line corresponds to the descent line of the content.
-                if (!ClipperBridge.addPolylineSubjectToClipper(clipper, rect2)) {
+                if (!clipperBridge.addPolylineSubjectToClipper(clipper, rect2)) {
                     return false;
                 }
                 if (rect1.length != rect2.length) {
@@ -151,8 +153,8 @@ class PdfCleanUpFilter {
                         break;
                     }
                 }
-                for (int i = 0; i < rect1.length; i++) {
-                    if (isPointOnALineSegment(rect1[i], startPoint, endPoint, true)) {
+                for (Point point : rect1) {
+                    if (isPointOnALineSegment(point, startPoint, endPoint, true)) {
                         return true;
                     }
                 }
@@ -168,14 +170,14 @@ class PdfCleanUpFilter {
         // If addition returns false, this means that there are less than 3 distinct points, because of rectangle zero width.
         // Let's in this case specify the path as polyline, because we still want to know if redaction area
         // intersects even with zero-width rectangles.
-        boolean intersectionSubjectAdded = ClipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT);
+        boolean intersectionSubjectAdded = clipperBridge.addPolygonToClipper(clipper, rect1, PolyType.SUBJECT);
         if (intersectionSubjectAdded) {
             // working with paths is considered to be a bit faster in terms of performance.
             Paths paths = new Paths();
             clipper.execute(ClipType.INTERSECTION, paths, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-            return checkIfIntersectionOccurs(paths, rect1, false);
+            return checkIfIntersectionOccurs(paths, rect1, false, clipperBridge);
         }
-        intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+        intersectionSubjectAdded = clipperBridge.addPolylineSubjectToClipper(clipper, rect1);
         if (!intersectionSubjectAdded) {
             // According to the comment above,
             // this could have happened only if all four passed points are actually the same point.
@@ -187,15 +189,16 @@ class PdfCleanUpFilter {
             expandedRect1[rect1.length] = new Point(rect1[0].getX() + SMALL_DIFF, rect1[0].getY());
             rect1 = expandedRect1;
 
-            intersectionSubjectAdded = ClipperBridge.addPolylineSubjectToClipper(clipper, rect1);
+            intersectionSubjectAdded = clipperBridge.addPolylineSubjectToClipper(clipper, rect1);
             assert intersectionSubjectAdded;
         }
         PolyTree polyTree = new PolyTree();
         clipper.execute(ClipType.INTERSECTION, polyTree, PolyFillType.NON_ZERO, PolyFillType.NON_ZERO);
-        return checkIfIntersectionOccurs(Paths.makePolyTreeToPaths(polyTree), rect1, true);
+        return checkIfIntersectionOccurs(Paths.makePolyTreeToPaths(polyTree), rect1, true, clipperBridge);
     }
 
-    private boolean checkIfIntersectionOccurs(Paths paths, Point[] rect1, boolean isDegenerate) {
+    private boolean checkIfIntersectionOccurs(Paths paths, Point[] rect1, boolean isDegenerate,
+                                              ClipperBridge clipperBridge) {
         if (paths.isEmpty()) {
             return false;
         }
@@ -203,11 +206,11 @@ class PdfCleanUpFilter {
         // If the user defines a overlappingRatio we use this to calculate whether it intersects enough
         // To pass as an intersection
         if (properties.getOverlapRatio() == null) {
-            return !checkIfIntersectionRectangleDegenerate(intersectionRectangle, isDegenerate);
+            return !checkIfIntersectionRectangleDegenerate(intersectionRectangle, isDegenerate, clipperBridge);
         }
         final double overlappedArea = CleanUpHelperUtil.calculatePolygonArea(rect1);
-        final double intersectionArea = ClipperBridge.longRectCalculateHeight(intersectionRectangle) *
-                ClipperBridge.longRectCalculateWidth(intersectionRectangle);
+        final double intersectionArea = clipperBridge.longRectCalculateHeight(intersectionRectangle) *
+                clipperBridge.longRectCalculateWidth(intersectionRectangle);
         final double percentageOfOverlapping = intersectionArea / overlappedArea;
         final float SMALL_VALUE_FOR_ROUNDING_ERRORS = 1e-5f;
         return percentageOfOverlapping + SMALL_VALUE_FOR_ROUNDING_ERRORS > properties.getOverlapRatio();
@@ -295,13 +298,10 @@ class PdfCleanUpFilter {
                                                          Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
 
-        IClipper clipper = new DefaultClipper();
-        ClipperBridge.addPath(clipper, path, PolyType.SUBJECT);
-
+        List<Point[]> transfRectVerticesList = new ArrayList<>();
         for (Rectangle rectangle : regions) {
             try {
-                Point[] transfRectVertices = transformPoints(ctm, true, getRectangleVertices(rectangle));
-                ClipperBridge.addPolygonToClipper(clipper, transfRectVertices, PolyType.CLIP);
+                transfRectVerticesList.add(transformPoints(ctm, true, getRectangleVertices(rectangle)));
             } catch (PdfException e) {
                 if (!(e.getCause() instanceof NoninvertibleTransformException)) {
                     throw e;
@@ -310,6 +310,16 @@ class PdfCleanUpFilter {
                 }
             }
 
+        }
+
+        IClipper clipper = new DefaultClipper();
+
+        ClipperBridge clipperBridge = properties.getOffsetProperties().calculateOffsetMultiplierDynamically() ?
+                getClipperBridge(path, transfRectVerticesList) : new ClipperBridge();
+        clipperBridge.addPath(clipper, path, PolyType.SUBJECT);
+
+        for (Point[] transfRectVertices : transfRectVerticesList) {
+            clipperBridge.addPolygonToClipper(clipper, transfRectVertices, PolyType.CLIP);
         }
 
         PolyFillType fillType = PolyFillType.NON_ZERO;
@@ -321,7 +331,7 @@ class PdfCleanUpFilter {
         PolyTree resultTree = new PolyTree();
         clipper.execute(ClipType.DIFFERENCE, resultTree, fillType, PolyFillType.NON_ZERO);
 
-        return ClipperBridge.convertToPath(resultTree);
+        return clipperBridge.convertToPath(resultTree);
     }
 
     /**
@@ -364,14 +374,17 @@ class PdfCleanUpFilter {
             path = LineDashPattern.applyDashPattern(path, lineDashPattern);
         }
 
-        ClipperOffset offset = new ClipperOffset(miterLimit, PdfCleanUpTool.arcTolerance * PdfCleanUpTool.floatMultiplier);
-        List<Subpath> degenerateSubpaths = ClipperBridge.addPath(offset, path, joinType, endType);
+        ClipperBridge clipperBridge = properties.getOffsetProperties().calculateOffsetMultiplierDynamically() ?
+                new ClipperBridge(path) : new ClipperBridge();
+        ClipperOffset offset = new ClipperOffset(miterLimit, properties.getOffsetProperties().getArcTolerance() *
+                clipperBridge.getFloatMultiplier());
+        List<Subpath> degenerateSubpaths = clipperBridge.addPath(offset, path, joinType, endType);
 
         PolyTree resultTree = new PolyTree();
-        offset.execute(resultTree, lineWidth * PdfCleanUpTool.floatMultiplier / 2);
-        com.itextpdf.kernel.geom.Path offsetedPath = ClipperBridge.convertToPath(resultTree);
+        offset.execute(resultTree, lineWidth * clipperBridge.getFloatMultiplier() / 2);
+        Path offsetedPath = clipperBridge.convertToPath(resultTree);
 
-        if (degenerateSubpaths.size() > 0) {
+        if (!degenerateSubpaths.isEmpty()) {
             if (endType == EndType.OPEN_ROUND) {
                 List<Subpath> circles = convertToCircles(degenerateSubpaths, lineWidth / 2);
                 offsetedPath.addSubpaths(circles);
@@ -436,16 +449,17 @@ class PdfCleanUpFilter {
      * Checks if the input intersection rectangle is degenerate.
      * In case of intersection subject is degenerate (isIntersectSubjectDegenerate
      * is true) and it is included into intersecting rectangle, this method returns false,
-     * despite of the intersection rectangle is degenerate.
+     * despite the intersection rectangle is degenerate.
      *
      * @param rect                         intersection rectangle
      * @param isIntersectSubjectDegenerate value, specifying if the intersection subject
      *                                     is degenerate.
      * @return true - if the intersection rectangle is degenerate.
      */
-    private static boolean checkIfIntersectionRectangleDegenerate(LongRect rect, boolean isIntersectSubjectDegenerate) {
-        final float width = ClipperBridge.longRectCalculateWidth(rect);
-        final float height = ClipperBridge.longRectCalculateHeight(rect);
+    private static boolean checkIfIntersectionRectangleDegenerate(LongRect rect, boolean isIntersectSubjectDegenerate,
+                                                                  ClipperBridge clipperBridge) {
+        final float width = clipperBridge.longRectCalculateWidth(rect);
+        final float height = clipperBridge.longRectCalculateHeight(rect);
         return isIntersectSubjectDegenerate ? (width < EPS && height < EPS) : (width < EPS || height < EPS);
     }
 
@@ -782,14 +796,12 @@ class PdfCleanUpFilter {
      * @param rect input Rectangle
      */
     private static Point[] getRectangleVertices(Rectangle rect) {
-        Point[] points = {
+        return new Point[]{
                 new Point(rect.getLeft(), rect.getBottom()),
                 new Point(rect.getRight(), rect.getBottom()),
                 new Point(rect.getRight(), rect.getTop()),
                 new Point(rect.getLeft(), rect.getTop())
         };
-
-        return points;
     }
 
     /**
@@ -808,12 +820,25 @@ class PdfCleanUpFilter {
                 : null;
     }
 
+    private static ClipperBridge getClipperBridge(Path path, List<Point[]> transfRectVerticesList) {
+        List<Point> pointsList = new ArrayList<>();
+        for (Subpath subpath : path.getSubpaths()) {
+            if (!subpath.isSinglePointClosed() && !subpath.isSinglePointOpen()) {
+                pointsList.addAll(subpath.getPiecewiseLinearApproximation());
+            }
+        }
+        for (Point[] transfRectVertices : transfRectVerticesList) {
+            pointsList.addAll(Arrays.asList(transfRectVertices));
+        }
+        return new ClipperBridge(pointsList.toArray(new Point[0]));
+    }
+
     /**
      * Generic class representing the result of filtering an object of type T.
      */
     static class FilterResult<T> {
-        private boolean isModified;
-        private T filterResult;
+        private final boolean isModified;
+        private final T filterResult;
 
         public FilterResult(boolean isModified, T filterResult) {
             this.isModified = isModified;

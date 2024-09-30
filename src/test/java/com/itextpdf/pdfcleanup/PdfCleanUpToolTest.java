@@ -722,8 +722,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
         List<PdfCleanUpLocation> additionalLocation = new ArrayList<>();
         additionalLocation.add(new PdfCleanUpLocation(1, new Rectangle(100, 560, 200, 30)));
 
-        CleanUpProperties properties = new CleanUpProperties();
-        properties.setProcessAnnotations(false);
+        CleanUpProperties properties = new CleanUpProperties().setProcessAnnotations(false);
         PdfCleaner
                 .autoSweepCleanUp(new FileInputStream(input), new FileOutputStream(output), strategy, additionalLocation, properties);
 

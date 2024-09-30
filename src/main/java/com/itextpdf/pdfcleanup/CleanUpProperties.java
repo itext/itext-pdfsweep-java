@@ -33,6 +33,7 @@ public class CleanUpProperties {
     private IMetaInfo metaInfo;
     private boolean processAnnotations;
     private Double overlapRatio;
+    private PathOffsetApproximationProperties offsetProperties = new PathOffsetApproximationProperties();
 
     /**
      * Creates default CleanUpProperties instance.
@@ -54,9 +55,12 @@ public class CleanUpProperties {
      * Sets additional meta info.
      *
      * @param metaInfo the meta info to set
+     *
+     * @return this {@link CleanUpProperties} instance
      */
-    public void setMetaInfo(IMetaInfo metaInfo) {
+    public CleanUpProperties setMetaInfo(IMetaInfo metaInfo) {
         this.metaInfo = metaInfo;
+        return this;
     }
 
     /**
@@ -74,9 +78,12 @@ public class CleanUpProperties {
      * Default processing behaviour: remove annotation if there is overlap with a redaction region.
      *
      * @param processAnnotations is page annotations will be processed
+     *
+     * @return this {@link CleanUpProperties} instance
      */
-    public void setProcessAnnotations(boolean processAnnotations) {
+    public CleanUpProperties setProcessAnnotations(boolean processAnnotations) {
         this.processAnnotations = processAnnotations;
+        return this;
     }
 
     /**
@@ -98,16 +105,42 @@ public class CleanUpProperties {
      * Example: if the overlap ratio is set to 0.3, the content region will be removed if it overlaps with
      * the redaction area by at least 30%.
      *
-     * @param overlapRatio The overlap ratio to set.
+     * @param overlapRatio the overlap ratio to set
+     *
+     * @return this {@link CleanUpProperties} instance
      */
-    public void setOverlapRatio(Double overlapRatio) {
+    public CleanUpProperties setOverlapRatio(Double overlapRatio) {
         if (overlapRatio == null) {
             this.overlapRatio = null;
-            return;
+            return this;
         }
         if (overlapRatio <= 0 || overlapRatio > 1) {
             throw new IllegalArgumentException(CleanupExceptionMessageConstant.OVERLAP_RATIO_SHOULD_BE_IN_RANGE);
         }
         this.overlapRatio = overlapRatio;
+        return this;
+    }
+
+    /**
+     * Get {@link PathOffsetApproximationProperties} specifying approximation parameters for
+     * {@link com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperOffset} operations.
+     *
+     * @return {@link PathOffsetApproximationProperties} parameters
+     */
+    public PathOffsetApproximationProperties getOffsetProperties() {
+        return offsetProperties;
+    }
+
+    /**
+     * Set {@link PathOffsetApproximationProperties} specifying approximation parameters for
+     * {@link com.itextpdf.kernel.pdf.canvas.parser.clipper.ClipperOffset} operations.
+     *
+     * @param offsetProperties {@link PathOffsetApproximationProperties} to set
+     *
+     * @return this {@link CleanUpProperties} instance
+     */
+    public CleanUpProperties setOffsetProperties(PathOffsetApproximationProperties offsetProperties) {
+        this.offsetProperties = offsetProperties;
+        return this;
     }
 }
