@@ -63,11 +63,11 @@ public final class CleanUpHelperUtil {
         double sum = 0;
         for (int i = 0; i < vertices.length; i++) {
             if (i == 0) {
-                sum += vertices[i].x * (vertices[i + 1].y - vertices[vertices.length - 1].y);
+                sum += vertices[i].getX() * (vertices[i + 1].getY() - vertices[vertices.length - 1].getY());
             } else if (i == vertices.length - 1) {
-                sum += vertices[i].x * (vertices[0].y - vertices[i - 1].y);
+                sum += vertices[i].getX() * (vertices[0].getY() - vertices[i - 1].getY());
             } else {
-                sum += vertices[i].x * (vertices[i + 1].y - vertices[i - 1].y);
+                sum += vertices[i].getX() * (vertices[i + 1].getY() - vertices[i - 1].getY());
             }
         }
         return 0.5 * Math.abs(sum);

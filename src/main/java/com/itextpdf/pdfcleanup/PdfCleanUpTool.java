@@ -70,42 +70,22 @@ import java.util.Map;
  */
 public class PdfCleanUpTool {
 
-    /**
-     * When a document with line arts is being cleaned up, there are a lot of
-     * calculations with floating point numbers. All of them are translated
-     * into fixed point numbers by multiplying by this coefficient. Vary it
-     * to adjust the preciseness of the calculations.
-     * @deprecated
-     */
-    @Deprecated
-    //TODO DEVSIX-5770 make this constant a single non-static configuration
-    public static double floatMultiplier = Math.pow(10, 14);
+    private final PdfDocument pdfDocument;
 
-    /**
-     * Used as the criterion of a good approximation of rounded line joins
-     * and line caps.
-     * @deprecated
-     */
-    @Deprecated
-    //TODO DEVSIX-5770 make this constant a single non-static configuration
-    public static double arcTolerance = 0.0025;
-
-    private PdfDocument pdfDocument;
-
-    private CleanUpProperties properties;
+    private final CleanUpProperties properties;
 
     /**
      * Key - page number, value - list of locations related to the page.
      */
-    private Map<Integer, List<PdfCleanUpLocation>> pdfCleanUpLocations;
+    private final Map<Integer, List<PdfCleanUpLocation>> pdfCleanUpLocations;
+
+    private final FilteredImagesCache filteredImagesCache;
 
     /**
      * Keys - redact annotations to be removed from the document after clean up,
      * values - list of regions defined by redact annotation.
      */
     private Map<PdfRedactAnnotation, List<Rectangle>> redactAnnotations;
-
-    private FilteredImagesCache filteredImagesCache;
 
     /**
      * Creates a {@link PdfCleanUpTool} object. No regions for erasing are specified.

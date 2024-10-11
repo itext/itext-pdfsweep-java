@@ -81,4 +81,14 @@ public class CleanUpPropertiesUnitTest extends ExtendedITextTest {
         properties.setOverlapRatio(null);
         assertNull(properties.getOverlapRatio());
     }
+
+    @Test
+    public void setGetPathOffsetApproximationPropertiesTest(){
+        PathOffsetApproximationProperties pathOffsetApproximationProperties = new PathOffsetApproximationProperties()
+                .calculateOffsetMultiplierDynamically(true)
+                .setArcTolerance(0.0015);
+        CleanUpProperties properties = new CleanUpProperties().setOffsetProperties(pathOffsetApproximationProperties);
+        assertTrue(properties.getOffsetProperties().calculateOffsetMultiplierDynamically());
+        assertEquals(0.0015, properties.getOffsetProperties().getArcTolerance());
+    }
 }

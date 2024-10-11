@@ -64,7 +64,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
-import com.itextpdf.kernel.pdf.colorspace.PdfShading;
+import com.itextpdf.kernel.pdf.colorspace.shading.AbstractPdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
@@ -525,7 +525,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if (FILL_COLOR_OPERATORS.contains(operator)) {
             notAppliedGsParams.peek().fillColor = getGraphicsState().getFillColor();
         } else if ("sh".equals(operator)) {
-            PdfShading shading = getResources().getShading((PdfName) operands.get(0));
+            AbstractPdfShading shading = getResources().getShading((PdfName) operands.get(0));
             getCanvas().paintShading(shading);
         } else if (!IGNORED_OPERATORS.contains(operator)) {
             writeOperands(getCanvas(), operands);

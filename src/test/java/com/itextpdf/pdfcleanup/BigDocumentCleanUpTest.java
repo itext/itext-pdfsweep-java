@@ -77,6 +77,22 @@ public class BigDocumentCleanUpTest extends ExtendedITextTest {
     }
 
     @Test
+    @LogMessages(messages = @LogMessage(messageTemplate = IoLogMessageConstant.CREATED_ROOT_TAG_HAS_MAPPING))
+    public void bigTaggedDocumentDynamicOffsetMultiplier() throws IOException, InterruptedException {
+        String input = inputPath + "chapter8_Interactive_features.pdf";
+        String output = outputPath + "bigTaggedDocumentDynamicOffsetMultiplier.pdf";
+        String cmp = inputPath + "cmp_bigTaggedDocument.pdf";
+
+        List<Rectangle> rects = Arrays.asList(new Rectangle(60f, 80f, 460f, 65f), new Rectangle(300f, 370f, 215f, 270f));
+        try (PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(output))) {
+            PdfCleaner.cleanUp(pdfDocument, initLocations(rects, 131), new CleanUpProperties().setOffsetProperties(
+                    new PathOffsetApproximationProperties().calculateOffsetMultiplierDynamically(true)
+            ));
+        }
+        compareByContent(cmp, output, outputPath, "4");
+    }
+
+    @Test
     public void textPositioning() throws IOException, InterruptedException {
         String input = inputPath + "textPositioning.pdf";
         String output = outputPath + "textPositioning.pdf";
