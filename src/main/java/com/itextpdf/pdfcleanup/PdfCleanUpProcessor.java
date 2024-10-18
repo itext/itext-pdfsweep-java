@@ -22,6 +22,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.datastructures.Tuple2;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.source.ByteUtils;
@@ -823,12 +824,18 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
 
         if (stroke) {
-            Path strokePath = filter.filterStrokePath(path);
-            if (!strokePath.isEmpty()) {
-                // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
-                writeNotAppliedGsParams(false, false);
-                openNotWrittenTags();
-                writeStrokePath(strokePath, path.getStrokeColor());
+            Tuple2<Path, Boolean> strokePath = filter.filterStrokePath(path);
+            if (!strokePath.getFirst().isEmpty()) {
+                if (strokePath.getSecond()) {
+                    // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
+                    writeNotAppliedGsParams(false, false);
+                    openNotWrittenTags();
+                    writeFilteredStrokePath(strokePath.getFirst(), path.getStrokeColor());
+                } else {
+                    writeNotAppliedGsParams(false, true);
+                    openNotWrittenTags();
+                    writeStrokePath(strokePath.getFirst(), path.getStrokeColor());
+                }
             }
         }
 
@@ -893,12 +900,19 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         }
     }
 
-    private void writeStrokePath(Path strokePath, Color strokeColor) {
+    private void writeFilteredStrokePath(Path strokePath, Color strokeColor) {
         PdfCanvas canvas = getCanvas();
-        // As we transformed stroke to fill, we set stroke color for filling here
+        //As we transformed stroke to fill, we set stroke color for filling here
         canvas.saveState().setFillColor(strokeColor);
         writePath(strokePath);
         canvas.fill().restoreState();
+    }
+
+    private void writeStrokePath(Path strokePath, Color strokeColor) {
+        PdfCanvas canvas = getCanvas();
+        canvas.saveState().setStrokeColor(strokeColor);
+        writePath(strokePath);
+        canvas.stroke().restoreState();
     }
 
     private void removeOrCloseTag() {

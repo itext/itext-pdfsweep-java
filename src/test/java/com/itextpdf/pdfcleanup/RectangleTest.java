@@ -22,7 +22,6 @@
  */
 package com.itextpdf.pdfcleanup;
 
-import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -54,7 +53,7 @@ public class RectangleTest extends ExtendedITextTest {
     }
 
     @Test
-    // TODO DEVSIX-7136 Rectangles drawn with zero-width line disappear on sweeping
+    // TODO DEVSIX-7136 Red rectangle drawn with zero-width line does not disappear on sweeping
     public void zeroWidthLineTest() throws IOException, InterruptedException {
         String outPdf = DESTINATION_FOLDER + "zeroWidthLine.pdf";
         String cmpPdf = SOURCE_FOLDER + "cmp_zeroWidthLine.pdf";
@@ -81,8 +80,9 @@ public class RectangleTest extends ExtendedITextTest {
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(outDocBaos.toByteArray())),
                 new PdfWriter(outPdf));
         PdfCleanUpTool workingTool = new PdfCleanUpTool(pdfDocument);
-        Rectangle area = new Rectangle(0, 50, 150, 150);
-        workingTool.addCleanupLocation(new PdfCleanUpLocation(1, area, ColorConstants.RED));
+        Rectangle area = new Rectangle(100, 150, 150, 150);
+        //It's expected that upper half of red rectangle is cleaned up
+        workingTool.addCleanupLocation(new PdfCleanUpLocation(1, area));
         workingTool.cleanUp();
         pdfDocument.close();
 
