@@ -29,7 +29,7 @@ import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
  * Contains properties for {@link PdfCleanUpTool} operations.
  */
 public class CleanUpProperties {
-
+//test comment for sharpen
     private IMetaInfo metaInfo;
     private boolean processAnnotations;
     private Double overlapRatio;
