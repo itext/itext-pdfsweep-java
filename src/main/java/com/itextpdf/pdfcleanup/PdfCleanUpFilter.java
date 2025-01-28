@@ -226,21 +226,24 @@ class PdfCleanUpFilter {
     FilterResult<PdfArray> filterText(TextRenderInfo text) {
         PdfTextArray textArray = new PdfTextArray();
 
-        if (isTextNotToBeCleaned(text)) {
+        // Overlap ratio should not be taken into account when we check the whole text not to be cleaned up
+        if (properties.getOverlapRatio() == null && isTextNotToBeCleaned(text)) {
             return new FilterResult<>(false, new PdfArray(text.getPdfString()));
         }
 
+        boolean isModified = false;
         for (TextRenderInfo ri : text.getCharacterRenderInfos()) {
             if (isTextNotToBeCleaned(ri)) {
                 textArray.add(ri.getPdfString());
             } else {
+                isModified = true;
                 textArray.add(new PdfNumber(FontProgram.convertGlyphSpaceToTextSpace(-ri.getUnscaledWidth()) /
                         (text.getFontSize() * text.getHorizontalScaling() / FontProgram.HORIZONTAL_SCALING_FACTOR)
                 ));
             }
         }
 
-        return new FilterResult<PdfArray>(true, textArray);
+        return new FilterResult<PdfArray>(isModified, textArray);
     }
 
     /**
