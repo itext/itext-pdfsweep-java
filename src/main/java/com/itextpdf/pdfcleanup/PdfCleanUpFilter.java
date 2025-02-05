@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2024 Apryse Group NV
+    Copyright (c) 1998-2025 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -22,6 +22,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.datastructures.Tuple2;
 import com.itextpdf.commons.utils.MessageFormatUtil;
 import com.itextpdf.io.font.FontProgram;
 import com.itextpdf.io.image.ImageData;
@@ -225,21 +226,24 @@ class PdfCleanUpFilter {
     FilterResult<PdfArray> filterText(TextRenderInfo text) {
         PdfTextArray textArray = new PdfTextArray();
 
-        if (isTextNotToBeCleaned(text)) {
+        // Overlap ratio should not be taken into account when we check the whole text not to be cleaned up
+        if (properties.getOverlapRatio() == null && isTextNotToBeCleaned(text)) {
             return new FilterResult<>(false, new PdfArray(text.getPdfString()));
         }
 
+        boolean isModified = false;
         for (TextRenderInfo ri : text.getCharacterRenderInfos()) {
             if (isTextNotToBeCleaned(ri)) {
                 textArray.add(ri.getPdfString());
             } else {
+                isModified = true;
                 textArray.add(new PdfNumber(FontProgram.convertGlyphSpaceToTextSpace(-ri.getUnscaledWidth()) /
                         (text.getFontSize() * text.getHorizontalScaling() / FontProgram.HORIZONTAL_SCALING_FACTOR)
                 ));
             }
         }
 
-        return new FilterResult<PdfArray>(true, textArray);
+        return new FilterResult<PdfArray>(isModified, textArray);
     }
 
     /**
@@ -262,7 +266,7 @@ class PdfCleanUpFilter {
      * @param path the PathRenderInfo object to be filtered
      * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
      */
-    com.itextpdf.kernel.geom.Path filterStrokePath(PathRenderInfo path) {
+    Tuple2<Path, Boolean> filterStrokePath(PathRenderInfo path) {
         PdfArray dashPattern = path.getLineDashPattern();
         LineDashPattern lineDashPattern = new LineDashPattern(dashPattern.getAsArray(0), dashPattern.getAsNumber(1).floatValue());
 
@@ -279,7 +283,7 @@ class PdfCleanUpFilter {
      * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
      */
     com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
-        return filterFillPath(path.getPath(), path.getCtm(), fillingRule);
+        return filterFillPath(path.getPath(), path.getCtm(), fillingRule, false);
     }
 
     FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
@@ -292,10 +296,16 @@ class PdfCleanUpFilter {
      * @param path        the PathRenderInfo object to be filtered.
      * @param ctm         a {@link com.itextpdf.kernel.geom.Path} transformation matrix.
      * @param fillingRule If the subpath is contour, pass any value.
+     * @param checkForIntersection if true, the intersection check of path and regions will be performed, and if
+     *                             there is no intersection, original path from parameters will be returned.
+     *                             We pass true when we filter stroke path (stroke converted to fill)
+     *                             not to put fill path into the output if it's not intersected with cleanup area.
+     *                             We pass false when we filter fill and clip paths (there we don't convert stroke to
+     *                             fill) and thus happy with the result from ClipperBridge DIFFERENCES.
      * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
      */
     private com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path,
-                                                         Matrix ctm, int fillingRule) {
+                                                         Matrix ctm, int fillingRule, boolean checkForIntersection) {
         path.closeAllSubpaths();
 
         List<Point[]> transfRectVerticesList = new ArrayList<>();
@@ -326,6 +336,15 @@ class PdfCleanUpFilter {
 
         if (fillingRule == PdfCanvasConstants.FillingRule.EVEN_ODD) {
             fillType = PolyFillType.EVEN_ODD;
+        }
+        if (checkForIntersection) {
+            //Find intersection with cleanup areas
+            PolyTree cleanupAreaIntersection = new PolyTree();
+            clipper.execute(ClipType.INTERSECTION, cleanupAreaIntersection, fillType, PolyFillType.NON_ZERO);
+            if (Paths.makePolyTreeToPaths(cleanupAreaIntersection).isEmpty()) {
+                //if there are no intersections, return original path as mark that no need to filter anything
+                return path;
+            }
         }
 
         PolyTree resultTree = new PolyTree();
@@ -363,10 +382,10 @@ class PdfCleanUpFilter {
         return areasToBeCleaned;
     }
 
-    private com.itextpdf.kernel.geom.Path filterStrokePath(com.itextpdf.kernel.geom.Path sourcePath, Matrix ctm,
+    private Tuple2<Path, Boolean> filterStrokePath(Path sourcePath, Matrix ctm,
                                                            float lineWidth, int lineCapStyle, int lineJoinStyle,
                                                            float miterLimit, LineDashPattern lineDashPattern) {
-        com.itextpdf.kernel.geom.Path path = sourcePath;
+        Path path = sourcePath;
         JoinType joinType = ClipperBridge.getJoinType(lineJoinStyle);
         EndType endType = ClipperBridge.getEndType(lineCapStyle);
 
@@ -394,7 +413,12 @@ class PdfCleanUpFilter {
             }
         }
 
-        return filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING);
+        Path resultPath = filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING, true);
+        //if path was not filtered, return original path
+        if (resultPath == offsetedPath) {
+            return new Tuple2<Path, Boolean>(sourcePath, Boolean.FALSE);
+        }
+        return new Tuple2<Path, Boolean>(resultPath, Boolean.TRUE);
     }
 
     /**

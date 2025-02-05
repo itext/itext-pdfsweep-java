@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2024 Apryse Group NV
+    Copyright (c) 1998-2025 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -31,9 +31,9 @@ public class PdfSweepProductData {
     public static final String PDF_SWEEP_PRODUCT_NAME = "pdfSweep";
     public static final String PDF_SWEEP_PUBLIC_PRODUCT_NAME = PDF_SWEEP_PRODUCT_NAME;
 
-    private static final String PDF_SWEEP_VERSION = "5.0.0";
+    private static final String PDF_SWEEP_VERSION = "5.0.1";
     private static final int PDF_SWEEP_COPYRIGHT_SINCE = 2000;
-    private static final int PDF_SWEEP_COPYRIGHT_TO = 2024;
+    private static final int PDF_SWEEP_COPYRIGHT_TO = 2025;
 
     private static final ProductData PDF_SWEEP_PRODUCT_DATA = new ProductData(PDF_SWEEP_PUBLIC_PRODUCT_NAME,
             PDF_SWEEP_PRODUCT_NAME, PDF_SWEEP_VERSION, PDF_SWEEP_COPYRIGHT_SINCE, PDF_SWEEP_COPYRIGHT_TO);

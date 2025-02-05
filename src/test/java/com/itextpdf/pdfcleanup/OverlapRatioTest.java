@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2024 Apryse Group NV
+    Copyright (c) 1998-2025 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -22,13 +22,16 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.io.util.DecimalFormatUtil;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.utils.CompareTool;
 import com.itextpdf.test.ExtendedITextTest;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
@@ -127,11 +130,10 @@ public class OverlapRatioTest extends ExtendedITextTest {
 
         PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputFile), new PdfWriter(targetFile));
 
-
         CleanUpProperties properties = new CleanUpProperties();
         properties.setOverlapRatio(1d);
 
-        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<>(); // convertCleanupLocations();
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<>();
         cleanUpLocations.add(new PdfCleanUpLocation(1, new Rectangle(20, 690, 263.75f, 40), ColorConstants.YELLOW));
         PdfCleaner.cleanUp(pdfDoc, cleanUpLocations, properties);
         pdfDoc.close();
@@ -141,6 +143,39 @@ public class OverlapRatioTest extends ExtendedITextTest {
         Assertions.assertNull(errorMessage);
     }
 
+    @Test
+    public void differentTextRenderInfo() throws IOException, InterruptedException {
+        final String inputFile = inputPath + "differentTextRenderInfo.pdf";
+        final Double[] ratioArray = new Double[] {0d, 0.001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1d};
+        final Rectangle r = new Rectangle(110, 700, 400, 130);
+
+        List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
+        PdfCleanUpLocation location = new PdfCleanUpLocation(1, r);
+        cleanUpLocations.add(location);
+        CleanUpProperties cleanUpProperties = new CleanUpProperties();
+
+        for (Double ratio : ratioArray) {
+            final String targetFile = outputPath + "differentTextRenderInfo_" +
+                    DecimalFormatUtil.formatNumber(ratio.doubleValue(), "#.000#") + "_redact.pdf";
+            final String cmpFile = inputPath + "cmp_differentTextRenderInfo_" +
+                    DecimalFormatUtil.formatNumber(ratio.doubleValue(), "#.000#") + "_redact.pdf";
+
+            try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputFile), new PdfWriter(targetFile))) {
+                if (ratio == 0d) {
+                    cleanUpProperties.setOverlapRatio(null);
+                } else {
+                    cleanUpProperties.setOverlapRatio(ratio);
+                }
+                PdfCleaner.cleanUp(pdfDoc, cleanUpLocations, cleanUpProperties);
+
+                // Draw a rectangle to visualize the cleanup
+                PdfCanvas pdfCanvas = new PdfCanvas(pdfDoc.getPage(1));
+                pdfCanvas.setStrokeColor(ColorConstants.RED).rectangle(r).stroke();
+            }
+
+            Assertions.assertNull(new CompareTool().compareByContent(targetFile, cmpFile, outputPath, "diff_"));
+        }
+    }
 
     private static List<PdfCleanUpLocation> convertCleanupLocations() {
         List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<>();

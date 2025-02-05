@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2024 Apryse Group NV
+    Copyright (c) 1998-2025 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -29,7 +29,7 @@ import com.itextpdf.pdfcleanup.exceptions.CleanupExceptionMessageConstant;
  * Contains properties for {@link PdfCleanUpTool} operations.
  */
 public class CleanUpProperties {
-
+//test comment for sharpen
     private IMetaInfo metaInfo;
     private boolean processAnnotations;
     private Double overlapRatio;

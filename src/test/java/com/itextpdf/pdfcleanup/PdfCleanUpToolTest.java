@@ -1,6 +1,6 @@
 /*
     This file is part of the iText (R) project.
-    Copyright (c) 1998-2024 Apryse Group NV
+    Copyright (c) 1998-2025 Apryse Group NV
     Authors: Apryse Software.
 
     This program is offered under a commercial and under the AGPL license.
@@ -1064,8 +1064,9 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
     }
 
     @Test
-    public void directPropertyObjectTest() throws IOException {
+    public void directPropertyObjectTest() throws IOException, InterruptedException {
         String input = INPUT_PATH + "DirectPropertyObject.pdf";
+        String cmp = INPUT_PATH + "cmp_DirectPropertyObject.pdf";
         String output = OUTPUT_PATH + "DirectPropertyObjectOutput.pdf";
 
         PdfDocument pdfDocument = new PdfDocument(new PdfReader(input),
@@ -1080,13 +1081,7 @@ public class PdfCleanUpToolTest extends ExtendedITextTest {
 
         pdfDocument.close();
 
-        PdfDocument resultDoc = new PdfDocument(new PdfReader(output));
-        byte[] bytes = resultDoc.getPage(1).getFirstContentStream().getBytes();
-        String contentString = new String(bytes, StandardCharsets.UTF_8);
-        resultDoc.close();
-
-        //TODO DEVSIX-7387 change when bug is fixed
-        Assertions.assertTrue(contentString.contains("/PlacedPDF <</Metadata 14 0 R>> BDC"));
+        compareByContent(cmp, output, OUTPUT_PATH, "diff_directPropertyObject_");
     }
 
     private void cleanUp(String input, String output, List<PdfCleanUpLocation> cleanUpLocations) throws IOException {
