@@ -35,7 +35,6 @@ import sharpen.config.OptionsConfigurator;
 
 public class SharpenConfigMapping implements MappingConfiguration {
 
-
     @Override
     public int getMappingPriority() {
         // leaf node in dependency tree
@@ -66,6 +65,7 @@ public class SharpenConfigMapping implements MappingConfiguration {
         configurator.mapType("com.itextpdf.text.pdf.pdfcleanup.PdfCleanUpProcessor",
                 "iTextSharp.xtra.iTextSharp.text.pdf.pdfcleanup.PdfCleanUpProcessor");
 
+        configurator.mapNamespace("pdfcleanup", "PdfCleanup");
     }
 
     @Override
