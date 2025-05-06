@@ -33,8 +33,7 @@ import sharpen.config.ModuleOption;
 import sharpen.config.ModulesConfigurator;
 import sharpen.config.OptionsConfigurator;
 
-public class SharpenMapping implements MappingConfiguration {
-
+public class SharpenConfigMapping implements MappingConfiguration {
 
     @Override
     public int getMappingPriority() {
@@ -66,6 +65,7 @@ public class SharpenMapping implements MappingConfiguration {
         configurator.mapType("com.itextpdf.text.pdf.pdfcleanup.PdfCleanUpProcessor",
                 "iTextSharp.xtra.iTextSharp.text.pdf.pdfcleanup.PdfCleanUpProcessor");
 
+        configurator.mapNamespace("pdfcleanup", "PdfCleanup");
     }
 
     @Override

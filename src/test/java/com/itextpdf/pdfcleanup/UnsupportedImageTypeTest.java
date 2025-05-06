@@ -22,6 +22,7 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.utils.StringNormalizer;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -71,9 +72,9 @@ public class UnsupportedImageTypeTest extends ExtendedITextTest {
         } else {
             Exception e = Assertions.assertThrows(Exception.class, () -> workingTool.cleanUp());
             Assertions.assertTrue(
-                    CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE.toLowerCase()
-                            .equals(e.getMessage().toLowerCase()) ||
-                            "incompatible color conversion".equals(e.getMessage().toLowerCase()));
+                    StringNormalizer.toLowerCase(CleanupExceptionMessageConstant.UNSUPPORTED_IMAGE_TYPE)
+                            .equals(StringNormalizer.toLowerCase(e.getMessage())) ||
+                            "incompatible color conversion".equals(StringNormalizer.toLowerCase(e.getMessage())));
             pdfDocument.close();
         }
 

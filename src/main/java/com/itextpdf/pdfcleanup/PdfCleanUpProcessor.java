@@ -26,8 +26,8 @@ import com.itextpdf.commons.datastructures.Tuple2;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.io.source.ByteUtils;
-import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.colors.Color;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.geom.BezierCurve;
 import com.itextpdf.kernel.geom.IShape;
@@ -69,6 +69,8 @@ import com.itextpdf.kernel.pdf.colorspace.shading.AbstractPdfShading;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
+import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
+import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -81,9 +83,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-
-import com.itextpdf.pdfcleanup.logs.CleanUpLogMessageConstant;
-import com.itextpdf.pdfcleanup.util.CleanUpCsCompareUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -776,7 +775,6 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             getCanvas().addImageWithTransformationMatrix(filteredImage, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5], true);
         }
 
-        // TODO
         // PdfCanvas doesn't have a method that writes inline image using pdf stream, and only have method which
         // accepts Image as parameter. That's why we can't write image just as it was in original file, we convert it to Image.
 
