@@ -27,13 +27,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import sharpen.config.MappingConfiguration;
+import sharpen.config.ExtendedMappingConfiguration;
 import sharpen.config.MappingConfigurator;
 import sharpen.config.ModuleOption;
 import sharpen.config.ModulesConfigurator;
 import sharpen.config.OptionsConfigurator;
 
-public class SharpenConfigMapping implements MappingConfiguration {
+public class SharpenConfigMapping implements ExtendedMappingConfiguration {
 
     @Override
     public int getMappingPriority() {
@@ -66,6 +66,11 @@ public class SharpenConfigMapping implements MappingConfiguration {
                 "iTextSharp.xtra.iTextSharp.text.pdf.pdfcleanup.PdfCleanUpProcessor");
 
         configurator.mapNamespace("pdfcleanup", "PdfCleanup");
+    }
+
+    @Override
+    public void setConfigModuleSettings(ModulesConfigurator modulesConfigurator) {
+
     }
 
     @Override
