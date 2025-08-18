@@ -69,6 +69,11 @@ public class SharpenConfigMapping implements MappingConfiguration {
     }
 
     @Override
+    public void setConfigModuleSettings(ModulesConfigurator modulesConfigurator) {
+
+    }
+
+    @Override
     public void applySharpenOptions(OptionsConfigurator configurator) {
 
     }
