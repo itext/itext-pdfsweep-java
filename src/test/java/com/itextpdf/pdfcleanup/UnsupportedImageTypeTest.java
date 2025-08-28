@@ -62,10 +62,12 @@ public class UnsupportedImageTypeTest extends ExtendedITextTest {
         Rectangle area = pdfDocument.getPage(pageIndex).getPageSize();
         workingTool.addCleanupLocation(new PdfCleanUpLocation(pageIndex, area, ColorConstants.RED));
 
-        String java_ver = System.getProperty("java.version");
-        System.out.println("Java Version: " + java_ver);
+        String javaVendor = System.getProperty("java.vendor");
+        System.out.println("Java Vendor: " + javaVendor);
+        String javaVer = System.getProperty("java.version");
+        System.out.println("Java Version: " + javaVer);
 
-        if (isFixedInJdk(java_ver)) {
+        if (isFixedInJdk(javaVer, javaVendor)) {
             workingTool.cleanUp();
             pdfDocument.close();
             compareByContent(cmp, output, OUTPUT_PATH, "diff_UnsupportedImageType_");
@@ -80,18 +82,21 @@ public class UnsupportedImageTypeTest extends ExtendedITextTest {
 
     }
 
-    private static boolean isFixedInJdk(String versionStr) {
-        //fixed for jdk8 from 351 onwards, for jdk11 from 16 onwards and for jdk17 starting from 4
+    private static boolean isFixedInJdk(String versionStr, String vendorStr) {
+        //Fixed CMYK bug https://bugs.openjdk.org/browse/JDK-8274735 for openJDK:
+        //jdk8 from 351 onwards, for jdk11 from 16 onwards and for jdk17 starting from 4.
+        //Amazon corretto jdk started support CMYK for JPEG from 11 version.
         boolean isFixed = false;
         int majorVer = getMajorVer(versionStr);
         String[] split = versionStr.split("[._-]");
         int minorVer = Integer.parseInt(split[split.length - 1]);
 
-        if (minorVer % 10 == 2) {
-            return false;
-        }
         switch (majorVer) {
             case 8:
+                if ("Amazon.com Inc.".equals(vendorStr)) {
+                    return false;
+                }
+
                 isFixed = minorVer >= 351;
                 break;
             case 11:
