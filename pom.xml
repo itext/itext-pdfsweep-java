@@ -5,12 +5,12 @@
   <parent>
     <groupId>com.itextpdf</groupId>
     <artifactId>root</artifactId>
-    <version>9.3.0</version>
+    <version>9.4.0</version>
     <relativePath />
   </parent>
 
   <artifactId>cleanup</artifactId>
-  <version>5.0.3</version>
+  <version>5.0.4</version>
 
   <name>pdfSweep</name>
   <description>Redact PDF documents. If you have to share PDFs with different departments or send them out of house, but
@@ -34,6 +34,12 @@
     <itext.version>${project.parent.version}</itext.version>
     <sourceFolder>${project.basedir}/src/main/java</sourceFolder>
     <testSourceFolder>${project.basedir}/src/test/java</testSourceFolder>
+
+    <sharpen.phase>install</sharpen.phase>
+    <sharpen.projectName>cleanup</sharpen.projectName>
+    <sharpen.cSharpTargetFolder>./../../sharp/cleanup</sharpen.cSharpTargetFolder>
+    <sharpen.cSharpSourceCodeDestination>itext/itext.cleanup</sharpen.cSharpSourceCodeDestination>
+    <sharpen.cSharpTestCodeDestination>itext.tests/itext.cleanup.tests</sharpen.cSharpTestCodeDestination>
   </properties>
 
   <dependencies>
@@ -100,48 +106,4 @@
       <url>https://repo.itextsupport.com/releases</url>
     </repository>
   </repositories>
-
-  <profiles>
-    <profile>
-      <id>with-sharpen</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>sharpen</groupId>
-            <artifactId>sharpen-maven-plugin</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <executions>
-              <execution>
-                <phase>install</phase>
-                <goals>
-                  <goal>sharpen</goal>
-                </goals>
-              </execution>
-            </executions>
-            <dependencies>
-              <dependency>
-                <groupId>sharpen</groupId>
-                <artifactId>standard-framework-mapping</artifactId>
-                <version>1.0-SNAPSHOT</version>
-              </dependency>
-            </dependencies>
-            <configuration>
-              <projectName>cleanup</projectName>
-              <cSharpTargetFolder>./../../sharp/cleanup</cSharpTargetFolder>
-              <cSharpSourceCodeDestination>itext/itext.cleanup</cSharpSourceCodeDestination>
-              <cSharpTestCodeDestination>itext.tests/itext.cleanup.tests</cSharpTestCodeDestination>
-              <buildDotnet>${sharpen.builddotnet}</buildDotnet>
-              <showDiff>${sharpen.showdiff}</showDiff>
-              <sourceCodeFiles>
-                <file>**/src/main/java/**/*.java</file>
-              </sourceCodeFiles>
-              <testCodeFiles>
-                <file>**/src/test/java/**/*.java</file>
-              </testCodeFiles>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

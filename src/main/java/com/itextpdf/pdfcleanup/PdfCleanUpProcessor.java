@@ -723,6 +723,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                             imageToWrite.put(PdfName.SMaskInData, originalImage.getPdfObject().get(PdfName.SMaskInData));
                         }
                     }
+                    if (originalImage.getPdfObject().containsKey(PdfName.Decode)) {
+                        imageToWrite.put(PdfName.Decode, originalImage.getPdfObject().get(PdfName.Decode));
+                    }
                 }
             } else {
                 imageToWrite = originalImage;
