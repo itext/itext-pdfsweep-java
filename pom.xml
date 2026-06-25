@@ -23,11 +23,11 @@
     see. PDF Data redaction with pdfSweep gives you the piece of mind that your companies confidential information
     remains just that, confidential.
   </description>
-  <url>https://itextpdf.com/products/itext-7/pdfsweep</url>
+  <url>https://itextpdf.com/products/pdf-redaction-pdfsweep</url>
 
   <scm>
-    <connection>scm:git:ssh://git@git.itextsupport.com:7999/i7j/cleanup.git</connection>
-    <url>https://git.itextsupport.com/projects/I7J/repos/cleanup</url>
+    <connection>scm:git:git@github.com:itext/itext-pdfsweep-java.git</connection>
+    <url>https://github.com/itext/itext-pdfsweep-java</url>
   </scm>
 
   <properties>
