@@ -39,16 +39,15 @@ import com.itextpdf.pdfcleanup.autosweep.RegexBasedCleanupStrategy;
 import com.itextpdf.pdfcleanup.util.CleanUpImagesCompareTool;
 import com.itextpdf.test.ExtendedITextTest;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag("IntegrationTest")
 public class BigDocumentAutoCleanUpTest extends ExtendedITextTest {
@@ -215,17 +214,17 @@ class CCharacterRenderInfo extends CharacterRenderInfo {
     private Color strokeColor;
     private Color fillColor;
 
-    public CCharacterRenderInfo(TextRenderInfo tri) {
+    CCharacterRenderInfo(TextRenderInfo tri) {
         super(tri);
         this.strokeColor = tri.getStrokeColor();
         this.fillColor = tri.getFillColor();
     }
 
-    public Color getStrokeColor() {
+    Color getStrokeColor() {
         return strokeColor;
     }
 
-    public Color getFillColor() {
+    Color getFillColor() {
         return fillColor;
     }
 }
