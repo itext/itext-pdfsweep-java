@@ -300,6 +300,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
     private static class ImageRenderListener implements IEventListener {
         private List<Rectangle> imageRectangles = new ArrayList<>();
 
+        @Override
         public void eventOccurred(IEventData data, EventType type) {
             switch (type) {
                 case RENDER_IMAGE: {
@@ -323,6 +324,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
             return imageRectangles;
         }
 
+        @Override
         public Set<EventType> getSupportedEvents() {
             return null;
         }
