@@ -23,8 +23,13 @@
             <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_maskImage.pdf" />
             <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_textAndImages.pdf" />
             <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolTest/cmp_corruptJpeg.pdf" />
-            <fileset reason="Images with indexed colorspaces are currently cleaned differently in Java and .NET. See test for more info.">
+            <fileset reason="Images with indexed colorspaces are currently cleaned differently in Java and .NET. See tests for more info.
+                             And for inline images we do not try to restore the original colorspace.">
                 <file path="com/itextpdf/pdfcleanup/images/CleanUpImageIndexedColorSpaceTest/cmp_indexedImageNoWhite.pdf" />
+                <file path="com/itextpdf/pdfcleanup/TaggedDocumentTest/cmp_canvasTagFormXobjectImagesMcTree.pdf" />
+                <file path="com/itextpdf/pdfcleanup/TaggedDocumentTest/cmp_canvasImagesMcTreeRedactInlineImage.pdf" />
+                <file path="com/itextpdf/pdfcleanup/TaggedDocumentTest/cmp_canvasImagesMcTreeRedactImage.pdf" />
+                <file path="com/itextpdf/pdfcleanup/TaggedDocumentTest/cmp_formXobjectImagesMcTree.pdf" />
             </fileset>
             <file path="com/itextpdf/pdfcleanup/PdfCleanUpToolWithInlineImagesTest/cmp_inlineImageCleanup.pdf" />
             <file path="com/itextpdf/pdfcleanup/transparency/MaskedImagesTest/cmp_imageColorKeyMaskArray.pdf" />

@@ -264,7 +264,9 @@ class PdfCleanUpFilter {
      * Filter a PathRenderInfo object.
      *
      * @param path the PathRenderInfo object to be filtered
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     *
+     * @return a filtered result represented by {@link Tuple2} object where first value is {@link Path} object
+     *         and second value is a boolean flag indicating whether the path was filtered or not
      */
     Tuple2<Path, Boolean> filterStrokePath(PathRenderInfo path) {
         PdfArray dashPattern = path.getLineDashPattern();
@@ -279,11 +281,15 @@ class PdfCleanUpFilter {
      *
      * @param path        the PathRenderInfo object to be filtered
      * @param fillingRule an integer parameter, specifying whether the subpath is contour.
-     *                    If the subpath is contour, pass any value.
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     *                    If the subpath is contour, pass any value
+     *
+     * @return a filtered result represented by {@link Tuple2} object where first value is {@link Path} object
+     *         and second value is a boolean flag indicating whether the path was filtered or not
      */
-    com.itextpdf.kernel.geom.Path filterFillPath(PathRenderInfo path, int fillingRule) {
-        return filterFillPath(path.getPath(), path.getCtm(), fillingRule, false);
+    Tuple2<Path, Boolean> filterFillPath(PathRenderInfo path, int fillingRule) {
+        Path resultPath = filterFillPath(path.getPath(), path.getCtm(), fillingRule);
+        // if path was not filtered, return original path
+        return new Tuple2<Path, Boolean>(resultPath, resultPath != path.getPath());
     }
 
     FilteredImagesCache.FilteredImageKey createFilteredImageKey(PdfImageXObject image, Matrix imageCtm, PdfDocument document) {
@@ -293,19 +299,13 @@ class PdfCleanUpFilter {
     /**
      * Note: this method will close all unclosed subpaths of the passed path.
      *
-     * @param path        the PathRenderInfo object to be filtered.
-     * @param ctm         a {@link com.itextpdf.kernel.geom.Path} transformation matrix.
-     * @param fillingRule If the subpath is contour, pass any value.
-     * @param checkForIntersection if true, the intersection check of path and regions will be performed, and if
-     *                             there is no intersection, original path from parameters will be returned.
-     *                             We pass true when we filter stroke path (stroke converted to fill)
-     *                             not to put fill path into the output if it's not intersected with cleanup area.
-     *                             We pass false when we filter fill and clip paths (there we don't convert stroke to
-     *                             fill) and thus happy with the result from ClipperBridge DIFFERENCES.
-     * @return a filtered {@link com.itextpdf.kernel.geom.Path} object.
+     * @param path        a {@link Path} to be filtered
+     * @param ctm         a {@link Matrix} transformation matrix
+     * @param fillingRule if the subpath is contour, pass any value
+     *
+     * @return a filtered {@link Path} object
      */
-    private com.itextpdf.kernel.geom.Path filterFillPath(com.itextpdf.kernel.geom.Path path,
-                                                         Matrix ctm, int fillingRule, boolean checkForIntersection) {
+    private Path filterFillPath(Path path, Matrix ctm, int fillingRule) {
         path.closeAllSubpaths();
 
         List<Point[]> transfRectVerticesList = new ArrayList<>();
@@ -319,7 +319,6 @@ class PdfCleanUpFilter {
                     logger.error(MessageFormatUtil.format(CleanUpLogMessageConstant.FAILED_TO_PROCESS_A_TRANSFORMATION_MATRIX));
                 }
             }
-
         }
 
         IClipper clipper = new DefaultClipper();
@@ -337,14 +336,13 @@ class PdfCleanUpFilter {
         if (fillingRule == PdfCanvasConstants.FillingRule.EVEN_ODD) {
             fillType = PolyFillType.EVEN_ODD;
         }
-        if (checkForIntersection) {
-            //Find intersection with cleanup areas
-            PolyTree cleanupAreaIntersection = new PolyTree();
-            clipper.execute(ClipType.INTERSECTION, cleanupAreaIntersection, fillType, PolyFillType.NON_ZERO);
-            if (Paths.makePolyTreeToPaths(cleanupAreaIntersection).isEmpty()) {
-                //if there are no intersections, return original path as mark that no need to filter anything
-                return path;
-            }
+
+        // Find intersection with cleanup areas
+        PolyTree cleanupAreaIntersection = new PolyTree();
+        clipper.execute(ClipType.INTERSECTION, cleanupAreaIntersection, fillType, PolyFillType.NON_ZERO);
+        if (Paths.makePolyTreeToPaths(cleanupAreaIntersection).isEmpty()) {
+            // If there are no intersections, return original path as mark that no need to filter anything
+            return path;
         }
 
         PolyTree resultTree = new PolyTree();
@@ -413,8 +411,8 @@ class PdfCleanUpFilter {
             }
         }
 
-        Path resultPath = filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING, true);
-        //if path was not filtered, return original path
+        Path resultPath = filterFillPath(offsetedPath, ctm, PdfCanvasConstants.FillingRule.NONZERO_WINDING);
+        // if path was not filtered, return original path
         if (resultPath == offsetedPath) {
             return new Tuple2<Path, Boolean>(sourcePath, Boolean.FALSE);
         }
@@ -655,7 +653,8 @@ class PdfCleanUpFilter {
      * @param sourcePath  The path which dash pattern applied to. Needed to calc rotation angle of each square.
      * @return {@link java.util.List} consisting of squares constructed on given degenerated subpaths.
      */
-    private static List<Subpath> convertToSquares(List<Subpath> degenerateSubpaths, double squareWidth, com.itextpdf.kernel.geom.Path sourcePath) {
+    private static List<Subpath> convertToSquares(List<Subpath> degenerateSubpaths, double squareWidth,
+            Path sourcePath) {
         List<Point> pathApprox = getPathApproximation(sourcePath);
 
         if (pathApprox.size() < 2) {
@@ -699,7 +698,7 @@ class PdfCleanUpFilter {
      *
      * @param path input path
      */
-    private static List<Point> getPathApproximation(com.itextpdf.kernel.geom.Path path) {
+    private static List<Point> getPathApproximation(Path path) {
         ApproxPointList<Point> approx = new ApproxPointList<Point>();
         for (Subpath subpath : path.getSubpaths()) {
             approx.addAllPoints(subpath.getPiecewiseLinearApproximation());
