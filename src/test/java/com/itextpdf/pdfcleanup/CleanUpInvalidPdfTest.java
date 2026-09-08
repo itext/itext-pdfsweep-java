@@ -22,6 +22,9 @@
  */
 package com.itextpdf.pdfcleanup;
 
+import com.itextpdf.commons.utils.MessageFormatUtil;
+import com.itextpdf.kernel.exceptions.KernelExceptionMessageConstant;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -33,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -49,19 +51,18 @@ public class CleanUpInvalidPdfTest extends ExtendedITextTest {
     }
 
     @Test
-    @Disabled("DEVSIX-3608: this test currently throws StackOverflowError, which cannot be caught in .NET")
-    public void cleanCircularReferencesInResourcesTest() {
+    public void cleanCircularReferencesInResourcesTest() throws IOException {
+        String input = inputPath + "circularReferencesInResources.pdf";
 
-        Assertions.assertThrows(StackOverflowError.class, () -> {
-            String input = inputPath + "circularReferencesInResources.pdf";
-
-            PdfDocument pdfDocument = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()));
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(input), new PdfWriter(new ByteArrayOutputStream()))) {
             List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
-            cleanUpLocations.add(new PdfCleanUpLocation(1, pdfDocument.getPage(1).getPageSize(), null));
+            cleanUpLocations.add(new PdfCleanUpLocation(1, pdfDoc.getPage(1).getPageSize(), null));
 
-            PdfCleaner.cleanUp(pdfDocument, cleanUpLocations);
-
-            pdfDocument.close();
-        });
+            Exception exception = Assertions.assertThrows(PdfException.class,
+                    () -> PdfCleaner.cleanUp(pdfDoc, cleanUpLocations));
+            Assertions.assertEquals(MessageFormatUtil.format(
+                            KernelExceptionMessageConstant.FORM_XOBJECT_HAS_CIRCULAR_REFERENCES, 12, 0),
+                    exception.getMessage());
+        }
     }
 }
