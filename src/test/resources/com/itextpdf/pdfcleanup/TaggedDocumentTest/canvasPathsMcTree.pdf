@@ -1,0 +1,118 @@
+%PDF-1.7
+%‚„œ”
+7 0 obj
+<</Length 697>>stream
+q
+BT
+/F1 14 Tf
+1 0 0 1 32 512 Tm
+/Span <</ActualText(The actual text is: Text with property list)/Lang(en-US)/MCID 0>> BDC
+35 510 350 9 re
+W
+n
+(Text with property list)Tj
+ET
+Q
+/Figure <</ActualText(The actual text is: Filled rectangle)/Alt(Filled rectangle)/MCID 1>> BDC
+q
+0.2 0.6 0.2 rg
+150 430 35 35 re
+f
+Q
+EMC
+/Figure <</ActualText(The actual text is: Stroked rectangle)/Alt(Stroked rectangle)/MCID 2>> BDC
+q
+2 w
+0.1 0.1 0.8 RG
+200 430 35 35 re
+S
+Q
+EMC
+/Figure /Pr1 BDC
+q
+250 430 35 35 re
+W
+n
+0.8 0.3 0.2 rg
+289.5 447.5 m
+289.5 459.65 279.65 469.5 267.5 469.5 c
+255.35 469.5 245.5 459.65 245.5 447.5 c
+245.5 435.35 255.35 425.5 267.5 425.5 c
+279.65 425.5 289.5 435.35 289.5 447.5 c
+f
+Q
+EMC
+EMC
+
+endstream
+endobj
+6 0 obj
+<</Contents 7 0 R/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<</Font<</F1 8 0 R>>/Properties<</Pr1 14 0 R>>>>/StructParents 0/Tabs/S/TrimBox[0 0 595 842]/Type/Page>>
+endobj
+15 0 obj
+[10 0 R 11 0 R 12 0 R 13 0 R]
+endobj
+10 0 obj
+<</K 0/P 9 0 R/Pg 6 0 R/S/Span/Type/StructElem>>
+endobj
+11 0 obj
+<</K<</MCID 1/Pg 6 0 R/Type/MCR>>/P 9 0 R/Pg 6 0 R/S/Figure/Type/StructElem>>
+endobj
+12 0 obj
+<</K<</MCID 2/Pg 6 0 R/Type/MCR>>/P 9 0 R/Pg 6 0 R/S/Figure/Type/StructElem>>
+endobj
+13 0 obj
+<</K<</MCID 3/Pg 6 0 R/Type/MCR>>/P 9 0 R/Pg 6 0 R/S/Figure/Type/StructElem>>
+endobj
+9 0 obj
+<</K[10 0 R 11 0 R 12 0 R 13 0 R]/P 5 0 R/S/P/Type/StructElem>>
+endobj
+5 0 obj
+<</K 9 0 R/P 4 0 R/S/Document/Type/StructElem>>
+endobj
+4 0 obj
+<</K[5 0 R]/ParentTree 16 0 R/ParentTreeNextKey 1/RoleMap<<>>/Type/StructTreeRoot>>
+endobj
+1 0 obj
+<</MarkInfo<</Marked true>>/Pages 2 0 R/StructTreeRoot 4 0 R/Type/Catalog>>
+endobj
+3 0 obj
+<</CreationDate(D:20260826114411+03'00')/ModDate(D:20260826114411+03'00')/Producer(iTextÆ Core 9.8.0-SNAPSHOT \(AGPL version\) ©2000-2026 Apryse Group NV)>>
+endobj
+8 0 obj
+<</BaseFont/Courier/Encoding/WinAnsiEncoding/Subtype/Type1/Type/Font>>
+endobj
+2 0 obj
+<</Count 1/Kids[6 0 R]/Type/Pages>>
+endobj
+14 0 obj
+<</ActualText(The actual text is: Clipped shape)/Alt(Clipped shape)/MCID 3>>
+endobj
+16 0 obj
+<</Nums[0 15 0 R]>>
+endobj
+xref
+0 17
+0000000000 65535 f 
+0000001576 00000 n 
+0000001925 00000 n 
+0000001667 00000 n 
+0000001477 00000 n 
+0000001414 00000 n 
+0000000760 00000 n 
+0000000015 00000 n 
+0000001839 00000 n 
+0000001335 00000 n 
+0000000988 00000 n 
+0000001053 00000 n 
+0000001147 00000 n 
+0000001241 00000 n 
+0000001976 00000 n 
+0000000942 00000 n 
+0000002069 00000 n 
+trailer
+<</ID [<4a469cd4c3ddc6cc20e0945a765668f591633fe6890a5dc014ab889166ab10c32bc1897200a1752e80d735f69e1c12da1dfefc691ee43764704131e3584788c2><4a469cd4c3ddc6cc20e0945a765668f591633fe6890a5dc014ab889166ab10c32bc1897200a1752e80d735f69e1c12da1dfefc691ee43764704131e3584788c2>]/Info 3 0 R/Root 1 0 R/Size 17>>
+%iText-Core-9.8.0-SNAPSHOT
+startxref
+2105
+%%EOF

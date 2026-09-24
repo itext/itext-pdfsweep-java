@@ -46,6 +46,7 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfTextArray;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.annot.PdfLineAnnotation;
@@ -66,6 +67,9 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.colorspace.shading.AbstractPdfShading;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
@@ -76,6 +80,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -114,6 +119,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     // TL actually is not a text positioning operator, but we need to process it with them
     private static final Set<String> TEXT_POSITIONING_OPERATORS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList("Td", "TD", "Tm", "T*", "TL")));
+
+    // Redacted ActualText and Alt entries of the canvas tags that are associated with the redacted content
+    // will be replaced with this value
+    private static final String REDACTED_CONTENT = "Redacted content";
 
     // these operators are processed via PdfCanvasProcessor graphics state and event listener
     private static final Set<String> IGNORED_OPERATORS;
@@ -163,6 +172,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
      */
     private Deque<NotAppliedGsParams> notAppliedGsParams;
     private Deque<CanvasTag> notWrittenTags;
+
+    // Stack of form XObject streams currently being processed.
+    // Used to match MCRs by their /Stm entry when content is inside a form XObject.
+    private Stack<PdfStream> currentFormXObjectStack;
+
     private int numOfOpenedTagsInsideText;
     private boolean btEncountered;
     private boolean isInText;
@@ -182,6 +196,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         this.notAppliedGsParams = new ArrayDeque<>();
         this.notAppliedGsParams.push(new NotAppliedGsParams());
         this.notWrittenTags = new ArrayDeque<>();
+        this.currentFormXObjectStack = new Stack<>();
         this.numOfOpenedTagsInsideText = 0;
         this.btEncountered = false;
         this.isInText = false;
@@ -276,6 +291,11 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     @Override
     protected void beginMarkedContent(PdfName tag, PdfDictionary dict) {
         super.beginMarkedContent(tag, dict);
+
+        // We might need to redact ActualText and Alt entries of the tags that are associated with the content.
+        // So we make them indirect.
+        ensureIndirectIfCanBeRedacted(dict);
+
         notWrittenTags.push(new CanvasTag(tag).setProperties(dict));
         if (btEncountered) {
             ++numOfOpenedTagsInsideText;
@@ -338,6 +358,14 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         while (tag != null) {
             getCanvas().openTag(tag);
             tag = notWrittenTags.pollLast();
+        }
+    }
+
+    private void ensureIndirectIfCanBeRedacted(PdfDictionary props) {
+        if (props != null
+                && (props.containsKey(PdfName.ActualText) || props.containsKey(PdfName.Alt))
+                && !props.isIndirect()) {
+            props.makeIndirect(document);
         }
     }
 
@@ -461,6 +489,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
                 writeNotAppliedGsParams(true, true);
                 openNotWrittenTags();
+                currentFormXObjectStack.push(formStream);
             }
         }
     }
@@ -469,6 +498,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if ("Do".equals(operator)) {
             PdfStream formStream = getXObjectStream((PdfName) operands.get(0));
             if (PdfName.Form.equals(formStream.getAsName(PdfName.Subtype))) {
+                currentFormXObjectStack.pop();
                 PdfCanvas cleanedCanvas = popCleanedCanvas();
 
                 PdfFormXObject newFormXObject = new PdfFormXObject((Rectangle) null);
@@ -492,7 +522,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         } else if ("EI".equals(operator)) {
             cleanInlineImage();
         } else if (PATH_PAINTING_OPERATORS.contains(operator)) {
-            writePath();
+            cleanAndWritePath();
         } else if ("q".equals(operator)) {
             notAppliedGsParams.push(new NotAppliedGsParams());
         } else if ("Q".equals(operator)) {
@@ -549,8 +579,14 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                     if (null == textChunks) {
                         textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
                     }
-                    PdfArray filteredText = filter.filterText(textChunks.get(i++)).getFilterResult();
+                    PdfCleanUpFilter.FilterResult<PdfArray> filterResult = filter.filterText(textChunks.get(i));
+                    if (filterResult.isModified()) {
+                        redactTags(textChunks.get(i).getCanvasTagHierarchy());
+                    }
+                    PdfArray filteredText = filterResult.getFilterResult();
                     newTJ.addAll(filteredText);
+
+                    ++i;
                 } else {
                     newTJ.add(e);
                 }
@@ -561,6 +597,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             textChunks = ((PdfCleanUpEventListener) getEventListener()).getEncounteredText();
             PdfCleanUpFilter.FilterResult<PdfArray> filterResult = filter.filterText(textChunks.get(0));
             if (filterResult.isModified()) {
+                redactTags(textChunks.get(0).getCanvasTagHierarchy());
                 cleanedText = filterResult.getFilterResult();
             }
         }
@@ -585,7 +622,95 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             }
             textPositioning.appendTjArrayWithSingleNumber(cleanedText, gs.getFontSize(), gs.getHorizontalScaling());
         }
+    }
 
+    private void redactTags(List<CanvasTag> tagHierarchy) {
+        Set<PdfDictionary> redactedStructElems = new HashSet<>();
+        for (CanvasTag tag : tagHierarchy) {
+            redactStructTreeByTag(tag, redactedStructElems);
+
+            PdfDictionary props = tag.getProperties();
+            if (props == null) {
+                continue;
+            }
+            if (props.containsKey(PdfName.ActualText)) {
+                props.put(PdfName.ActualText, new PdfString(REDACTED_CONTENT));
+            }
+            if (props.containsKey(PdfName.Alt)) {
+                props.put(PdfName.Alt, new PdfString(REDACTED_CONTENT));
+            }
+        }
+    }
+
+    /**
+     * Redacts /ActualText and /Alt on the struct element mapped to this marked content tag and
+     * on all of its struct element ancestors up to the structure tree root.
+     */
+    private void redactStructTreeByTag(CanvasTag tag, Set<PdfDictionary> alreadyRedactedStructElems) {
+        if (!document.isTagged() || !tag.hasMcid()) {
+            return;
+        }
+
+        PdfMcr mcr = findMcrByMcid(tag);
+        if (mcr == null || !(mcr.getParent() instanceof PdfStructElem)) {
+            return;
+        }
+
+        IStructureNode node = mcr.getParent();
+        while (node instanceof PdfStructElem) {
+            PdfStructElem structElem = (PdfStructElem) node;
+            PdfDictionary structElemDict = structElem.getPdfObject();
+            if (!alreadyRedactedStructElems.contains(structElemDict)) {
+                alreadyRedactedStructElems.add(structElemDict);
+                if (structElem.getActualText() != null) {
+                    structElem.setActualText(new PdfString(REDACTED_CONTENT));
+                }
+                if (structElem.getAlt() != null) {
+                    structElem.setAlt(new PdfString(REDACTED_CONTENT));
+                }
+            } else {
+                // This struct element has already been redacted, so all of its ancestors have also been redacted
+                break;
+            }
+            node = structElem.getParent();
+        }
+    }
+
+    private PdfMcr findMcrByMcid(CanvasTag tag) {
+        if (currentFormXObjectStack.isEmpty()) {
+            // If we are not inside a form XObject, we can just look up the MCR by MCID in the page content stream
+            return document.getStructTreeRoot().findMcrByMcid(currentPage.getPdfObject(), tag.getMcid());
+        }
+
+        Collection<PdfMcr> pageMcrs = document.getStructTreeRoot().getPageMarkedContentReferences(currentPage);
+        if (pageMcrs == null) {
+            return null;
+        }
+
+        PdfStream currentFormXobjectStream =  currentFormXObjectStack.peek();
+        PdfMcr pageMatchingMcid = null;
+        // Go over all MCRs on the page and find the one that matches the MCID of the current tag
+        for (PdfMcr candidate : pageMcrs) {
+            if (candidate == null || candidate.getMcid() != tag.getMcid()) {
+                continue;
+            }
+
+            PdfObject candidateStm = candidate.getPdfObject() instanceof PdfDictionary ?
+                    ((PdfDictionary) candidate.getPdfObject()).get(PdfName.Stm, false) : null;
+            if (currentFormXobjectStream.getIndirectReference().equals(candidateStm)) {
+                // This is definitely the one we are looking for
+                return candidate;
+            }
+
+            // Just in case we will not find any, let's take the one from the page content stream.
+            // Should be the same as
+            // document.getStructTreeRoot().findMcrByMcid(currentPage.getPdfObject(), tag.getMcid());
+            if (candidateStm == null) {
+                pageMatchingMcid = candidate;
+            }
+        }
+
+        return pageMatchingMcid;
     }
 
     private void beginTextObjectAndOpenNotWrittenTags() {
@@ -661,6 +786,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
             ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
 
             FilteredImagesCache.FilteredImageKey key = filter.createFilteredImageKey(encounteredImage.getImage(), encounteredImage.getImageCtm(), document);
+            List<Rectangle> cleanedAreas = key.getCleanedAreas();
+            // Null here means the image was fully covered. We will remove the whole canvas tag in this case anyway
+            // but not its ancestors. So we still need to redact ancestors.
+            if (cleanedAreas == null || !cleanedAreas.isEmpty()) {
+                redactTags(encounteredImage.getCanvasTagHierarchy());
+            }
             PdfImageXObject imageToWrite = getFilteredImage(key, encounteredImage.getImageCtm());
 
             if (imageToWrite != null) {
@@ -694,7 +825,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
                     // While having been processed with java libraries, only the number of components mattered.
                     // However now we should put the correct color space dictionary as an image's resource,
-                    // because it'd be have been considered by pdf browsers before rendering it.
+                    // because it'd have been considered by pdf browsers before rendering it.
                     // Additional checks required as if an image format has been changed,
                     // then the old colorspace may produce an error with the new image data.
                     if (areColorSpacesDifferent(originalImage, imageToWrite)
@@ -759,6 +890,9 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
     private void cleanInlineImage() {
         ImageRenderInfo encounteredImage = ((PdfCleanUpEventListener) getEventListener()).getEncounteredImage();
         PdfCleanUpFilter.FilterResult<ImageData> imageFilterResult = filter.filterImage(encounteredImage);
+        if (imageFilterResult.isModified()) {
+            redactTags(encounteredImage.getCanvasTagHierarchy());
+        }
         ImageData filteredImage;
         if (imageFilterResult.isModified()) {
             filteredImage = imageFilterResult.getFilterResult();
@@ -785,7 +919,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         // inline image color space is present in new resources if necessary.
     }
 
-    private void writePath() {
+    private void cleanAndWritePath() {
         PathRenderInfo path = ((PdfCleanUpEventListener) getEventListener()).getEncounteredPath();
 
         boolean stroke = (path.getOperation() & PathRenderInfo.STROKE) == PathRenderInfo.STROKE;
@@ -808,10 +942,13 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         // Some improved logic could be applied to distinguish the cases when some paths actually could be drawn as one,
         // but this is the only generic solution.
 
+        boolean pathWasRedacted = false;
         Path fillPath = null;
         PdfCanvas canvas = getCanvas();
         if (fill) {
-            fillPath = filter.filterFillPath(path, path.getRule());
+            Tuple2<Path, Boolean> filterResult = filter.filterFillPath(path, path.getRule());
+            fillPath = filterResult.getFirst();
+            pathWasRedacted |= filterResult.getSecond();
             if (!fillPath.isEmpty()) {
                 writeNotAppliedGsParams(true, false);
                 openNotWrittenTags();
@@ -826,6 +963,7 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
 
         if (stroke) {
             Tuple2<Path, Boolean> strokePath = filter.filterStrokePath(path);
+            pathWasRedacted |= strokePath.getSecond();
             if (!strokePath.getFirst().isEmpty()) {
                 if (strokePath.getSecond()) {
                     // we pass stroke here as false, because stroke is transformed into fill. we don't need to set stroke color
@@ -843,9 +981,12 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
         if (clip) {
             Path clippingPath;
             if (fill && path.getClippingRule() == path.getRule()) {
+                // Reuse the already filtered fill path; modification already tracked above
                 clippingPath = fillPath;
             } else {
-                clippingPath = filter.filterFillPath(path, path.getClippingRule());
+                Tuple2<Path, Boolean> filterResult = filter.filterFillPath(path, path.getClippingRule());
+                clippingPath = filterResult.getFirst();
+                pathWasRedacted |= filterResult.getSecond();
             }
             if (!clippingPath.isEmpty()) {
                 writeNotAppliedGsParams(false, false);
@@ -868,6 +1009,10 @@ public class PdfCleanUpProcessor extends PdfCanvasProcessor {
                 canvas.moveTo(0, 0).clip();
             }
             canvas.endPath();
+        }
+
+        if (pathWasRedacted) {
+            redactTags(path.getCanvasTagHierarchy());
         }
     }
 

@@ -46,6 +46,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.xobject.PdfImageXObject;
 import com.itextpdf.kernel.utils.CompareTool;
+import com.itextpdf.kernel.utils.CompareToolResult;
 import com.itextpdf.kernel.utils.objectpathitems.ObjectPath;
 import com.itextpdf.kernel.utils.objectpathitems.DictPathItem;
 import com.itextpdf.kernel.utils.objectpathitems.LocalPathItem;
@@ -171,7 +172,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
 
     @Override
     protected boolean compareObjects(PdfObject outObj, PdfObject cmpObj, ObjectPath currentPath,
-            CompareTool.CompareResult compareResult) {
+            CompareToolResult compareResult) {
         if (ignoredObjectPaths.contains(currentPath)) {
 
             // Current objects should not be compared, if its ObjectPath is contained in ignored list
@@ -299,6 +300,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
     private static class ImageRenderListener implements IEventListener {
         private List<Rectangle> imageRectangles = new ArrayList<>();
 
+        @Override
         public void eventOccurred(IEventData data, EventType type) {
             switch (type) {
                 case RENDER_IMAGE: {
@@ -322,6 +324,7 @@ public class CleanUpImagesCompareTool extends CompareTool {
             return imageRectangles;
         }
 
+        @Override
         public Set<EventType> getSupportedEvents() {
             return null;
         }
