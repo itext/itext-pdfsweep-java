@@ -18,7 +18,7 @@ jobs:
 
       - name: Convert Markdown to PDF
         id: convert
-        uses: itext/markdown2pdf@v1
+        uses: itext/markdown2pdf-gh-action@v1.0.0
         with:
           input: '.'
           output: 'dist/markdown-pdfs.zip'
