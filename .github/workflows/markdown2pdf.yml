@@ -1,0 +1,31 @@
+name: Convert Markdown to PDF
+
+on:
+  push:
+    paths:
+      - '**.md'
+      - '.github/workflows/markdown2pdf.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Convert Markdown to PDF
+        id: convert
+        uses: itext/markdown2pdf@v1
+        with:
+          input: '.'
+          output: 'dist/markdown-pdfs.zip'
+
+      - name: Upload conversion result
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-pdfs
+          path: ${{ steps.convert.outputs.output-path }}
+          if-no-files-found: error
